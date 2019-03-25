@@ -92,5 +92,7 @@ func (this *Database) exec(query_str string) bool {
 		log.Printf("mysql:Database exec err %v", err.Error())
 		return false
 	}
+	res.LastInsertId()
+	res.RowsAffected()
 	return true
 }
