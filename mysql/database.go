@@ -183,6 +183,8 @@ func (this *Database) BeginProcedure() *Procedure {
 	return CreateProcedure(tx)
 }
 
+// ----------------------------------- STMT -----------------------------------
+
 type Stmt struct {
 	stmt *sql.Stmt
 }
@@ -197,7 +199,7 @@ func (this *Stmt) Query(args []interface{}, result *QueryResultList) bool {
 	rows, err := this.stmt.Query(args...)
 	defer rows.Close()
 	if err != nil {
-		log.Printf("Database query err %v\n", err.Error())
+		log.Printf("Stmt query err %v\n", err.Error())
 		return false
 	}
 	result.Init(rows)
@@ -212,7 +214,7 @@ func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) bool {
 	}
 	err := row.Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one row and scan err %v\n", err.Error())
+		log.Printf("Stmt query one row and scan err %v\n", err.Error())
 		return false
 	}
 	return true
@@ -221,14 +223,14 @@ func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) bool {
 func (this *Stmt) Exec(args []interface{}, last_insert_id, rows_affected *int64) bool {
 	res, err := this.stmt.Exec(args...)
 	if err != nil {
-		log.Printf("Database exec with args err %v\n", err.Error())
+		log.Printf("Stmt exec with args err %v\n", err.Error())
 		return false
 	}
 	_exec_result(res, last_insert_id, rows_affected)
 	return true
 }
 
-// --------------------------------- Procedure --------------------------------
+// -------------------------------- Procedure ---------------------------------
 type Procedure struct {
 	tx *sql.Tx
 }
@@ -243,7 +245,7 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 	rows, err := this.tx.Query(query_str, args...)
 	defer rows.Close()
 	if err != nil {
-		log.Printf("Database query err %v\n", err.Error())
+		log.Printf("Procedure query err %v\n", err.Error())
 		return false
 	}
 	result.Init(rows)
@@ -253,12 +255,12 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []interface{}) bool {
 	row := this.tx.QueryRow(query_str, args...)
 	if row == nil {
-		log.Printf("Stmt query one row get result empty")
+		log.Printf("Procedure query one row get result empty")
 		return false
 	}
 	err := row.Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one row and scan err %v\n", err.Error())
+		log.Printf("Procedure query one row and scan err %v\n", err.Error())
 		return false
 	}
 	return true
@@ -267,9 +269,18 @@ func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []int
 func (this *Procedure) Exec(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
 	res, err := this.tx.Exec(query_str, args...)
 	if err != nil {
-		log.Printf("Database exec with args err %v\n", err.Error())
+		log.Printf("Procedure exec with args err %v\n", err.Error())
 		return false
 	}
 	_exec_result(res, last_insert_id, rows_affected)
+	return true
+}
+
+func (this *Procedure) Commit() bool {
+	err := this.tx.Commit()
+	if err != nil {
+		log.Printf("Procedure commit err %v", err.Error())
+		return false
+	}
 	return true
 }

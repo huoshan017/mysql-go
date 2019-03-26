@@ -6,6 +6,11 @@ const (
 	MYSQL_ENGINE_INNODB = 1
 )
 
+var mysql_engines_map = map[int32]string{
+	MYSQL_ENGINE_MYISAM: "MYISAM",
+	MYSQL_ENGINE_INNODB: "INNODB",
+}
+
 // mysql table create flag
 const (
 	MYSQL_TABLE_CREATE_ZEROFILL                   = 1
@@ -17,6 +22,15 @@ const (
 	MYSQL_TABLE_CREATE_CURRENTTIMESTAMP           = 64
 	MYSQL_TABLE_CREATE_CURRENTTIMESTAMP_ON_UPDATE = 128
 )
+
+var mysql_table_create_flags_map = map[int32]string{
+	MYSQL_TABLE_CREATE_ZEROFILL:      "ZEROFILL",
+	MYSQL_TABLE_CREATE_UNSIGNED:      "UNSIGNED",
+	MYSQL_TABLE_CREATE_AUTOINCREMENT: "AUTO_INCREMENT",
+	MYSQL_TABLE_CREATE_NULL:          "NULL",
+	MYSQL_TABLE_CREATE_NOT_NULL:      "NOT NULL",
+	MYSQL_TABLE_CREATE_DEFAULT:       "DEFAULT",
+}
 
 // mysql field type
 const (
