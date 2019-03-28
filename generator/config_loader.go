@@ -1,4 +1,4 @@
-package mysql
+package mysql_generator
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/huoshan017/golib/mysql/base"
+	"github.com/huoshan017/mysql-go/base"
 )
 
 type FieldConfig struct {
@@ -57,8 +57,10 @@ func (this *ConfigLoader) Load(config string) bool {
 }
 
 func (this *ConfigLoader) load_table(tab *TableConfig) bool {
-	engine := strings.ToLower(tab.Engine)
-	if engine != "myisam" && engine != "innodb" {
+	engine := strings.ToUpper(tab.Engine)
+	var ok bool
+	if _, ok = mysql_go.GetMysqlEngineTypeByString(engine); !ok {
+		log.Printf("ConfigLoader::load_table unsupported engine type %v", engine)
 		return false
 	}
 
@@ -75,8 +77,31 @@ func (this *ConfigLoader) load_table(tab *TableConfig) bool {
 		return false
 	}
 
+	var str string
 	for _, f := range tab.Fields {
+		str = strings.ToUpper(f.Type)
+		_, ok = mysql_go.GetMysqlFieldTypeByString(str)
+		if !ok {
+			log.Printf("ConfigLoader::load_table %v field type %v not found", tab.Name, str)
+			return false
+		}
 
+		str = strings.ToUpper(f.IndexType)
+		_, ok = mysql_go.GetMysqlIndexTypeByString(str)
+		if !ok {
+			log.Printf("ConfigLoader::load_table %v index type %v not found", tab.Name, str)
+			return false
+		}
+
+		strs := strings.Split(f.CreateFlags, ",")
+		for _, s := range strs {
+			str = strings.ToUpper(s)
+			_, ok = mysql_go.GetMysqlTableCreateFlagTypeByString(str)
+			if !ok {
+				log.Printf("ConfigLoader::load_table %v create flag %v not found", tab.Name, str)
+				return false
+			}
+		}
 	}
 	return true
 }

@@ -1,4 +1,4 @@
-package mysql
+package mysql_go
 
 // mysql engine type
 const (
@@ -6,14 +6,24 @@ const (
 	MYSQL_ENGINE_INNODB = 1
 )
 
-var mysql_engines_type_name_map = map[int32]string{
+var mysql_engines_type_string_map = map[int]string{
 	MYSQL_ENGINE_MYISAM: "MYISAM",
 	MYSQL_ENGINE_INNODB: "INNODB",
 }
 
-var mysql_engines_name_type_map = map[string]int32{
+func GetMysqlEngineTypeString(engine_type int) (string, bool) {
+	str, o := mysql_engines_type_string_map[engine_type]
+	return str, o
+}
+
+var mysql_engines_string_type_map = map[string]int{
 	"MYISAM": MYSQL_ENGINE_MYISAM,
 	"INNODB": MYSQL_ENGINE_INNODB,
+}
+
+func GetMysqlEngineTypeByString(engine_name string) (int, bool) {
+	str, o := mysql_engines_string_type_map[engine_name]
+	return str, o
 }
 
 // mysql table create flag
@@ -28,7 +38,7 @@ const (
 	MYSQL_TABLE_CREATE_CURRENTTIMESTAMP_ON_UPDATE = 128
 )
 
-var mysql_table_create_flag_type_name_map = map[int32]string{
+var mysql_table_create_flag_type_string_map = map[int]string{
 	MYSQL_TABLE_CREATE_ZEROFILL:      "ZEROFILL",
 	MYSQL_TABLE_CREATE_UNSIGNED:      "UNSIGNED",
 	MYSQL_TABLE_CREATE_AUTOINCREMENT: "AUTO_INCREMENT",
@@ -37,13 +47,23 @@ var mysql_table_create_flag_type_name_map = map[int32]string{
 	MYSQL_TABLE_CREATE_DEFAULT:       "DEFAULT",
 }
 
-var mysql_table_create_flag_name_type_map = map[string]int32{
+func GetMysqlTableCreateFlagTypeString(flag_type int) (string, bool) {
+	str, o := mysql_table_create_flag_type_string_map[flag_type]
+	return str, o
+}
+
+var mysql_table_create_flag_string_type_map = map[string]int{
 	"ZEROFILL":       MYSQL_TABLE_CREATE_ZEROFILL,
 	"UNSIGNED":       MYSQL_TABLE_CREATE_UNSIGNED,
 	"AUTO_INCREMENT": MYSQL_TABLE_CREATE_AUTOINCREMENT,
 	"NULL":           MYSQL_TABLE_CREATE_NULL,
 	"NOT NULL":       MYSQL_TABLE_CREATE_NOT_NULL,
 	"DEFAULT":        MYSQL_TABLE_CREATE_DEFAULT,
+}
+
+func GetMysqlTableCreateFlagTypeByString(flag_str string) (int, bool) {
+	str, o := mysql_table_create_flag_string_type_map[flag_str]
+	return str, o
 }
 
 // mysql field type
@@ -78,7 +98,7 @@ const (
 	MYSQL_FIELD_TYPE_MAX        = 100
 )
 
-var mysql_field_type_name_map = map[int32]string{
+var mysql_field_type_string_map = map[int]string{
 	MYSQL_FIELD_TYPE_TINYINT:    "TINYINT",
 	MYSQL_FIELD_TYPE_SMALLINT:   "SMALLINT",
 	MYSQL_FIELD_TYPE_MEDIUMINT:  "MEDIUMINT",
@@ -105,7 +125,12 @@ var mysql_field_type_name_map = map[int32]string{
 	MYSQL_FIELD_TYPE_LONGTEXT:   "LONGTEXT",
 }
 
-var mysql_field_name_type_map = map[string]int32{
+func GetMysqlFieldTypeString(field_type int) (string, bool) {
+	str, o := mysql_field_type_string_map[field_type]
+	return str, o
+}
+
+var mysql_field_string_type_map = map[string]int{
 	"TINYINT":    MYSQL_FIELD_TYPE_TINYINT,
 	"SMALLINT":   MYSQL_FIELD_TYPE_SMALLINT,
 	"MEDIUMINT":  MYSQL_FIELD_TYPE_MEDIUMINT,
@@ -130,6 +155,11 @@ var mysql_field_name_type_map = map[string]int32{
 	"MEDIUMTEXT": MYSQL_FIELD_TYPE_MEDIUMTEXT,
 	"LONGBLOB":   MYSQL_FIELD_TYPE_LONGBLOB,
 	"LONGTEXT":   MYSQL_FIELD_TYPE_LONGTEXT,
+}
+
+func GetMysqlFieldTypeByString(field_type_str string) (int, bool) {
+	str, o := mysql_field_string_type_map[field_type_str]
+	return str, o
 }
 
 // mysql default field length
@@ -161,7 +191,7 @@ const (
 	MYSQL_FIELD_DEFAULT_LENGTH_LONGTEXT   = 4294967295
 )
 
-var mysql_field_type_default_length_map = map[int32]int64{
+var mysql_field_type_default_length_map = map[int]int{
 	MYSQL_FIELD_TYPE_TINYINT:    MYSQL_FIELD_DEFAULT_LENGTH_TINYINT,
 	MYSQL_FIELD_TYPE_SMALLINT:   MYSQL_FIELD_DEFAULT_LENGTH_SMALLINT,
 	MYSQL_FIELD_TYPE_MEDIUMINT:  MYSQL_FIELD_DEFAULT_LENGTH_MEDIUMINT,
@@ -188,6 +218,11 @@ var mysql_field_type_default_length_map = map[int32]int64{
 	MYSQL_FIELD_TYPE_LONGTEXT:   MYSQL_FIELD_DEFAULT_LENGTH_LONGTEXT,
 }
 
+func GetMysqlFieldTypeDefaultLength(field_type int) (int, bool) {
+	str, o := mysql_field_type_default_length_map[field_type]
+	return str, o
+}
+
 // mysql index type
 const (
 	MYSQL_INDEX_TYPE_NONE     = iota
@@ -196,16 +231,26 @@ const (
 	MYSQL_INDEX_TYPE_FULLTEXT = 3
 )
 
-var mysql_index_type_name_map = map[int32]string{
+var mysql_index_type_string_map = map[int]string{
 	MYSQL_INDEX_TYPE_NONE:     "none",
 	MYSQL_INDEX_TYPE_NORMAL:   "index",
 	MYSQL_INDEX_TYPE_UNIQUE:   "unique",
 	MYSQL_INDEX_TYPE_FULLTEXT: "fulltext",
 }
 
-var mysql_index_name_type_map = map[string]int32{
+func GetMysqlIndexTypeString(index_type int) (string, bool) {
+	str, o := mysql_index_type_string_map[index_type]
+	return str, o
+}
+
+var mysql_index_string_type_map = map[string]int{
 	"none":     MYSQL_INDEX_TYPE_NONE,
 	"index":    MYSQL_INDEX_TYPE_NORMAL,
 	"unique":   MYSQL_INDEX_TYPE_UNIQUE,
 	"fulltext": MYSQL_INDEX_TYPE_FULLTEXT,
+}
+
+func GetMysqlIndexTypeByString(index_type_str string) (int, bool) {
+	str, o := mysql_index_string_type_map[index_type_str]
+	return str, o
 }
