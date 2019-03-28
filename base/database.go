@@ -1,4 +1,4 @@
-package mysql_go
+package mysql_base
 
 import (
 	"database/sql"

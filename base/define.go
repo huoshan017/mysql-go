@@ -1,4 +1,4 @@
-package mysql_go
+package mysql_base
 
 // mysql engine type
 const (
@@ -233,7 +233,7 @@ const (
 
 var mysql_index_type_string_map = map[int]string{
 	MYSQL_INDEX_TYPE_NONE:     "none",
-	MYSQL_INDEX_TYPE_NORMAL:   "index",
+	MYSQL_INDEX_TYPE_NORMAL:   "normal",
 	MYSQL_INDEX_TYPE_UNIQUE:   "unique",
 	MYSQL_INDEX_TYPE_FULLTEXT: "fulltext",
 }
@@ -245,7 +245,7 @@ func GetMysqlIndexTypeString(index_type int) (string, bool) {
 
 var mysql_index_string_type_map = map[string]int{
 	"none":     MYSQL_INDEX_TYPE_NONE,
-	"index":    MYSQL_INDEX_TYPE_NORMAL,
+	"normal":   MYSQL_INDEX_TYPE_NORMAL,
 	"unique":   MYSQL_INDEX_TYPE_UNIQUE,
 	"fulltext": MYSQL_INDEX_TYPE_FULLTEXT,
 }
@@ -253,4 +253,91 @@ var mysql_index_string_type_map = map[string]int{
 func GetMysqlIndexTypeByString(index_type_str string) (int, bool) {
 	str, o := mysql_index_string_type_map[index_type_str]
 	return str, o
+}
+
+func IsMysqlFieldIntType(field_type int) bool {
+	var int_types = []int{
+		MYSQL_FIELD_TYPE_TINYINT,
+		MYSQL_FIELD_TYPE_SMALLINT,
+		MYSQL_FIELD_TYPE_MEDIUMINT,
+		MYSQL_FIELD_TYPE_INT,
+		MYSQL_FIELD_TYPE_BIGINT,
+	}
+	for _, t := range int_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMysqlFieldTextType(field_type int) bool {
+	var text_types = []int{
+		MYSQL_FIELD_TYPE_CHAR,
+		MYSQL_FIELD_TYPE_VARCHAR,
+		MYSQL_FIELD_TYPE_TINYTEXT,
+		MYSQL_FIELD_TYPE_MEDIUMTEXT,
+		MYSQL_FIELD_TYPE_TEXT,
+		MYSQL_FIELD_TYPE_LONGTEXT,
+	}
+	for _, t := range text_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMysqlFieldBlobType(field_type int) bool {
+	var blob_types = []int{
+		MYSQL_FIELD_TYPE_TINYBLOB,
+		MYSQL_FIELD_TYPE_MEDIUMBLOB,
+		MYSQL_FIELD_TYPE_BLOB,
+		MYSQL_FIELD_TYPE_LONGBLOB,
+	}
+	for _, t := range blob_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMysqlFieldBinaryType(field_type int) bool {
+	var binary_types = []int{
+		MYSQL_FIELD_TYPE_BINARY,
+		MYSQL_FIELD_TYPE_VARBINARY,
+	}
+	for _, t := range binary_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMysqlFieldTimeType(field_type int) bool {
+	var time_types = []int{
+		MYSQL_FIELD_TYPE_DATE,
+		MYSQL_FIELD_TYPE_DATETIME,
+		MYSQL_FIELD_TYPE_TIME,
+	}
+	for _, t := range time_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMysqlFieldTimestampType(field_type int) bool {
+	var timestamp_types = []int{
+		MYSQL_FIELD_TYPE_TIMESTAMP,
+	}
+	for _, t := range timestamp_types {
+		if field_type == t {
+			return true
+		}
+	}
+	return false
 }

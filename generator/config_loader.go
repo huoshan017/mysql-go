@@ -9,24 +9,9 @@ import (
 	"github.com/huoshan017/mysql-go/base"
 )
 
-type FieldConfig struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Length      int    `json:"length"`
-	IndexType   string `json:"index_type"`
-	CreateFlags string `json:"create_flags"`
-}
-
-type TableConfig struct {
-	Name       string         `json:"name"`
-	PrimaryKey string         `json:"primary_key"`
-	Engine     string         `json:"engine"`
-	Fields     []*FieldConfig `json:"fields"`
-}
-
 type ConfigLoader struct {
-	DBName string         `json:"db_name"`
-	Tables []*TableConfig `json:"tables"`
+	DBName string                    `json:"db_name"`
+	Tables []*mysql_base.TableConfig `json:"tables"`
 }
 
 func (this *ConfigLoader) Load(config string) bool {
@@ -56,10 +41,10 @@ func (this *ConfigLoader) Load(config string) bool {
 	return true
 }
 
-func (this *ConfigLoader) load_table(tab *TableConfig) bool {
+func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	engine := strings.ToUpper(tab.Engine)
 	var ok bool
-	if _, ok = mysql_go.GetMysqlEngineTypeByString(engine); !ok {
+	if _, ok = mysql_base.GetMysqlEngineTypeByString(engine); !ok {
 		log.Printf("ConfigLoader::load_table unsupported engine type %v", engine)
 		return false
 	}
@@ -80,14 +65,14 @@ func (this *ConfigLoader) load_table(tab *TableConfig) bool {
 	var str string
 	for _, f := range tab.Fields {
 		str = strings.ToUpper(f.Type)
-		_, ok = mysql_go.GetMysqlFieldTypeByString(str)
+		_, ok = mysql_base.GetMysqlFieldTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v field type %v not found", tab.Name, str)
 			return false
 		}
 
 		str = strings.ToUpper(f.IndexType)
-		_, ok = mysql_go.GetMysqlIndexTypeByString(str)
+		_, ok = mysql_base.GetMysqlIndexTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v index type %v not found", tab.Name, str)
 			return false
@@ -96,7 +81,7 @@ func (this *ConfigLoader) load_table(tab *TableConfig) bool {
 		strs := strings.Split(f.CreateFlags, ",")
 		for _, s := range strs {
 			str = strings.ToUpper(s)
-			_, ok = mysql_go.GetMysqlTableCreateFlagTypeByString(str)
+			_, ok = mysql_base.GetMysqlTableCreateFlagTypeByString(str)
 			if !ok {
 				log.Printf("ConfigLoader::load_table %v create flag %v not found", tab.Name, str)
 				return false
