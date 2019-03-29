@@ -119,14 +119,14 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 	}
 
 	// create index
-	index_type, o := GetMysqlIndexTypeByString(field.IndexType)
+	index_type, o := GetMysqlIndexTypeByString(strings.ToUpper(field.IndexType))
 	if !o {
 		log.Printf("No supported index type %v", field.IndexType)
 		return false
 	}
 
 	if index_type != MYSQL_INDEX_TYPE_NONE {
-		field_type, o := GetMysqlFieldTypeByString(field.Type)
+		field_type, o := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
 		if !o {
 			return false
 		}

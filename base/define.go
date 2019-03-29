@@ -232,10 +232,10 @@ const (
 )
 
 var mysql_index_type_string_map = map[int]string{
-	MYSQL_INDEX_TYPE_NONE:     "none",
-	MYSQL_INDEX_TYPE_NORMAL:   "normal",
-	MYSQL_INDEX_TYPE_UNIQUE:   "unique",
-	MYSQL_INDEX_TYPE_FULLTEXT: "fulltext",
+	MYSQL_INDEX_TYPE_NONE:     "NONE",
+	MYSQL_INDEX_TYPE_NORMAL:   "NORMAL",
+	MYSQL_INDEX_TYPE_UNIQUE:   "UNIQUE",
+	MYSQL_INDEX_TYPE_FULLTEXT: "FULLTEXT",
 }
 
 func GetMysqlIndexTypeString(index_type int) (string, bool) {
@@ -244,10 +244,10 @@ func GetMysqlIndexTypeString(index_type int) (string, bool) {
 }
 
 var mysql_index_string_type_map = map[string]int{
-	"none":     MYSQL_INDEX_TYPE_NONE,
-	"normal":   MYSQL_INDEX_TYPE_NORMAL,
-	"unique":   MYSQL_INDEX_TYPE_UNIQUE,
-	"fulltext": MYSQL_INDEX_TYPE_FULLTEXT,
+	"NONE":     MYSQL_INDEX_TYPE_NONE,
+	"NORMAL":   MYSQL_INDEX_TYPE_NORMAL,
+	"UNIQUE":   MYSQL_INDEX_TYPE_UNIQUE,
+	"FULLTEXT": MYSQL_INDEX_TYPE_FULLTEXT,
 }
 
 func GetMysqlIndexTypeByString(index_type_str string) (int, bool) {
