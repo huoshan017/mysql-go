@@ -1,5 +1,9 @@
 package mysql_base
 
+import (
+	"strings"
+)
+
 type FieldConfig struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"`
@@ -28,4 +32,20 @@ func (this *TableConfig) GetPrimaryKeyFieldConfig() (field_config *FieldConfig) 
 	}
 
 	return
+}
+
+func (this *TableConfig) IsPrimaryAutoIncrement() bool {
+	f := this.GetPrimaryKeyFieldConfig()
+	if f == nil {
+		return false
+	}
+	strs := strings.Split(f.CreateFlags, ",")
+	for _, s := range strs {
+		if c, o := GetMysqlTableCreateFlagTypeByString(strings.ToUpper(s)); o {
+			if c == MYSQL_TABLE_CREATE_AUTOINCREMENT {
+				return true
+			}
+		}
+	}
+	return false
 }

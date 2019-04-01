@@ -126,13 +126,14 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 			return false
 		}
 
-		err = gen_source(f, pkg_path, table)
+		res := gen_source(f, pkg_path, table)
 
-		if err != nil {
-			log.Printf("写文件%v错误 %v\n", f.Name, err.Error())
+		if !res {
+			log.Printf("写文件%v失败\n", f.Name)
 			return false
 		}
 
+		var err error
 		if err = f.Sync(); err != nil {
 			log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
 			return false
