@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/huoshan017/mysql-go/base"
 )
@@ -68,7 +69,7 @@ func gen_source(f *os.File, dest_dir string, table *mysql_base.TableConfig) bool
 	row_name := table.Name + "Row"
 	str += ("type " + row_name + "Row struct {\n")
 	for _, field := range table.Fields {
-		field_type, o := mysql_base.GetMysqlFieldTypeByString(field.Type)
+		field_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
 		if !o {
 			log.Printf("cant get field type by string %v\n", field.Type)
 			return false
@@ -104,13 +105,25 @@ func gen_source(f *os.File, dest_dir string, table *mysql_base.TableConfig) bool
 	str += "	rows map[" + pt + "]*" + table.Name + "\n"
 	str += "}\n\n"
 
-	// functions
+	// init func
 	str += ("func (this *" + table_name + ") Init(db *mysql_base.Database) {\n")
 	str += ("	this.db = db\n")
 	str += "}\n\n"
 
-	str += ("func (this *" + table_name + ") Insert(" + ") {\n")
+	// select func
+
+	// insert func
+	str += ("func (this *" + table_name + ") Insert(key " + pt + ") bool {\n")
+	str += "	r := this.db.rows[key]\n"
+	str += "	if r != nil {\n"
+	str += "		return false\n"
+	str += "	}\n"
+	str += "	"
 	str += "}\n\n"
+
+	// update func
+
+	// delete func
 
 	_, err := f.WriteString(str)
 	if err != nil {
