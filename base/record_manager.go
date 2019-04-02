@@ -1,4 +1,10 @@
 package mysql_base
 
-type RecordManager struct {
+type TableOperation interface {
+	Insert()
+	Update()
+	Delete()
+}
+
+type RecordsManager struct {
 }
