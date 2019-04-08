@@ -2,32 +2,28 @@ package mysql_base
 
 import (
 	"log"
+	"sync"
 )
 
-type Row interface {
+type TableBase interface {
 	Insert() bool
 	Update() bool
 	Delete() bool
-}
-
-type Table struct {
 	Name() string
 }
 
 type TableManager struct {
-	tables_array []TableBase
-	tables_map   map[string]TableBase
-	db           *Database
+	tables_map map[string]TableBase
+	locker     sync.RWMutex
+	db         *Database
 }
 
 func (this *TableManager) Init(db *Database) {
+	this.tables_map = make(map[string]TableBase)
 	this.db = db
 }
 
 func (this *TableManager) Add(table TableBase) bool {
-	if this.tables_map == nil {
-		this.tables_map = make(map[string]TableBase)
-	}
 	name := table.Name()
 	var t TableBase
 	t = this.tables_map[name]
@@ -35,34 +31,19 @@ func (this *TableManager) Add(table TableBase) bool {
 		log.Printf("TableManager::Add already has table %v", name)
 		return false
 	}
-	if this.tables_array != nil {
-		for _, t = range this.tables_array {
-			if t.Name() == name {
-				log.Printf("TableManager::Add already has table %v", name)
-				return false
-			}
-		}
-	}
-	this.tables_array = append(this.tables_array, table)
 	this.tables_map[name] = table
 	return true
 }
 
 func (this *TableManager) RemoveByName(name string) bool {
-	if this.tables_array == nil || this.tables_map == nil {
+	if this.tables_map == nil {
 		return false
 	}
-	var found bool
-	for i := 0; i < len(this.tables_array); i++ {
-		t := this.tables_array[i]
-		if t != nil && t.Name() == name {
-			this.tables_array[i] = nil
-			found = true
-			break
-		}
+	if _, o := this.tables_map[name]; !o {
+		return false
 	}
 	delete(this.tables_map, name)
-	return found
+	return true
 }
 
 func (this *TableManager) Remove(table TableBase) bool {
