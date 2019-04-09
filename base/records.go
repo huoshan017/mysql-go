@@ -9,7 +9,7 @@ type FieldValuePair struct {
 	Value interface{}
 }
 
-func (this *Database) InsertRecord(table_name string, field_args ...FieldValuePair) bool {
+func (this *Database) InsertRecord(table_name string, field_args ...FieldValuePair) (res bool, last_insert_id int64) {
 	fl := len(field_args)
 	if fl > 0 {
 		var field_list, placehold_list string
@@ -24,21 +24,23 @@ func (this *Database) InsertRecord(table_name string, field_args ...FieldValuePa
 			}
 			args = append(args, fa.Value)
 		}
-		return this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, nil, nil)
+		res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	} else {
-		return this.Exec("INSERT INTO "+table_name+";", nil, nil)
+		res = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
 	}
+	return
 }
 
-func (this *Database) InsertRecord2(table_name string, fields []string, values []interface{}) bool {
+func (this *Database) InsertRecord2(table_name string, fields []string, values []interface{}) (res bool, last_insert_id int64) {
 	var fl int
 	if fields != nil {
 		fl := len(fields)
 		if values == nil || fl != len(values) {
 			log.Printf("Database:InsertRecord2 fields length must equal to values length\n")
-			return false
+			return false, 0
 		}
 	}
+
 	if fl > 0 {
 		var field_list, placehold_list string
 		for i := 0; i < fl; i++ {
@@ -50,10 +52,11 @@ func (this *Database) InsertRecord2(table_name string, fields []string, values [
 				field_list += ("," + fields[i])
 			}
 		}
-		return this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", values, nil, nil)
+		res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", values, &last_insert_id, nil)
 	} else {
-		return this.Exec("INSERT INTO"+table_name+";", nil, nil)
+		res = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
 	}
+	return
 }
 
 func _gen_select_query_str(table_name string, field_list []string) string {
@@ -68,7 +71,7 @@ func _gen_select_query_str(table_name string, field_list []string) string {
 				query_str += ", "
 			}
 		}
-		query_str += (" FROM " + table_name + " WHERE ?=?")
+		query_str += (" FROM " + table_name + " WHERE ?=?;")
 	}
 	return query_str
 }
@@ -108,5 +111,5 @@ func (this *Database) UpdateRecord(table_name string, key_name string, key_value
 }
 
 func (this *Database) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
-	return this.ExecWith("DELETE FROM "+table_name+" WHERE ?=?", []interface{}{key_name, key_value}, nil, nil)
+	return this.ExecWith("DELETE FROM "+table_name+" WHERE ?=?;", []interface{}{key_name, key_value}, nil, nil)
 }
