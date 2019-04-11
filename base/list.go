@@ -44,12 +44,6 @@ type ListNode struct {
 	prev *ListNode
 }
 
-func NewListNode(data interface{}) *ListNode {
-	return &ListNode{
-		data: data,
-	}
-}
-
 func (this *ListNode) GetData() interface{} {
 	return this.data
 }

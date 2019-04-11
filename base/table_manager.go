@@ -20,59 +20,62 @@ type TableBase interface {
 }
 
 type OpData struct {
-	op_type    int32
 	table_name string
+	op_type    int32
 	field_list []*FieldValuePair
-	next       *OpData
-	prev       *OpData
 }
 
-type MapOpData struct {
+type TableOpData struct {
 	records_ops map[interface{}]*OpData
 	locker      sync.RWMutex
 }
 
-func (this *MapOpData) get(key interface{}) *OpData {
-	this.locker.RLock()
-	defer this.locker.RUnlock()
-	if this.records_ops == nil {
-		return nil
-	}
-	return this.records_ops[key]
+func (this *TableOpData) Init(table_name string) {
+	this.locker.Lock()
+	defer this.locker.Unlock()
+	this.records_ops = make(map[interface{}]*OpData)
 }
 
-func (this *MapOpData) insert(key interface{}, field_args ...FieldValuePair) {
+func (this *TableOpData) insert(key interface{}, field_args ...FieldValuePair) {
 	var op_data *OpData
 	this.locker.RLock()
-	if this.records_ops == nil {
-		this.locker.RUnlock()
+	var o bool
+	op_data, o = this.records_ops[key]
+	this.locker.RUnlock()
+
+	if !o {
 		this.locker.Lock()
-		if this.records_ops == nil {
-			this.records_ops = make(map[interface{}]*OpData)
-		}
-		op_data = this.records_ops[key]
-		if op_data == nil {
-			op_data = &OpData{
-				op_type: DB_OPERATE_TYPE_INSERT_RECORD,
-			}
+		op_data = &OpData{}
+		_, o = this.records_ops[key]
+		if !o {
 			this.records_ops[key] = op_data
 		}
 		this.locker.Unlock()
 	}
 
-	if op_data.op_type == DB_OPERATE_TYPE_DELETE_RECORD {
+	if op_data.op_type == DB_OPERATE_TYPE_NONE {
 
 	}
+}
 
-	this.locker.RUnlock()
+func (this *TableOpData) update(key interface{}, field_args ...FieldValuePair) {
+
+}
+
+type TablesOpMgr struct {
+	op_list           *List
+	table_records_ops map[string]*TableOpData
+}
+
+func (this *TablesOpMgr) Init() {
+	this.op_list = &List{}
+	this.table_records_ops = make(map[string]*TableOpData)
 }
 
 type TableManager struct {
-	tables_map        map[string]TableBase
-	locker            sync.RWMutex
-	db                *Database
-	op_list           List
-	table_records_ops map[string]*MapOpData
+	tables_map map[string]TableBase
+	locker     sync.RWMutex
+	db         *Database
 }
 
 func (this *TableManager) Init(db *Database) {
