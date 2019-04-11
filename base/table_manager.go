@@ -65,6 +65,7 @@ func (this *TableOpData) update(key interface{}, field_args ...FieldValuePair) {
 type TablesOpMgr struct {
 	op_list           *List
 	table_records_ops map[string]*TableOpData
+	locker            sync.RWMutex
 }
 
 func (this *TablesOpMgr) Init() {
