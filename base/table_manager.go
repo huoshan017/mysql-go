@@ -24,6 +24,7 @@ type OpData struct {
 	table_name string
 	field_list []*FieldValuePair
 	next       *OpData
+	prev       *OpData
 }
 
 type MapOpData struct {
@@ -66,18 +67,12 @@ func (this *MapOpData) insert(key interface{}, field_args ...FieldValuePair) {
 	this.locker.RUnlock()
 }
 
-type OpList struct {
-	head              *OpData
-	tail              *OpData
-	table_records_ops map[string]*MapOpData
-	locker            sync.RWMutex
-}
-
 type TableManager struct {
-	tables_map map[string]TableBase
-	locker     sync.RWMutex
-	db         *Database
-	op_list    []*OpData
+	tables_map        map[string]TableBase
+	locker            sync.RWMutex
+	db                *Database
+	op_list           List
+	table_records_ops map[string]*MapOpData
 }
 
 func (this *TableManager) Init(db *Database) {
@@ -135,7 +130,7 @@ func (this *TableManager) InsertRecord(table_name string, field_args ...FieldVal
 		return false
 	}
 
-	var field_list []*FieldValuePair
+	/*var field_list []*FieldValuePair
 	for _, f := range field_args {
 		field_list = append(field_list, &f)
 	}
@@ -144,7 +139,7 @@ func (this *TableManager) InsertRecord(table_name string, field_args ...FieldVal
 		op_type:    DB_OPERATE_TYPE_INSERT_RECORD,
 		table_name: table_name,
 		field_list: field_list,
-	})
+	})*/
 	return true
 }
 
@@ -154,7 +149,7 @@ func (this *TableManager) DeleteRecord(table_name, field_name string, field_valu
 		return false
 	}
 
-	fp := &FieldValuePair{
+	/*fp := &FieldValuePair{
 		Name:  field_name,
 		Value: field_value,
 	}
@@ -163,7 +158,7 @@ func (this *TableManager) DeleteRecord(table_name, field_name string, field_valu
 		op_type:    DB_OPERATE_TYPE_DELETE_RECORD,
 		table_name: table_name,
 		field_list: []*FieldValuePair{fp},
-	})
+	})*/
 
 	return true
 }
