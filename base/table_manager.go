@@ -12,31 +12,20 @@ const (
 	DB_OPERATE_TYPE_UPDATE_RECORD = 3
 )
 
-type TableBase interface {
-	Insert() bool
-	Update() bool
-	Delete() bool
-	Name() string
-}
-
 type OpData struct {
 	table_name string
 	op_type    int32
 	field_list []*FieldValuePair
 }
 
-type TableOpData struct {
-	records_ops map[interface{}]*OpData
-	locker      sync.RWMutex
-}
-
-func (this *TableOpData) Init(table_name string) {
+func (this *TableOpDataMap) Init(table_name string) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
+	this.table_name = table_name
 	this.records_ops = make(map[interface{}]*OpData)
 }
 
-func (this *TableOpData) insert(key interface{}, field_args ...FieldValuePair) {
+func (this *TableOpDataMap) insert(key interface{}, field_args ...FieldValuePair) {
 	var op_data *OpData
 	this.locker.RLock()
 	var o bool
@@ -58,19 +47,28 @@ func (this *TableOpData) insert(key interface{}, field_args ...FieldValuePair) {
 	}
 }
 
-func (this *TableOpData) update(key interface{}, field_args ...FieldValuePair) {
+func (this *TableOpDataMap) update(key interface{}, field_args ...FieldValuePair) {
 
 }
 
 type TablesOpMgr struct {
 	op_list           *List
-	table_records_ops map[string]*TableOpData
 	locker            sync.RWMutex
+	table_records_ops map[string]*TableOpDataMap
 }
 
-func (this *TablesOpMgr) Init() {
+func (this *TablesOpMgr) Init(table_names []string) {
 	this.op_list = &List{}
-	this.table_records_ops = make(map[string]*TableOpData)
+	this.table_records_ops = make(map[string]*TableOpDataMap)
+	for _, table_name := range table_names {
+		table_op_data := &TableOpDataMap{}
+		table_op_data.Init(table_name)
+		this.table_records_ops[table_name] = table_op_data
+	}
+}
+
+func (this *TablesOpMgr) InsertRecord(table_name string, key interface{}, field_args ...FieldValuePair) {
+
 }
 
 type TableManager struct {
