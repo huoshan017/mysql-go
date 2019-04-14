@@ -279,7 +279,16 @@ func (this *Procedure) Exec(query_str string, args []interface{}, last_insert_id
 func (this *Procedure) Commit() bool {
 	err := this.tx.Commit()
 	if err != nil {
-		log.Printf("Procedure commit err %v", err.Error())
+		log.Printf("Procedure commit err %v\n", err.Error())
+		return false
+	}
+	return true
+}
+
+func (this *Procedure) Rollback() bool {
+	err := this.tx.Rollback()
+	if err != nil {
+		log.Printf("Procedure rollback err %v\n", err.Error())
 		return false
 	}
 	return true
