@@ -36,7 +36,7 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	}
 	err := this.rows.Scan(dest)
 	if err != nil {
-		log.Printf("QueryResultList::Get with scan err %v", err.Error())
+		log.Printf("QueryResultList::Get with scan err %v\n", err.Error())
 		return false
 	}
 	return true
@@ -60,14 +60,14 @@ func (this *Database) Open(dbhost, dbuser, dbpassword, dbname string) error {
 
 func (this *Database) Close() {
 	if this.db == nil {
-		log.Printf("Database close failed with null instance")
+		log.Printf("Database close failed with null instance\n")
 		return
 	}
 	err := this.db.Close()
 	if err != nil {
-		log.Printf("Database close err %v", err.Error())
+		log.Printf("Database close err %v\n", err.Error())
 	} else {
-		log.Printf("Database closed")
+		log.Printf("Database closed\n")
 	}
 }
 
@@ -131,6 +131,19 @@ func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []
 	return true
 }
 
+func (this *Database) HasRow(query_str string) bool {
+	row := this.db.QueryRow(query_str)
+	if row == nil {
+		return false
+	}
+	var dest interface{}
+	err := row.Scan(dest)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	return true
+}
+
 func _exec_result(res sql.Result, last_insert_id, rows_affected *int64) {
 	var err error
 	if last_insert_id != nil {
@@ -170,7 +183,7 @@ func (this *Database) ExecWith(query_str string, args []interface{}, last_insert
 func (this *Database) Prepare(query_str string) *Stmt {
 	stmt, err := this.db.Prepare(query_str)
 	if err != nil {
-		log.Printf("Database Prepare query err %v", err.Error())
+		log.Printf("Database Prepare query err %v\n", err.Error())
 		return nil
 	}
 	return CreateStmt(stmt)
@@ -179,7 +192,7 @@ func (this *Database) Prepare(query_str string) *Stmt {
 func (this *Database) BeginProcedure() *Procedure {
 	tx, err := this.db.Begin()
 	if err != nil {
-		log.Printf("Database begin procedure err %v", err.Error())
+		log.Printf("Database begin procedure err %v\n", err.Error())
 		return nil
 	}
 	return CreateProcedure(tx)
@@ -211,7 +224,7 @@ func (this *Stmt) Query(args []interface{}, result *QueryResultList) bool {
 func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) bool {
 	row := this.stmt.QueryRow(args...)
 	if row == nil {
-		log.Printf("Stmt query one row get result empty")
+		log.Printf("Stmt query one row get result empty\n")
 		return false
 	}
 	err := row.Scan(dest...)
@@ -257,7 +270,7 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []interface{}) bool {
 	row := this.tx.QueryRow(query_str, args...)
 	if row == nil {
-		log.Printf("Procedure query one row get result empty")
+		log.Printf("Procedure query one row get result empty\n")
 		return false
 	}
 	err := row.Scan(dest...)

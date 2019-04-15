@@ -96,7 +96,6 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 				return false
 			}
 		}
-		f.CreateFlags = strings.Replace(f.CreateFlags, ",", " ", -1)
 	}
 	return true
 }

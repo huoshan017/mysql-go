@@ -14,7 +14,7 @@ func (this *Database) LoadTable(tab *TableConfig) bool {
 	}
 
 	// create table
-	sql_str := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length, primary_field.CreateFlags, tab.PrimaryKey, tab.Engine)
+	sql_str := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length /*primary_field.CreateFlags*/, strings.Replace(primary_field.CreateFlags, ",", " ", -1), tab.PrimaryKey, tab.Engine)
 	if !this.Exec(sql_str, nil, nil) {
 		return false
 	}
@@ -66,7 +66,7 @@ func _get_field_type_str(field *FieldConfig) (field_type_str string) {
 	return
 }
 
-func _get_field_create_flags_str(create_flags string) (create_flags_str string) {
+func _get_field_create_flags_str(field_type int, create_flags string) (create_flags_str string) {
 	flags := strings.Split(create_flags, ",")
 	for _, s := range flags {
 		s = strings.ToUpper(s)
@@ -77,11 +77,11 @@ func _get_field_create_flags_str(create_flags string) (create_flags_str string) 
 		}
 		// 缺省
 		if t == MYSQL_TABLE_CREATE_DEFAULT {
-			if IsMysqlFieldIntType(t) {
+			if IsMysqlFieldIntType(field_type) {
 				create_flags_str += (s + " 0")
-			} else if IsMysqlFieldTextType(t) || IsMysqlFieldBinaryType(t) || IsMysqlFieldBlobType(t) {
+			} else if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
 				create_flags_str += (s + " ''")
-			} else if IsMysqlFieldTimestampType(t) {
+			} else if IsMysqlFieldTimestampType(field_type) {
 				create_flags_str += (s + " CURRENT_TIMESTAMP")
 			} else {
 				log.Printf("Create table flag %v no default value", s)
@@ -94,13 +94,8 @@ func _get_field_create_flags_str(create_flags string) (create_flags_str string) 
 }
 
 func (this *Database) add_field(table_name string, field *FieldConfig) bool {
-	var result QueryResultList
 	sql_str := fmt.Sprintf("DESCRIBE %s %s", table_name, field.Name)
-	if !this.Query(sql_str, &result) {
-		return false
-	}
-
-	if result.rows != nil && result.Get() {
+	if !this.HasRow(sql_str) {
 		log.Printf("describe get rows not empty, no need to add field %v\n", field.Name)
 		return true
 	}
@@ -110,7 +105,8 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 		return false
 	}
 
-	create_flags_str := _get_field_create_flags_str(field.CreateFlags)
+	field_type, _ := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
+	create_flags_str := _get_field_create_flags_str(field_type, field.CreateFlags)
 
 	sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s %s", table_name, field.Name, field_type_str, create_flags_str)
 	if !this.Exec(sql_str, nil, nil) {
@@ -121,7 +117,7 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 	// create index
 	index_type, o := GetMysqlIndexTypeByString(strings.ToUpper(field.IndexType))
 	if !o {
-		log.Printf("No supported index type %v", field.IndexType)
+		log.Printf("No supported index type %v\n", field.IndexType)
 		return false
 	}
 
@@ -132,7 +128,7 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 		}
 		index_type_length, o := GetMysqlFieldTypeDefaultLength(field_type)
 		if !o {
-			log.Printf("field type %v default length not found", field.Type)
+			log.Printf("field type %v default length not found\n", field.Type)
 			return false
 		}
 		if index_type == MYSQL_INDEX_TYPE_NORMAL {
@@ -181,13 +177,15 @@ func (this *Database) rename_field(table_name, old_field_name, new_field_name st
 func (this *Database) modify_field_attr(table_name string, field *FieldConfig) bool {
 	field_type_str := _get_field_type_str(field)
 	if field_type_str == "" {
-		log.Printf("get table %v field %v type string failed", table_name, field.Name)
+		log.Printf("get table %v field %v type string failed\n", table_name, field.Name)
 		return false
 	}
-	field_create_str := _get_field_create_flags_str(field.CreateFlags)
+
+	field_type, _ := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
+	field_create_str := _get_field_create_flags_str(field_type, field.CreateFlags)
 	args := []interface{}{table_name, field.Name, field_type_str, field_create_str}
 	if !this.ExecWith("ALTER TABLE ? MODIFY ? ? ?", args, nil, nil) {
-		log.Printf("modify table %v field %v attr failed", table_name, field.Name)
+		log.Printf("modify table %v field %v attr failed\n", table_name, field.Name)
 		return false
 	}
 	return true
