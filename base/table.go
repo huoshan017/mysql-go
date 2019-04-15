@@ -14,7 +14,7 @@ func (this *Database) LoadTable(tab *TableConfig) bool {
 	}
 
 	// create table
-	sql_str := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.CreateFlags, tab.PrimaryKey, tab.Engine)
+	sql_str := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length, primary_field.CreateFlags, tab.PrimaryKey, tab.Engine)
 	if !this.Exec(sql_str, nil, nil) {
 		return false
 	}
@@ -100,7 +100,7 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 		return false
 	}
 
-	if result.rows != nil || result.Get() {
+	if result.rows != nil && result.Get() {
 		log.Printf("describe get rows not empty, no need to add field %v\n", field.Name)
 		return true
 	}

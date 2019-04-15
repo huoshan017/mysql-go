@@ -130,11 +130,18 @@ func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValue
 	if fl == 0 {
 		return
 	}
-
 	field_list, placehold_list, args := _gen_insert_params(field_args...)
 	res = this.Exec("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
-
 	return
+}
+
+func (this *Procedure) UpdateRecord(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) bool {
+	fl := len(field_args)
+	if fl <= 0 {
+		return false
+	}
+	query_str, args := _gen_update_params(table_name, key_name, key_value, field_args...)
+	return this.Exec(query_str, args, nil, nil)
 }
 
 func (this *Procedure) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {

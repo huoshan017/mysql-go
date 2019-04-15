@@ -30,20 +30,35 @@ type OpData struct {
 	detail_list []*OpDetail
 }
 
-type OpProcedure struct {
+type ProcedureOpList struct {
 	detail_list []*OpDetail
 }
 
-func (this *OpProcedure) Insert() {
-
+func (this *ProcedureOpList) Insert(table_name string, field_list []*FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_INSERT,
+		field_list: field_list,
+	})
 }
 
-func (this *OpProcedure) Update() {
-
+func (this *ProcedureOpList) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_UPDATE,
+		key:        key,
+		value:      value,
+		field_list: field_list,
+	})
 }
 
-func (this *OpProcedure) Delete() {
-
+func (this *ProcedureOpList) Delete(table_name string, key string, value interface{}) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_DELETE,
+		key:        key,
+		value:      value,
+	})
 }
 
 type DBOperateManager struct {
@@ -108,7 +123,7 @@ func (this *DBOperateManager) Update(table_name string, key string, value interf
 	})
 }
 
-func (this *DBOperateManager) AppendProcedure(procedure *OpProcedure) {
+func (this *DBOperateManager) AppendProcedure(procedure *ProcedureOpList) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -135,12 +150,15 @@ func (this *DBOperateManager) _op_cmd(d *OpDetail) {
 	}
 }
 
+// 在一个goroutine中执行
 func (this *DBOperateManager) CheckAndDo() {
-	this.locker.Lock()
+	this.locker.RLock()
 	if this.op_list.GetLength() == 0 {
-		this.locker.Unlock()
+		this.locker.RUnlock()
 		return
 	}
+	this.locker.RUnlock()
+
 	tmp_list := this.op_list
 	this.op_list = &List{}
 	this.locker.Unlock()
@@ -148,18 +166,36 @@ func (this *DBOperateManager) CheckAndDo() {
 	node := tmp_list.GetHeadNode()
 	for node != nil {
 		op_data := node.GetData().(*OpData)
-		if op_data != nil {
-			if op_data.sql_type == DB_SQL_TYPE_COMMAND {
-				if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
-					d := op_data.detail_list[0]
-					this._op_cmd(d)
-				}
-			} else {
-				if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
-					for _, d := range op_data.detail_list {
+		if op_data == nil {
+			node = node.GetNext()
+		}
 
+		if op_data.sql_type == DB_SQL_TYPE_COMMAND {
+			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
+				d := op_data.detail_list[0]
+				this._op_cmd(d)
+			}
+		} else if op_data.sql_type == DB_SQL_TYPE_PROCEDURE {
+			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
+				procedure := this.db.BeginProcedure()
+				if procedure == nil {
+					continue
+				}
+				for _, d := range op_data.detail_list {
+					var o bool
+					if d.op_type == DB_OPERATE_TYPE_INSERT {
+						o, _ = procedure.InsertRecord(d.table_name, d.field_list...)
+					} else if d.op_type == DB_OPERATE_TYPE_UPDATE {
+						o = procedure.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
+					} else if d.op_type == DB_OPERATE_TYPE_DELETE {
+						o = procedure.DeleteRecord(d.table_name, d.key, d.value)
+					}
+					if !o {
+						procedure.Rollback()
+						break
 					}
 				}
+				procedure.Commit()
 			}
 		}
 		node = node.GetNext()

@@ -66,8 +66,14 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	}
 
 	var str string
+	var strs []string
 	for _, f := range tab.Fields {
-		str = strings.ToUpper(f.Type)
+		if strings.Index(f.Type, ":") >= 0 {
+			strs = strings.Split(f.Type, ":")
+			str = strings.ToUpper(strs[0])
+		} else {
+			str = strings.ToUpper(f.Type)
+		}
 		_, ok = mysql_base.GetMysqlFieldTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v field type %v not found\n", tab.Name, str)
@@ -81,7 +87,7 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			return false
 		}
 
-		strs := strings.Split(f.CreateFlags, ",")
+		strs = strings.Split(f.CreateFlags, ",")
 		for _, s := range strs {
 			str = strings.ToUpper(s)
 			_, ok = mysql_base.GetMysqlTableCreateFlagTypeByString(str)
@@ -90,6 +96,7 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 				return false
 			}
 		}
+		f.CreateFlags = strings.Replace(f.CreateFlags, ",", " ", -1)
 	}
 	return true
 }

@@ -87,6 +87,7 @@ func (this *Database) Query(query_str string, result *QueryResultList) bool {
 	rows, err := this.db.Query(query_str)
 	defer rows.Close()
 	if err != nil {
+		log.Printf("Database query err %v\n", err.Error())
 		return false
 	}
 	result.Init(rows)
@@ -97,6 +98,7 @@ func (this *Database) QueryWith(query_str string, args []interface{}, result *Qu
 	rows, err := this.db.Query(query_str, args...)
 	defer rows.Close()
 	if err != nil {
+		log.Printf("Database query with err %v\n", err.Error())
 		return false
 	}
 	result.Init(rows)
