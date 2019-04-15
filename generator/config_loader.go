@@ -71,9 +71,11 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 		if strings.Index(f.Type, ":") >= 0 {
 			strs = strings.Split(f.Type, ":")
 			str = strings.ToUpper(strs[0])
+			f.Type = strs[0]
 		} else {
 			str = strings.ToUpper(f.Type)
 		}
+
 		_, ok = mysql_base.GetMysqlFieldTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v field type %v not found\n", tab.Name, str)

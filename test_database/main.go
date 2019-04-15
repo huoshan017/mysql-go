@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/huoshan017/mysql-go/base"
 	"github.com/huoshan017/mysql-go/generator"
@@ -22,6 +23,7 @@ func main() {
 		log.Printf("open database err %v\n", err.Error())
 		return
 	}
+	defer database.Close()
 
 	if config_loader.Tables != nil {
 		for _, t := range config_loader.Tables {
@@ -33,4 +35,23 @@ func main() {
 	}
 
 	log.Printf("database loaded\n")
+
+	var db_op_manager mysql_base.DBOperateManager
+	db_op_manager.Init(&database)
+
+	go func() {
+		for {
+			db_op_manager.CheckAndDo()
+			time.Sleep(time.Minute * 5)
+		}
+	}()
+
+	for {
+		on_tick()
+		time.Sleep(time.Second)
+	}
+}
+
+func on_tick() {
+
 }
