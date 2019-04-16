@@ -66,8 +66,8 @@ func _get_field_type_str(field *FieldConfig) (field_type_str string) {
 	return
 }
 
-func _get_field_create_flags_str(field_type int, create_flags string) (create_flags_str string) {
-	flags := strings.Split(create_flags, ",")
+func _get_field_create_flags_str(field *FieldConfig) (create_flags_str string) {
+	flags := strings.Split(field.CreateFlags, ",")
 	for _, s := range flags {
 		s = strings.ToUpper(s)
 		t, o := GetMysqlTableCreateFlagTypeByString(s)
@@ -77,17 +77,18 @@ func _get_field_create_flags_str(field_type int, create_flags string) (create_fl
 		}
 		// 缺省
 		if t == MYSQL_TABLE_CREATE_DEFAULT {
+			field_type, _ := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
 			if IsMysqlFieldIntType(field_type) {
-				create_flags_str += (s + " 0")
+				create_flags_str += (" " + s + " 0")
 			} else if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
-				create_flags_str += (s + " ''")
+				create_flags_str += (" " + s + " ''")
 			} else if IsMysqlFieldTimestampType(field_type) {
-				create_flags_str += (s + " CURRENT_TIMESTAMP")
+				create_flags_str += (" " + s + " CURRENT_TIMESTAMP")
 			} else {
 				log.Printf("Create table flag %v no default value", s)
 			}
 		} else {
-			create_flags_str += s
+			create_flags_str += (" " + s)
 		}
 	}
 	return
@@ -105,8 +106,7 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 		return false
 	}
 
-	field_type, _ := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
-	create_flags_str := _get_field_create_flags_str(field_type, field.CreateFlags)
+	create_flags_str := _get_field_create_flags_str(field)
 
 	sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s %s", table_name, field.Name, field_type_str, create_flags_str)
 	if !this.Exec(sql_str, nil, nil) {
@@ -135,13 +135,13 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 			if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
 				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD INDEX %s_index (`%s`(%d))", table_name, field.Name, field.Name, index_type_length)
 			} else {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` AND INDEX %s_index(`%s`)", table_name, field.Name, field.Name)
+				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD INDEX %s_index(`%s`)", table_name, field.Name, field.Name)
 			}
 		} else if index_type == MYSQL_INDEX_TYPE_UNIQUE {
 			if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
 				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE (`%s`(%d))", table_name, field.Name, index_type_length)
 			} else {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` AND UNIQUE (`%s`)", table_name, field.Name)
+				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE (`%s`)", table_name, field.Name)
 			}
 		} else if index_type == MYSQL_INDEX_TYPE_FULLTEXT {
 			log.Printf("table %v field %v index type FULLTEXT not supported\n", table_name, field.Name)
@@ -149,7 +149,7 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 
 		}
 
-		if !this.Query(sql_str, nil) {
+		if !this.Exec(sql_str, nil, nil) {
 			log.Printf("create table %v field %v index failed\n", table_name, field.Name)
 			return false
 		}
@@ -181,8 +181,7 @@ func (this *Database) modify_field_attr(table_name string, field *FieldConfig) b
 		return false
 	}
 
-	field_type, _ := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
-	field_create_str := _get_field_create_flags_str(field_type, field.CreateFlags)
+	field_create_str := _get_field_create_flags_str(field)
 	args := []interface{}{table_name, field.Name, field_type_str, field_create_str}
 	if !this.ExecWith("ALTER TABLE ? MODIFY ? ? ?", args, nil, nil) {
 		log.Printf("modify table %v field %v attr failed\n", table_name, field.Name)
