@@ -69,6 +69,9 @@ func _get_field_type_str(field *FieldConfig) (field_type_str string) {
 func _get_field_create_flags_str(field *FieldConfig) (create_flags_str string) {
 	flags := strings.Split(field.CreateFlags, ",")
 	for _, s := range flags {
+		if s == "" {
+			continue
+		}
 		s = strings.ToUpper(s)
 		t, o := GetMysqlTableCreateFlagTypeByString(s)
 		if !o {

@@ -5,11 +5,13 @@ import (
 )
 
 type FieldConfig struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Length      int    `json:"length"`
-	IndexType   string `json:"index_type"`
-	CreateFlags string `json:"create_flags"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	Length        int    `json:"length"`
+	IndexType     string `json:"index_type"`
+	CreateFlags   string `json:"create_flags"`
+	RealType      int
+	RealIndexType int
 }
 
 type TableConfig struct {
@@ -48,4 +50,17 @@ func (this *TableConfig) IsPrimaryAutoIncrement() bool {
 		}
 	}
 	return false
+}
+
+func (this *TableConfig) GetField(field_name string) *FieldConfig {
+	var field *FieldConfig
+	if this.Fields != nil {
+		for _, f := range this.Fields {
+			if f.Name == field_name {
+				field = f
+				break
+			}
+		}
+	}
+	return field
 }

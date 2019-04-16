@@ -87,10 +87,10 @@
 				{ "name":"level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
 				{ "name":"vip_level",	"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
 				{ "name":"exp",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"items",		"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"not null" },
-				{ "name":"skills",		"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"not null" },
-				{ "name":"tasks",		"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"not null" },
-				{ "name":"activities",	"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"not null" }
+				{ "name":"items",		"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"skills",		"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"tasks",		"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"activities",	"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" }
 			]
 		},
 		
@@ -100,7 +100,7 @@
 			"engine": "innodb",
 			"fields": [
 				{ "name":"id", 			"type":"int", 				"length":0, 	"index_type":"none", 	"create_flags":"unsigned,not null" },
-				{ "name":"friends", 	"type":"blob:DBFriends",  	"length":0, 	"index_type":"none",  	"create_flags":"not null" }
+				{ "name":"friends", 	"type":"blob:DBFriends",  	"length":0, 	"index_type":"none",  	"create_flags":"" }
 			]
 		},
 		

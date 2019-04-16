@@ -66,7 +66,7 @@ func (this *Database) InsertRecord2(table_name string, fields []string, values [
 	return
 }
 
-func _gen_select_query_str(table_name string, field_list []string) string {
+func _gen_select_query_str(table_name string, field_list []string, key string) string {
 	var query_str string
 	if field_list == nil || len(field_list) == 0 {
 		query_str = "SELECT * FROM " + table_name + " WHERE ?=?"
@@ -78,27 +78,27 @@ func _gen_select_query_str(table_name string, field_list []string) string {
 				query_str += ", "
 			}
 		}
-		query_str += (" FROM " + table_name + " WHERE ?=?;")
+		query_str += (" FROM " + table_name + " WHERE " + key + "=?;")
 	}
 	return query_str
 }
 
 func (this *Database) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
 	if dest_list == nil || len(dest_list) == 0 {
-		log.Printf("Database::SelectRecord result dest_list could not empty\n")
+		log.Printf("Database::SelectRecord result dest_list cant not empty\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list)
-	return this.QueryOneWith(query_str, []interface{}{key_name, key_value}, dest_list)
+	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
 }
 
 func (this *Database) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) bool {
 	if result_list == nil {
-		log.Printf("Database::SelectRecords result_list could not null\n")
+		log.Printf("Database::SelectRecords result_list cant not null\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list)
-	return this.QueryWith(query_str, []interface{}{key_name, key_value}, result_list)
+	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	return this.QueryWith(query_str, []interface{}{key_value}, result_list)
 }
 
 func _gen_update_params(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) (query_str string, args []interface{}) {
@@ -122,7 +122,8 @@ func (this *Database) UpdateRecord(table_name string, key_name string, key_value
 }
 
 func (this *Database) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
-	return this.ExecWith("DELETE FROM "+table_name+" WHERE ?=?;", []interface{}{key_name, key_value}, nil, nil)
+	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
+	return this.ExecWith(sql_str, []interface{}{key_value}, nil, nil)
 }
 
 func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
@@ -149,8 +150,8 @@ func (this *Procedure) SelectRecord(table_name, key_name string, key_value inter
 		log.Printf("Procedure::SelectRecord result dest_list could not empty\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list)
-	return this.QueryOne(query_str, []interface{}{key_name, key_value}, dest_list)
+	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	return this.QueryOne(query_str, []interface{}{key_value}, dest_list)
 }
 
 func (this *Procedure) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) bool {
@@ -158,10 +159,11 @@ func (this *Procedure) SelectRecords(table_name, key_name string, key_value inte
 		log.Printf("Procedure::SelectRecords result_list could not null\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list)
-	return this.Query(query_str, []interface{}{key_name, key_value}, result_list)
+	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	return this.Query(query_str, []interface{}{key_value}, result_list)
 }
 
 func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
-	return this.Exec("DELETE FROM "+table_name+" WHERE ?=?;", []interface{}{key_name, key_value}, nil, nil)
+	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
+	return this.Exec(sql_str, []interface{}{key_value}, nil, nil)
 }

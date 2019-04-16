@@ -106,26 +106,18 @@ func (this *Database) QueryWith(query_str string, args []interface{}, result *Qu
 }
 
 func (this *Database) QueryOne(query_str string, dest []interface{}) bool {
-	row := this.db.QueryRow(query_str)
-	if row == nil {
-		return false
-	}
-	err := row.Scan(dest...)
+	err := this.db.QueryRow(query_str).Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one row and scan err %v\n", err.Error())
+		log.Printf("Database query one row and scan query string(%v) get dest(%v) err: %v\n", query_str, dest, err.Error())
 		return false
 	}
 	return true
 }
 
 func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []interface{}) bool {
-	row := this.db.QueryRow(query_str, args...)
-	if row == nil {
-		return false
-	}
-	err := row.Scan(dest...)
+	err := this.db.QueryRow(query_str, args...).Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one with and scan err %v\n", err.Error())
+		log.Printf("Database query one with and scan query string(%v) with args(%v) get dest(%v) err: %v\n", query_str, args, dest, err.Error())
 		return false
 	}
 	return true
@@ -163,7 +155,7 @@ func _exec_result(res sql.Result, last_insert_id, rows_affected *int64) {
 func (this *Database) Exec(query_str string, last_insert_id, rows_affected *int64) bool {
 	res, err := this.db.Exec(query_str)
 	if err != nil {
-		log.Printf("Database exec err %v\n", err.Error())
+		log.Printf("Database exec query string(%v) err %v\n", query_str, err.Error())
 		return false
 	}
 	_exec_result(res, last_insert_id, rows_affected)
@@ -173,7 +165,7 @@ func (this *Database) Exec(query_str string, last_insert_id, rows_affected *int6
 func (this *Database) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
 	res, err := this.db.Exec(query_str, args...)
 	if err != nil {
-		log.Printf("Database exec with args err %v\n", err.Error())
+		log.Printf("Database exec query string(%v) with args(%v) err %v\n", query_str, args, err.Error())
 		return false
 	}
 	_exec_result(res, last_insert_id, rows_affected)
@@ -183,7 +175,7 @@ func (this *Database) ExecWith(query_str string, args []interface{}, last_insert
 func (this *Database) Prepare(query_str string) *Stmt {
 	stmt, err := this.db.Prepare(query_str)
 	if err != nil {
-		log.Printf("Database Prepare query err %v\n", err.Error())
+		log.Printf("Database Prepare query (%v) err %v\n", query_str, err.Error())
 		return nil
 	}
 	return CreateStmt(stmt)
@@ -260,7 +252,7 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 	rows, err := this.tx.Query(query_str, args...)
 	defer rows.Close()
 	if err != nil {
-		log.Printf("Procedure query err %v\n", err.Error())
+		log.Printf("Procedure query(%v) with args(%v) err %v\n", query_str, args, err.Error())
 		return false
 	}
 	result.Init(rows)
@@ -270,12 +262,12 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []interface{}) bool {
 	row := this.tx.QueryRow(query_str, args...)
 	if row == nil {
-		log.Printf("Procedure query one row get result empty\n")
+		log.Printf("Procedure query(%v) one row with args(%v) get result empty\n", query_str, args)
 		return false
 	}
 	err := row.Scan(dest...)
 	if err != nil {
-		log.Printf("Procedure query one row and scan err %v\n", err.Error())
+		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, args, err.Error())
 		return false
 	}
 	return true
@@ -284,7 +276,7 @@ func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []int
 func (this *Procedure) Exec(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
 	res, err := this.tx.Exec(query_str, args...)
 	if err != nil {
-		log.Printf("Procedure exec with args err %v\n", err.Error())
+		log.Printf("Procedure exec(%v) with args(%v) err %v\n", query_str, args, err.Error())
 		return false
 	}
 	_exec_result(res, last_insert_id, rows_affected)

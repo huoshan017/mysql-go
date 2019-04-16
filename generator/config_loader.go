@@ -15,6 +15,18 @@ type ConfigLoader struct {
 	Tables []*mysql_base.TableConfig `json:"tables"`
 }
 
+func (this *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {
+	if this.Tables == nil {
+		return nil
+	}
+	for _, t := range this.Tables {
+		if t.Name == table_name {
+			return t
+		}
+	}
+	return nil
+}
+
 func (this *ConfigLoader) Load(config string) bool {
 	data, err := ioutil.ReadFile(config)
 	if nil != err {
@@ -76,22 +88,32 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			str = strings.ToUpper(f.Type)
 		}
 
-		_, ok = mysql_base.GetMysqlFieldTypeByString(str)
+		var real_type int
+		real_type, ok = mysql_base.GetMysqlFieldTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v field type %v not found\n", tab.Name, str)
 			return false
 		}
 
+		f.RealType = real_type
+
 		str = strings.ToUpper(f.IndexType)
-		_, ok = mysql_base.GetMysqlIndexTypeByString(str)
+		var real_index_type int
+		real_index_type, ok = mysql_base.GetMysqlIndexTypeByString(str)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v index type %v not found\n", tab.Name, str)
 			return false
 		}
 
+		f.RealIndexType = real_index_type
+
 		strs = strings.Split(f.CreateFlags, ",")
 		for _, s := range strs {
 			str = strings.ToUpper(s)
+			str = strings.Trim(str, " ")
+			if str == "" {
+				continue
+			}
 			_, ok = mysql_base.GetMysqlTableCreateFlagTypeByString(str)
 			if !ok {
 				log.Printf("ConfigLoader::load_table %v create flag %v not found\n", tab.Name, str)
