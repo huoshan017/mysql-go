@@ -42,6 +42,11 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	return true
 }
 
+func (this *QueryResultList) HasData() bool {
+	this.rows.NextResultSet()
+	return true
+}
+
 type Database struct {
 	db *sql.DB
 }
@@ -71,7 +76,7 @@ func (this *Database) Close() {
 	}
 }
 
-func (this *Database) SetMaxListTime(d time.Duration) {
+func (this *Database) SetMaxLifeTime(d time.Duration) {
 	this.db.SetConnMaxLifetime(d)
 }
 
@@ -85,7 +90,7 @@ func (this *Database) SetMaxOpenConns(conns int) {
 
 func (this *Database) Query(query_str string, result *QueryResultList) bool {
 	rows, err := this.db.Query(query_str)
-	defer rows.Close()
+	//defer rows.Close()
 	if err != nil {
 		log.Printf("Database query err %v\n", err.Error())
 		return false
@@ -96,7 +101,7 @@ func (this *Database) Query(query_str string, result *QueryResultList) bool {
 
 func (this *Database) QueryWith(query_str string, args []interface{}, result *QueryResultList) bool {
 	rows, err := this.db.Query(query_str, args...)
-	defer rows.Close()
+	//defer rows.Close()
 	if err != nil {
 		log.Printf("Database query with err %v\n", err.Error())
 		return false

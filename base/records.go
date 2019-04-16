@@ -103,8 +103,12 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 
 func _gen_update_params(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) (query_str string, args []interface{}) {
 	query_str = "UPDATE " + table_name + " SET "
-	for _, fa := range field_args {
-		query_str += (fa.Name + "=?")
+	for i, fa := range field_args {
+		if i == 0 {
+			query_str += (fa.Name + "=?")
+		} else {
+			query_str += (", " + fa.Name + "=?")
+		}
 		args = append(args, fa.Value)
 	}
 	query_str += (" WHERE " + key_name + "=?;")
