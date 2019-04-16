@@ -95,7 +95,7 @@ func _get_field_create_flags_str(field_type int, create_flags string) (create_fl
 
 func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 	sql_str := fmt.Sprintf("DESCRIBE %s %s", table_name, field.Name)
-	if !this.HasRow(sql_str) {
+	if this.HasRow(sql_str) {
 		log.Printf("describe get rows not empty, no need to add field %v\n", field.Name)
 		return true
 	}
