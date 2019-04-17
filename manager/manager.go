@@ -17,6 +17,7 @@ type DB struct {
 	config_loader mysql_generator.ConfigLoader
 	database      mysql_base.Database
 	db_op_manager mysql_base.DBOperateManager
+	save_interval time.Duration
 }
 
 func (this *DB) LoadConfig(config_path string) bool {
@@ -43,11 +44,16 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 		}
 	}
 	this.db_op_manager.Init(&this.database)
+	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	return true
 }
 
 func (this *DB) SetConnectLifeTime(d time.Duration) {
 	this.database.SetMaxLifeTime(d)
+}
+
+func (this *DB) SetSaveIntervalTime(d time.Duration) {
+	this.save_interval = d
 }
 
 func (this *DB) Close() {
@@ -61,6 +67,6 @@ func (this *DB) Save() {
 func (this *DB) Run() {
 	go func() {
 		this.db_op_manager.Save()
-		time.Sleep(DEFAULT_SAVE_INTERVAL_TIME)
+		time.Sleep(this.save_interval)
 	}()
 }
