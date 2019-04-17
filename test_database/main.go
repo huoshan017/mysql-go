@@ -172,12 +172,14 @@ func do_selects(strs []string) {
 			}
 		}
 
+		log.Printf("field_list: %v, dest_list: %v\n", field_list, dest_list)
+
 		var result_list mysql_base.QueryResultList
 		if db.SelectRecords(table_name, key, value, field_list, &result_list) {
 			log.Printf("select结果: \n")
 			var cnt int
 			for {
-				if !result_list.Get(dest_list) {
+				if !result_list.Get(dest_list...) {
 					log.Printf("!!!!!!!!!!!!!!\n")
 					break
 				}

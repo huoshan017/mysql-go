@@ -80,7 +80,7 @@
 			"engine": "innodb",
 			"fields": [
 				{ "name":"id",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
-				{ "name":"account",		"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null" },
+				{ "name":"account",		"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null,default" },
 				{ "name":"role_id",		"type":"bigint",			"length":0,		"index_type":"normal",	"create_flags":"unsigned,not null,default" },
 				{ "name":"nick_name",	"type":"varchar",			"length":32,	"index_type":"none",	"create_flags":"not null,default" },
 				{ "name":"sex",			"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"not null,default" },
@@ -110,7 +110,7 @@
 			"engine":"innodb",
 			"fields": [
 				{ "name":"id",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"mail_id",		"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"unsigned,not null" },
+				{ "name":"mail_id",		"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"unsigned,not null,default" },
 				{ "name":"title",		"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
 				{ "name":"content",		"type":"varchar",		"length":512,	"index_type":"none",		"create_flags":"not null,default" },
 				{ "name":"sender",		"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
@@ -125,7 +125,7 @@
 			"engine":"innodb",
 			"fields": [
 				{ "name":"id",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"guild_id",	"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"not null" },
+				{ "name":"guild_id",	"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"not null,default" },
 				{ "name":"name",		"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
 				{ "name":"creater", 	"type":"bigint",		"length":0,		"index_type":"none",		"create_flags":"unsigned,not null,default" },
 				{ "name":"create_time",	"type":"timestamp",		"length":0,		"index_type":"none",		"create_flags":"not null,default" }
