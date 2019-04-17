@@ -65,11 +65,13 @@ type DBOperateManager struct {
 	op_list *List
 	locker  sync.RWMutex
 	db      *Database
+	enable  bool
 }
 
 func (this *DBOperateManager) Init(db *Database) {
 	this.op_list = &List{}
 	this.db = db
+	this.enable = true
 }
 
 func (this *DBOperateManager) GetDB() *Database {
@@ -79,6 +81,10 @@ func (this *DBOperateManager) GetDB() *Database {
 func (this *DBOperateManager) Insert(table_name string, field_list []*FieldValuePair) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
+
+	if !this.enable {
+		return
+	}
 
 	this.op_list.Append(&OpData{
 		sql_type: DB_SQL_TYPE_COMMAND,
@@ -95,6 +101,10 @@ func (this *DBOperateManager) Insert(table_name string, field_list []*FieldValue
 func (this *DBOperateManager) Delete(table_name string, field_name string, field_value interface{}) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
+
+	if !this.enable {
+		return
+	}
 
 	this.op_list.Append(&OpData{
 		sql_type: DB_SQL_TYPE_COMMAND,
@@ -113,6 +123,10 @@ func (this *DBOperateManager) Update(table_name string, key string, value interf
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
+	if !this.enable {
+		return
+	}
+
 	this.op_list.Append(&OpData{
 		sql_type: DB_SQL_TYPE_COMMAND,
 		detail_list: []*OpDetail{
@@ -130,6 +144,10 @@ func (this *DBOperateManager) Update(table_name string, key string, value interf
 func (this *DBOperateManager) AppendProcedure(procedure *ProcedureOpList) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
+
+	if !this.enable {
+		return
+	}
 
 	this.op_list.Append(&OpData{
 		sql_type:    DB_SQL_TYPE_PROCEDURE,
@@ -154,24 +172,34 @@ func (this *DBOperateManager) _op_cmd(d *OpDetail) {
 	}
 }
 
-// 在一个goroutine中执行
-func (this *DBOperateManager) Save() {
+func (this *DBOperateManager) _check_op_list_empty() bool {
 	this.locker.RLock()
-	if this.op_list.GetLength() == 0 {
-		log.Printf("DBOperateManager::Save @@@ not operation to execute\n")
-		this.locker.RUnlock()
-		return
-	}
-	this.locker.RUnlock()
+	defer this.locker.RUnlock()
+	return this.op_list.GetLength() == 0
+}
 
+func (this *DBOperateManager) _get_tmp_op_list() *List {
 	this.locker.Lock()
+	defer this.locker.Unlock()
 	if this.op_list.GetLength() == 0 {
-		this.locker.Unlock()
-		return
+		return nil
 	}
 	tmp_list := this.op_list
 	this.op_list = &List{}
-	this.locker.Unlock()
+	return tmp_list
+}
+
+// 在一个goroutine中执行
+func (this *DBOperateManager) Save() {
+	if this._check_op_list_empty() {
+		log.Printf("DBOperateManager::Save @@@ no operation to execute\n")
+		return
+	}
+
+	tmp_list := this._get_tmp_op_list()
+	if tmp_list == nil {
+		return
+	}
 
 	node := tmp_list.GetHeadNode()
 	for node != nil {

@@ -2,6 +2,7 @@ package mysql_manager
 
 import (
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/huoshan017/mysql-go/base"
@@ -13,14 +14,21 @@ const (
 	DEFAULT_SAVE_INTERVAL_TIME    = time.Minute * 5
 )
 
-type DB struct {
+const (
+	DB_STATE_NO_RUN  = iota
+	DB_STATE_RUNNING = 1
+	DB_STATE_TO_END  = 2
+)
+
+type DBManager struct {
 	config_loader mysql_generator.ConfigLoader
 	database      mysql_base.Database
 	db_op_manager mysql_base.DBOperateManager
 	save_interval time.Duration
+	state         int32
 }
 
-func (this *DB) LoadConfig(config_path string) bool {
+func (this *DBManager) LoadConfig(config_path string) bool {
 	if !this.config_loader.Load(config_path) {
 		log.Printf("load config %v failed\n", config_path)
 		return false
@@ -28,7 +36,7 @@ func (this *DB) LoadConfig(config_path string) bool {
 	return true
 }
 
-func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
+func (this *DBManager) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 	err := this.database.Open(dbhost, dbuser, dbpassword, this.config_loader.DBPkg)
 	if err != nil {
 		log.Printf("open database err %v\n", err.Error())
@@ -45,28 +53,42 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 	}
 	this.db_op_manager.Init(&this.database)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
+	this.state = DB_STATE_RUNNING
 	return true
 }
 
-func (this *DB) SetConnectLifeTime(d time.Duration) {
+func (this *DBManager) SetConnectLifeTime(d time.Duration) {
 	this.database.SetMaxLifeTime(d)
 }
 
-func (this *DB) SetSaveIntervalTime(d time.Duration) {
+func (this *DBManager) SetSaveIntervalTime(d time.Duration) {
 	this.save_interval = d
 }
 
-func (this *DB) Close() {
+func (this *DBManager) Close() {
 	this.database.Close()
 }
 
-func (this *DB) Save() {
+func (this *DBManager) ToEnd() bool {
+	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
+}
+
+func (this *DBManager) Save() {
 	this.db_op_manager.Save()
 }
 
-func (this *DB) Run() {
+func (this *DBManager) Run() {
 	go func() {
-		this.db_op_manager.Save()
-		time.Sleep(this.save_interval)
+		var last_save_time int32
+		for {
+			if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
+				break
+			}
+
+			if last_save_time > 0 && int32(time.Now().Unix())-last_save_time >= int32(this.save_interval) {
+				this.db_op_manager.Save()
+			}
+			time.Sleep(time.Second)
+		}
 	}()
 }

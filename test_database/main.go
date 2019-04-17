@@ -116,6 +116,8 @@ func do_select(strs []string) {
 					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
 				} else if t == reflect.Array {
 					log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
+				} else {
+					log.Printf("		unprocessed reflect kind %v with index\n", t, i)
 				}
 			}
 		}

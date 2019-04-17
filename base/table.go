@@ -145,16 +145,16 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 }
 
 func (this *Database) remove_field(table_name, field_name string) bool {
-	args := []interface{}{table_name, field_name}
-	if !this.ExecWith("ALTER TABLE ? DROP COLUMN ?", args, nil, nil) {
+	sql_str := "ALTER TABLE " + table_name + " DROP COLUMN " + field_name
+	if !this.Exec(sql_str, nil, nil) {
 		return false
 	}
 	return true
 }
 
 func (this *Database) rename_field(table_name, old_field_name, new_field_name string) bool {
-	args := []interface{}{table_name, old_field_name, new_field_name}
-	if !this.ExecWith("ALTER TABLE ? CHANGE ? ?", args, nil, nil) {
+	sql_str := "ALTER TABLE " + table_name + " CHANGE " + old_field_name + " " + new_field_name
+	if !this.Exec(sql_str, nil, nil) {
 		return false
 	}
 	return true
@@ -168,8 +168,8 @@ func (this *Database) modify_field_attr(table_name string, field *FieldConfig) b
 	}
 
 	field_create_str := _get_field_create_flags_str(field)
-	args := []interface{}{table_name, field.Name, field_type_str, field_create_str}
-	if !this.ExecWith("ALTER TABLE ? MODIFY ? ? ?", args, nil, nil) {
+	sql_str := "ALTER TABLE " + table_name + " MODIFY " + field.Name + " " + field_type_str + " " + field_create_str
+	if !this.Exec(sql_str, nil, nil) {
 		log.Printf("modify table %v field %v attr failed\n", table_name, field.Name)
 		return false
 	}
