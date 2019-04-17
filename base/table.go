@@ -125,31 +125,14 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 	}
 
 	if index_type != MYSQL_INDEX_TYPE_NONE {
-		field_type, o := GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
-		if !o {
-			return false
-		}
-		index_type_length, o := GetMysqlFieldTypeDefaultLength(field_type)
-		if !o {
-			log.Printf("field type %v default length not found\n", field.Type)
-			return false
-		}
 		if index_type == MYSQL_INDEX_TYPE_NORMAL {
-			if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD INDEX %s_index (`%s`(%d))", table_name, field.Name, field.Name, index_type_length)
-			} else {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD INDEX %s_index(`%s`)", table_name, field.Name, field.Name)
-			}
+			sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD INDEX %s_index(`%s`)", table_name, field.Name, field.Name)
 		} else if index_type == MYSQL_INDEX_TYPE_UNIQUE {
-			if IsMysqlFieldTextType(field_type) || IsMysqlFieldBinaryType(field_type) || IsMysqlFieldBlobType(field_type) {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE (`%s`(%d))", table_name, field.Name, index_type_length)
-			} else {
-				sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE (`%s`)", table_name, field.Name)
-			}
+			sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE (`%s`)", table_name, field.Name)
 		} else if index_type == MYSQL_INDEX_TYPE_FULLTEXT {
-			log.Printf("table %v field %v index type FULLTEXT not supported\n", table_name, field.Name)
+			sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD FULLTEXT(`%s`)", table_name, field.Name)
 		} else {
-
+			log.Printf("table %v field %v index type FULLTEXT not supported\n", table_name, field.Name)
 		}
 
 		if !this.Exec(sql_str, nil, nil) {

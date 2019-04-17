@@ -34,12 +34,16 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	if !this.rows.Next() {
 		return false
 	}
-	err := this.rows.Scan(dest)
+	err := this.rows.Scan(dest...)
 	if err != nil {
-		log.Printf("QueryResultList::Get with scan err %v\n", err.Error())
+		log.Printf("QueryResultList::Get with dest(%v) scan err %v\n", dest, err.Error())
 		return false
 	}
 	return true
+}
+
+func (this *QueryResultList) Get2(dest []interface{}) bool {
+	return this.Get(dest...)
 }
 
 func (this *QueryResultList) HasData() bool {
@@ -92,7 +96,7 @@ func (this *Database) Query(query_str string, result *QueryResultList) bool {
 	rows, err := this.db.Query(query_str)
 	//defer rows.Close()
 	if err != nil {
-		log.Printf("Database query err %v\n", err.Error())
+		log.Printf("Database query string(%v) err %v\n", query_str, err.Error())
 		return false
 	}
 	result.Init(rows)
@@ -103,7 +107,7 @@ func (this *Database) QueryWith(query_str string, args []interface{}, result *Qu
 	rows, err := this.db.Query(query_str, args...)
 	//defer rows.Close()
 	if err != nil {
-		log.Printf("Database query with err %v\n", err.Error())
+		log.Printf("Database query string(%v) with args(%v) err %v\n", query_str, args, err.Error())
 		return false
 	}
 	result.Init(rows)

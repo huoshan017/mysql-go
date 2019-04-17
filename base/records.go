@@ -78,7 +78,10 @@ func _gen_select_query_str(table_name string, field_list []string, key string) s
 				query_str += ", "
 			}
 		}
-		query_str += (" FROM " + table_name + " WHERE " + key + "=?;")
+		query_str += (" FROM " + table_name)
+		if key != "" {
+			query_str += (" WHERE " + key + "=?;")
+		}
 	}
 	return query_str
 }
@@ -98,7 +101,11 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 		return false
 	}
 	query_str := _gen_select_query_str(table_name, field_list, key_name)
-	return this.QueryWith(query_str, []interface{}{key_value}, result_list)
+	if key_name != "" {
+		return this.QueryWith(query_str, []interface{}{key_value}, result_list)
+	} else {
+		return this.Query(query_str, result_list)
+	}
 }
 
 func _gen_update_params(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) (query_str string, args []interface{}) {

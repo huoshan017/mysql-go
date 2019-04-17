@@ -251,8 +251,11 @@ var mysql_index_string_type_map = map[string]int{
 }
 
 func GetMysqlIndexTypeByString(index_type_str string) (int, bool) {
-	str, o := mysql_index_string_type_map[index_type_str]
-	return str, o
+	if index_type_str == "" {
+		return MYSQL_INDEX_TYPE_NONE, true
+	}
+	t, o := mysql_index_string_type_map[index_type_str]
+	return t, o
 }
 
 func IsMysqlFieldIntType(field_type int) bool {
