@@ -69,7 +69,10 @@ func (this *Database) InsertRecord2(table_name string, fields []string, values [
 func _gen_select_query_str(table_name string, field_list []string, key string) string {
 	var query_str string
 	if field_list == nil || len(field_list) == 0 {
-		query_str = "SELECT * FROM " + table_name + " WHERE ?=?"
+		query_str = "SELECT * FROM " + table_name
+		if key != "" {
+			query_str += (" WHERE " + key + "=?;")
+		}
 	} else {
 		query_str = "SELECT "
 		for i := 0; i < len(field_list); i++ {

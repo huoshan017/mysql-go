@@ -114,7 +114,7 @@ func do_select(strs []string) {
 					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
 				} else if t == reflect.String {
 					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
-				} else if t == reflect.Array {
+				} else if t == reflect.Slice {
 					log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
 				} else {
 					log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
@@ -197,8 +197,10 @@ func do_selects(strs []string) {
 						log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
 					} else if t == reflect.String {
 						log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
-					} else if t == reflect.Array {
-						log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
+					} else if t == reflect.Slice {
+						log.Printf("		%v: %v\n", field_list[i], dest_list[i].(*[]byte))
+					} else {
+						log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
 					}
 				}
 				cnt += 1

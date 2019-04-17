@@ -92,3 +92,39 @@ func (this *DBManager) Run() {
 		}
 	}()
 }
+
+func (this *DBManager) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
+	this.db_op_manager.Insert(table_name, field_pair)
+}
+
+func (this *DBManager) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {
+	this.db_op_manager.Update(table_name, key, value, field_pair)
+}
+
+func (this *DBManager) Delete(table_name string, key string, value interface{}) {
+	this.db_op_manager.Delete(table_name, key, value)
+}
+
+func (this *DBManager) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
+	return this.database.SelectRecord(table_name, key, value, field_list, dest_list)
+}
+
+func (this *DBManager) SelectStar(table_name string, key string, value interface{}, dest_list []interface{}) bool {
+	return this.database.SelectRecord(table_name, key, value, nil, dest_list)
+}
+
+func (this *DBManager) SelectRecords(table_name string, key string, value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, key, value, field_list, result_list)
+}
+
+func (this *DBManager) SelectStarRecords(table_name string, key string, value interface{}, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, key, value, nil, result_list)
+}
+
+func (this *DBManager) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, "", nil, field_list, result_list)
+}
+
+func (this *DBManager) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, "", nil, nil, result_list)
+}
