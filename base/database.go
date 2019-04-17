@@ -257,9 +257,18 @@ func CreateProcedure(tx *sql.Tx) *Procedure {
 	}
 }
 
-func (this *Procedure) Query(query_str string, args []interface{}, result *QueryResultList) bool {
+func (this *Procedure) Query(query_str string, result *QueryResultList) bool {
+	rows, err := this.tx.Query(query_str)
+	if err != nil {
+		log.Printf("Procedure query(%v) err %v\n", query_str, err.Error())
+		return false
+	}
+	result.Init(rows)
+	return true
+}
+
+func (this *Procedure) QueryWith(query_str string, args []interface{}, result *QueryResultList) bool {
 	rows, err := this.tx.Query(query_str, args...)
-	defer rows.Close()
 	if err != nil {
 		log.Printf("Procedure query(%v) with args(%v) err %v\n", query_str, args, err.Error())
 		return false
@@ -268,13 +277,17 @@ func (this *Procedure) Query(query_str string, args []interface{}, result *Query
 	return true
 }
 
-func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []interface{}) bool {
-	row := this.tx.QueryRow(query_str, args...)
-	if row == nil {
-		log.Printf("Procedure query(%v) one row with args(%v) get result empty\n", query_str, args)
+func (this *Procedure) QueryOne(query_str string, dest []interface{}) bool {
+	err := this.tx.QueryRow(query_str).Scan(dest...)
+	if err != nil {
+		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, err.Error())
 		return false
 	}
-	err := row.Scan(dest...)
+	return true
+}
+
+func (this *Procedure) QueryOneWith(query_str string, args []interface{}, dest []interface{}) bool {
+	err := this.tx.QueryRow(query_str, args...).Scan(dest...)
 	if err != nil {
 		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, args, err.Error())
 		return false
@@ -282,7 +295,17 @@ func (this *Procedure) QueryOne(query_str string, args []interface{}, dest []int
 	return true
 }
 
-func (this *Procedure) Exec(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
+func (this *Procedure) Exec(query_str string, last_insert_id, rows_affected *int64) bool {
+	res, err := this.tx.Exec(query_str)
+	if err != nil {
+		log.Printf("Procedure exec(%v) with err %v\n", query_str, err.Error())
+		return false
+	}
+	_exec_result(res, last_insert_id, rows_affected)
+	return true
+}
+
+func (this *Procedure) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
 	res, err := this.tx.Exec(query_str, args...)
 	if err != nil {
 		log.Printf("Procedure exec(%v) with args(%v) err %v\n", query_str, args, err.Error())

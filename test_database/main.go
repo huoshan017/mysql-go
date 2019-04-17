@@ -104,9 +104,9 @@ func do_select(strs []string) {
 		if db.SelectRecord(table_name, key, value, field_list, dest_list) {
 			log.Printf("select结果: \n")
 			for i := 0; i < len(field_list); i++ {
-				if len(dest_list) <= i {
+				/*if len(dest_list) <= i {
 					break
-				}
+				}*/
 				v := reflect.ValueOf(dest_list[i])
 				e := v.Elem()
 				t := e.Kind()
@@ -117,7 +117,7 @@ func do_select(strs []string) {
 				} else if t == reflect.Array {
 					log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
 				} else {
-					log.Printf("		unprocessed reflect kind %v with index\n", t, i)
+					log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
 				}
 			}
 		}

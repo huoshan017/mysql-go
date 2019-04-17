@@ -143,7 +143,7 @@ func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValue
 		return
 	}
 	field_list, placehold_list, args := _gen_insert_params(field_args...)
-	res = this.Exec("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+	res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	return
 }
 
@@ -153,7 +153,7 @@ func (this *Procedure) UpdateRecord(table_name string, key_name string, key_valu
 		return false
 	}
 	query_str, args := _gen_update_params(table_name, key_name, key_value, field_args...)
-	return this.Exec(query_str, args, nil, nil)
+	return this.ExecWith(query_str, args, nil, nil)
 }
 
 func (this *Procedure) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
@@ -162,7 +162,7 @@ func (this *Procedure) SelectRecord(table_name, key_name string, key_value inter
 		return false
 	}
 	query_str := _gen_select_query_str(table_name, field_list, key_name)
-	return this.QueryOne(query_str, []interface{}{key_value}, dest_list)
+	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
 }
 
 func (this *Procedure) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) bool {
@@ -171,10 +171,10 @@ func (this *Procedure) SelectRecords(table_name, key_name string, key_value inte
 		return false
 	}
 	query_str := _gen_select_query_str(table_name, field_list, key_name)
-	return this.Query(query_str, []interface{}{key_value}, result_list)
+	return this.QueryWith(query_str, []interface{}{key_value}, result_list)
 }
 
 func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
 	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
-	return this.Exec(sql_str, []interface{}{key_value}, nil, nil)
+	return this.ExecWith(sql_str, []interface{}{key_value}, nil, nil)
 }
