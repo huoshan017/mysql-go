@@ -80,7 +80,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// row struct
 	row_name := _upper_first_char(table.Name)
-	str += ("type " + row_name + "Row struct {\n")
+	struct_row_name := row_name + "Row"
+	str += ("type " + struct_row_name + " struct {\n")
 	for _, field := range table.Fields {
 		field_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
 		if !o {
@@ -97,8 +98,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "}\n\n"
 
 	// table
-	table_name := table.Name + "Table"
-	str += ("type " + table_name + " struct {\n")
+	struct_table_name := row_name + "Table"
+	str += ("type " + struct_table_name + " struct {\n")
 	str += "	db *mysql_base.Database\n"
 	pf := table.GetPrimaryKeyFieldConfig()
 	if pf == nil {
@@ -115,28 +116,16 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		return false
 	}
 	pt := _field_type_to_go_type(primary_type)
-	str += "	rows map[" + pt + "]*" + table.Name + "\n"
+	str += "	rows map[" + pt + "]*" + struct_row_name + "\n"
 	str += "}\n\n"
 
 	// init func
-	str += ("func (this *" + table_name + ") Init(db *mysql_base.Database) {\n")
+	str += ("func (this *" + struct_table_name + ") Init(db *mysql_base.Database) {\n")
 	str += ("	this.db = db\n")
 	str += "}\n\n"
 
 	// select func
-
-	// insert func
-	str += ("func (this *" + table_name + ") Insert(key " + pt + ") bool {\n")
-	str += "	r := this.db.rows[key]\n"
-	str += "	if r != nil {\n"
-	str += "		return false\n"
-	str += "	}\n"
-	str += "	"
-	str += "}\n\n"
-
-	// update func
-
-	// delete func
+	str += ("func (this *" + struct_table_name + ") Select()")
 
 	_, err := f.WriteString(str)
 	if err != nil {
