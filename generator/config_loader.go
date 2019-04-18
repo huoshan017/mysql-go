@@ -202,7 +202,7 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 			return false
 		}
 
-		res := gen_source(f, pkg_path, table)
+		res := gen_source(f, this.DBPkg, table)
 
 		if !res {
 			log.Printf("写文件%v失败\n", f.Name)

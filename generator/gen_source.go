@@ -3,7 +3,6 @@ package mysql_generator
 import (
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/huoshan017/mysql-go/base"
@@ -19,7 +18,7 @@ var field_type_string_maps = map[int]string{
 	mysql_base.MYSQL_FIELD_TYPE_DOUBLE:     "float64",
 	mysql_base.MYSQL_FIELD_TYPE_DATE:       "",
 	mysql_base.MYSQL_FIELD_TYPE_DATETIME:   "",
-	mysql_base.MYSQL_FIELD_TYPE_TIMESTAMP:  "timestamp",
+	mysql_base.MYSQL_FIELD_TYPE_TIMESTAMP:  "",
 	mysql_base.MYSQL_FIELD_TYPE_TIME:       "",
 	mysql_base.MYSQL_FIELD_TYPE_YEAR:       "",
 	mysql_base.MYSQL_FIELD_TYPE_CHAR:       "string",
@@ -54,10 +53,24 @@ func _field_type_string_to_go_type(field_type_str string) string {
 	return _field_type_to_go_type(field_type)
 }
 
-func gen_source(f *os.File, dest_dir string, table *mysql_base.TableConfig) bool {
-	_, pkg := filepath.Split(dest_dir)
-	str := "package " + pkg + "\n\nimport (\n"
-	str += "	\"encoding/csv\"\n"
+func _upper_first_char(str string) string {
+	if str == "" {
+		return str
+	}
+	c := []byte(str)
+	var uppered bool
+	if int32(c[0]) >= int32('a') && int32(c[0]) <= int32('z') {
+		c[0] = byte(int32(c[0]) + int32('A') - int32('a'))
+		uppered = true
+	}
+	if !uppered {
+		return str
+	}
+	return string(c)
+}
+
+func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
+	str := "package " + pkg_name + "\n\nimport (\n"
 	str += "	\"io/ioutil\"\n"
 	str += "	\"log\"\n"
 	str += "	\"strconv\"\n"
@@ -65,8 +78,8 @@ func gen_source(f *os.File, dest_dir string, table *mysql_base.TableConfig) bool
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
 	str += ")\n\n"
 
-	// row
-	row_name := table.Name + "Row"
+	// row struct
+	row_name := _upper_first_char(table.Name)
 	str += ("type " + row_name + "Row struct {\n")
 	for _, field := range table.Fields {
 		field_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
