@@ -68,6 +68,14 @@
 		},
 		
 		{
+			"name": "DBFriendData",
+			"members": [
+				{ "name": "player_id", 	"index": 1, "type": "int32" },
+				{ "name": "get_points",	"index": 2, "type": "int32" }
+			]
+		},
+		
+		{
 			"name": "DBFriends",
 			"members": [
 				{ "name": "friends", 	"index": 1, "type": "map<int32, DBFriendData>" }
@@ -98,10 +106,10 @@
 				{ "name":"account",			"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null,default" },
 				{ "name":"role_id",			"type":"bigint",			"length":0,		"index_type":"normal",	"create_flags":"unsigned,not null,default" },
 				{ "name":"nick_name",		"type":"varchar",			"length":32,	"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"sex",				"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"level",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"vip_level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"exp",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"sex",				"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
+				{ "name":"level",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
+				{ "name":"vip_level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
+				{ "name":"exp",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
 				{ "name":"items",			"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"skills",			"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"tasks",			"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },

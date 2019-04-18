@@ -14,7 +14,7 @@ func main() {
 		return
 	}
 
-	if !config_loader.GenerateFieldStructsProto("./") {
+	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/generator") {
 		return
 	}
 

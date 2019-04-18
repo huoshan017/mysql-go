@@ -144,7 +144,7 @@ func (this *ConfigLoader) GenerateFieldStructsProto(dest_path string) bool {
 
 	var f *os.File
 	var err error
-	dest_file := dest_path + "/" + this.DBPkg + "_fieldstructs.proto"
+	dest_file := dest_path + "/" + this.DBPkg + "_field_structs.proto"
 	f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())

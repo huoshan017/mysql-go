@@ -19,7 +19,7 @@ var field_type_string_maps = map[int]string{
 	mysql_base.MYSQL_FIELD_TYPE_DOUBLE:     "float64",
 	mysql_base.MYSQL_FIELD_TYPE_DATE:       "",
 	mysql_base.MYSQL_FIELD_TYPE_DATETIME:   "",
-	mysql_base.MYSQL_FIELD_TYPE_TIMESTAMP:  "",
+	mysql_base.MYSQL_FIELD_TYPE_TIMESTAMP:  "timestamp",
 	mysql_base.MYSQL_FIELD_TYPE_TIME:       "",
 	mysql_base.MYSQL_FIELD_TYPE_YEAR:       "",
 	mysql_base.MYSQL_FIELD_TYPE_CHAR:       "string",
