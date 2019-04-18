@@ -65,6 +65,10 @@ func (this *DBManager) SetSaveIntervalTime(d time.Duration) {
 	this.save_interval = d
 }
 
+func (this *DBManager) GetConfigLoader() *mysql_generator.ConfigLoader {
+	return &this.config_loader
+}
+
 func (this *DBManager) Close() {
 	this.database.Close()
 }

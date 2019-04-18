@@ -9,17 +9,22 @@ import (
 	"time"
 
 	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/generator"
+	//"github.com/huoshan017/mysql-go/generator"
+	"github.com/huoshan017/mysql-go/manager"
 )
 
+/*
 var config_loader mysql_generator.ConfigLoader
 var database mysql_base.Database
 var db_op_manager mysql_base.DBOperateManager
+*/
+
+var db_mgr mysql_manager.DBManager
 
 func main() {
 
 	config_path := "../src/github.com/huoshan017/mysql-go/generator/config.json"
-	if !config_loader.Load(config_path) {
+	/*if !config_loader.Load(config_path) {
 		log.Printf("load config %v failed\n", config_path)
 		return
 	}
@@ -50,7 +55,16 @@ func main() {
 			db_op_manager.Save()
 			time.Sleep(time.Minute * 5)
 		}
-	}()
+	}()*/
+
+	if !db_mgr.LoadConfig(config_path) {
+		return
+	}
+
+	if !db_mgr.Connect("localhost", "root", "", db_mgr.GetConfigLoader().DBPkg) {
+		return
+	}
+	defer db_mgr.Close()
 
 	for {
 		on_tick()
@@ -67,60 +81,70 @@ func do_insert(strs []string) {
 			Value: strs[i+1],
 		})
 	}
-	db_op_manager.Insert(table_name, field_list)
+	//db_op_manager.Insert(table_name, field_list)
+	db_mgr.Insert(table_name, field_list)
 }
 
 func do_select(strs []string) {
 	table_name := strs[1]
 	key := strs[2]
 	value := strs[3]
-	db := db_op_manager.GetDB()
-	if db != nil {
-		var field_list []string
-		if len(strs) > 4 {
-			for i := 4; i < len(strs); i++ {
-				field_list = append(field_list, strs[i])
-			}
-		}
-		table := config_loader.GetTable(table_name)
-		if table == nil {
-			log.Printf("没有表%v\n", table_name)
-			return
-		}
 
-		var dest_list []interface{}
-		for _, field_name := range field_list {
-			field := table.GetField(field_name)
-			if mysql_base.IsMysqlFieldIntType(field.RealType) {
-				dest_list = append(dest_list, new(int))
-			} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
-				dest_list = append(dest_list, new(string))
-			} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
-				dest_list = append(dest_list, new([]byte))
+	var field_list []string
+	if len(strs) > 4 {
+		for i := 4; i < len(strs); i++ {
+			field_list = append(field_list, strs[i])
+		}
+	}
+	table := db_mgr.GetConfigLoader().GetTable(table_name)
+	if table == nil {
+		log.Printf("没有表%v\n", table_name)
+		return
+	}
+
+	var dest_list []interface{}
+	for _, field_name := range field_list {
+		field := table.GetField(field_name)
+		if mysql_base.IsMysqlFieldIntType(field.RealType) {
+			dest_list = append(dest_list, new(int))
+		} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
+			dest_list = append(dest_list, new(string))
+		} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+			dest_list = append(dest_list, new([]byte))
+		} else {
+			log.Printf("不支持的select字段类型 %v\n", field.RealType)
+		}
+	}
+	if db_mgr.Select(table_name, key, value, field_list, dest_list) {
+		log.Printf("select结果: \n")
+		for i := 0; i < len(field_list); i++ {
+			/*if len(dest_list) <= i {
+				break
+			}*/
+			v := reflect.ValueOf(dest_list[i])
+			e := v.Elem()
+			t := e.Kind()
+			if t == reflect.Int {
+				log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
+			} else if t == reflect.String {
+				log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
+			} else if t == reflect.Slice {
+				log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
 			} else {
-				log.Printf("不支持的select字段类型 %v\n", field.RealType)
+				log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
 			}
 		}
-		if db.SelectRecord(table_name, key, value, field_list, dest_list) {
-			log.Printf("select结果: \n")
-			for i := 0; i < len(field_list); i++ {
-				/*if len(dest_list) <= i {
-					break
-				}*/
-				v := reflect.ValueOf(dest_list[i])
-				e := v.Elem()
-				t := e.Kind()
-				if t == reflect.Int {
-					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
-				} else if t == reflect.String {
-					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
-				} else if t == reflect.Slice {
-					log.Printf("		%v: %v\n", field_list[i], dest_list[i].([]byte))
-				} else {
-					log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
-				}
-			}
-		}
+	}
+
+}
+
+func do_select_star(strs []string) {
+	table_name := strs[1]
+	key := strs[2]
+	value := strs[3]
+	var dest_list []interface{}
+	if !db_mgr.SelectStar(table_name, key, value, dest_list) {
+		return
 	}
 }
 
@@ -132,82 +156,81 @@ func do_update(strs []string) {
 	for i := 4; i < len(strs); i += 2 {
 		field_list = append(field_list, &mysql_base.FieldValuePair{strs[i], strs[i+1]})
 	}
-	db_op_manager.Update(table_name, key, value, field_list)
+	db_mgr.Update(table_name, key, value, field_list)
 }
 
 func do_delete(strs []string) {
 	table_name := strs[1]
 	key := strs[2]
 	value := strs[3]
-	db_op_manager.Delete(table_name, key, value)
+	db_mgr.Delete(table_name, key, value)
 }
 
 func do_selects(strs []string) {
 	table_name := strs[1]
 	key := strs[2]
 	value := strs[3]
-	db := db_op_manager.GetDB()
-	if db != nil {
-		var field_list []string
-		if len(strs) > 4 {
-			for i := 4; i < len(strs); i++ {
-				field_list = append(field_list, strs[i])
-			}
-		}
-		table := config_loader.GetTable(table_name)
-		if table == nil {
-			log.Printf("没有表%v\n", table_name)
-			return
-		}
 
-		var dest_list []interface{}
-		for _, field_name := range field_list {
-			field := table.GetField(field_name)
-			if mysql_base.IsMysqlFieldIntType(field.RealType) {
-				dest_list = append(dest_list, new(int))
-			} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
-				dest_list = append(dest_list, new(string))
-			} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
-				dest_list = append(dest_list, new([]byte))
-			} else {
-				log.Printf("不支持的select字段类型 %v\n", field.RealType)
-			}
-		}
-
-		log.Printf("field_list: %v, dest_list: %v\n", field_list, dest_list)
-
-		var result_list mysql_base.QueryResultList
-		if db.SelectRecords(table_name, key, value, field_list, &result_list) {
-			log.Printf("select结果: \n")
-			var cnt int
-			for {
-				if !result_list.Get(dest_list...) {
-					log.Printf("!!!!!!!!!!!!!!\n")
-					break
-				}
-				log.Printf("	index: %v\n", cnt)
-				for i := 0; i < len(field_list); i++ {
-					if len(dest_list) <= i {
-						break
-					}
-					v := reflect.ValueOf(dest_list[i])
-					e := v.Elem()
-					t := e.Kind()
-					if t == reflect.Int {
-						log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
-					} else if t == reflect.String {
-						log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
-					} else if t == reflect.Slice {
-						log.Printf("		%v: %v\n", field_list[i], dest_list[i].(*[]byte))
-					} else {
-						log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
-					}
-				}
-				cnt += 1
-			}
-			result_list.Close()
+	var field_list []string
+	if len(strs) > 4 {
+		for i := 4; i < len(strs); i++ {
+			field_list = append(field_list, strs[i])
 		}
 	}
+	table := db_mgr.GetConfigLoader().GetTable(table_name)
+	if table == nil {
+		log.Printf("没有表%v\n", table_name)
+		return
+	}
+
+	var dest_list []interface{}
+	for _, field_name := range field_list {
+		field := table.GetField(field_name)
+		if mysql_base.IsMysqlFieldIntType(field.RealType) {
+			dest_list = append(dest_list, new(int))
+		} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
+			dest_list = append(dest_list, new(string))
+		} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+			dest_list = append(dest_list, new([]byte))
+		} else {
+			log.Printf("不支持的select字段类型 %v\n", field.RealType)
+		}
+	}
+
+	log.Printf("field_list: %v, dest_list: %v\n", field_list, dest_list)
+
+	var result_list mysql_base.QueryResultList
+	if db_mgr.SelectRecords(table_name, key, value, field_list, &result_list) {
+		log.Printf("select结果: \n")
+		var cnt int
+		for {
+			if !result_list.Get(dest_list...) {
+				log.Printf("!!!!!!!!!!!!!!\n")
+				break
+			}
+			log.Printf("	index: %v\n", cnt)
+			for i := 0; i < len(field_list); i++ {
+				if len(dest_list) <= i {
+					break
+				}
+				v := reflect.ValueOf(dest_list[i])
+				e := v.Elem()
+				t := e.Kind()
+				if t == reflect.Int {
+					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*int))
+				} else if t == reflect.String {
+					log.Printf("		%v: %v\n", field_list[i], *dest_list[i].(*string))
+				} else if t == reflect.Slice {
+					log.Printf("		%v: %v\n", field_list[i], dest_list[i].(*[]byte))
+				} else {
+					log.Printf("		unprocessed reflect kind %v with index %v\n", t, i)
+				}
+			}
+			cnt += 1
+		}
+		result_list.Close()
+	}
+
 }
 
 func on_tick() {
@@ -234,6 +257,12 @@ func on_tick() {
 			return
 		}
 		do_select(strs)
+	} else if cmd == "select_star" {
+		if len(strs) < 2 {
+			log.Printf("select_star命令参数不够\n")
+			return
+		}
+		do_select_star(strs)
 	} else if cmd == "update" {
 		if len(strs) < 6 {
 			log.Printf("update命令参数不够\n")
@@ -252,7 +281,9 @@ func on_tick() {
 		}
 		do_selects(strs)
 	} else if cmd == "save" {
-		db_op_manager.Save()
+		db_mgr.Save()
+	} else if cmd == "quit" {
+		db_mgr.ToEnd()
 	} else {
 		log.Printf("不支持的命令")
 	}

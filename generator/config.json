@@ -1,6 +1,8 @@
 {
 	"db_pkg" : "game_db",
 	
+	"charset": "utf8",
+	
 	"field_structs": [
 		{
 			"struct_name": "DBItemData",
@@ -75,22 +77,35 @@
 	
 	"tables" : [
 		{
-			"name": "t_player", 
+			"name":"t_global",
+			"single_row":true,
+			"primary_key": "id",
+			"engine":"myisam",
+			"fields":[
+				{ "name":"id",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
+				{ "name":"curr_player_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
+				{ "name":"curr_guild_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
+				{ "name":"curr_mail_id", 	"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" }
+			]
+		},
+		
+		{
+			"name": "t_player",
 			"primary_key": "id",
 			"engine": "innodb",
 			"fields": [
-				{ "name":"id",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
-				{ "name":"account",		"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null,default" },
-				{ "name":"role_id",		"type":"bigint",			"length":0,		"index_type":"normal",	"create_flags":"unsigned,not null,default" },
-				{ "name":"nick_name",	"type":"varchar",			"length":32,	"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"sex",			"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"vip_level",	"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"exp",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"items",		"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"skills",		"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"tasks",		"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"activities",	"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" }
+				{ "name":"id",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
+				{ "name":"account",			"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null,default" },
+				{ "name":"role_id",			"type":"bigint",			"length":0,		"index_type":"normal",	"create_flags":"unsigned,not null,default" },
+				{ "name":"nick_name",		"type":"varchar",			"length":32,	"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"sex",				"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"level",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"vip_level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"exp",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"items",			"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"skills",			"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"tasks",			"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"activities",		"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" }
 			]
 		},
 		
@@ -99,8 +114,8 @@
 			"primary_key": "id",
 			"engine": "innodb",
 			"fields": [
-				{ "name":"id", 			"type":"int", 				"length":0, 	"index_type":"none", 	"create_flags":"unsigned,not null" },
-				{ "name":"friends", 	"type":"blob:DBFriends",  	"length":0, 	"index_type":"none",  	"create_flags":"" }
+				{ "name":"id", 				"type":"int", 				"length":0, 	"index_type":"none", 	"create_flags":"unsigned,not null" },
+				{ "name":"friends", 		"type":"blob:DBFriends",  	"length":0, 	"index_type":"none",  	"create_flags":"" }
 			]
 		},
 		
@@ -109,13 +124,13 @@
 			"primary_key":"id",
 			"engine":"innodb",
 			"fields": [
-				{ "name":"id",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"mail_id",		"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"unsigned,not null,default" },
-				{ "name":"title",		"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"content",		"type":"varchar",		"length":512,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"sender",		"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
-				{ "name":"receiver",	"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
-				{ "name":"send_time",	"type":"int",			"length":0,		"index_type":"none",		"create_flags":"not null,default" }
+				{ "name":"id",				"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
+				{ "name":"mail_id",			"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"unsigned,not null,default" },
+				{ "name":"title",			"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
+				{ "name":"content",			"type":"varchar",		"length":512,	"index_type":"none",		"create_flags":"not null,default" },
+				{ "name":"sender",			"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
+				{ "name":"receiver",		"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
+				{ "name":"send_time",		"type":"int",			"length":0,		"index_type":"none",		"create_flags":"not null,default" }
 			]
 		},
 		
@@ -124,11 +139,25 @@
 			"primary_key":"id",
 			"engine":"innodb",
 			"fields": [
-				{ "name":"id",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"guild_id",	"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"not null,default" },
-				{ "name":"name",		"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"creater", 	"type":"bigint",		"length":0,		"index_type":"none",		"create_flags":"unsigned,not null,default" },
-				{ "name":"create_time",	"type":"timestamp",		"length":0,		"index_type":"none",		"create_flags":"not null,default" }
+				{ "name":"id",				"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
+				{ "name":"guild_id",		"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"not null,default" },
+				{ "name":"name",			"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
+				{ "name":"creater", 		"type":"bigint",		"length":0,		"index_type":"none",		"create_flags":"unsigned,not null,default" },
+				{ "name":"create_time",		"type":"timestamp",		"length":0,		"index_type":"none",		"create_flags":"not null,default" },
+				{ "name":"logo",			"type":"int",			"length":0, 	"index_type":"none",		"create_flags":"not null,default" },
+				{ "name":"level",			"type":"int",			"length":0,		"index_type":"",			"create_flags":"not null,default" },
+				{ "name":"exp",				"type":"int",			"length":0,		"index_type":"",			"create_flags":"not null,default" }
+			]
+		},
+		
+		{
+			"name":"t_arena",
+			"primary_key":"role_id",
+			"engine":"innodb",
+			"fields":[
+				{ "name":"role_id",     	"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null" },
+				{ "name":"update_time",		"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
+				{ "name":"score",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" }
 			]
 		}
 	]
