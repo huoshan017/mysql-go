@@ -34,6 +34,10 @@ type ProcedureOpList struct {
 	detail_list []*OpDetail
 }
 
+func CreateProcedureOpList() *ProcedureOpList {
+	return &ProcedureOpList{}
+}
+
 func (this *ProcedureOpList) Insert(table_name string, field_list []*FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
@@ -76,6 +80,12 @@ func (this *DBOperateManager) Init(db *Database) {
 
 func (this *DBOperateManager) GetDB() *Database {
 	return this.db
+}
+
+func (this *DBOperateManager) Enable(enable bool) {
+	this.locker.Lock()
+	defer this.locker.Unlock()
+	this.enable = enable
 }
 
 func (this *DBOperateManager) Insert(table_name string, field_list []*FieldValuePair) {

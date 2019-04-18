@@ -10,9 +10,21 @@ import (
 	"github.com/huoshan017/mysql-go/base"
 )
 
+type FieldStructMember struct {
+	Name  string `json:"name"`
+	Index int32  `json:"index"`
+	Type  int32  `json:"type"`
+}
+
+type FieldStruct struct {
+	Name    string               `json:"name"`
+	Members []*FieldStructMember `json:"members"`
+}
+
 type ConfigLoader struct {
-	DBPkg  string                    `json:"db_pkg"`
-	Tables []*mysql_base.TableConfig `json:"tables"`
+	DBPkg        string                    `json:"db_pkg"`
+	Tables       []*mysql_base.TableConfig `json:"tables"`
+	FieldStructs []*FieldStruct            `json:"field_structs"`
 }
 
 func (this *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {

@@ -9,62 +9,25 @@ import (
 	"time"
 
 	"github.com/huoshan017/mysql-go/base"
-	//"github.com/huoshan017/mysql-go/generator"
 	"github.com/huoshan017/mysql-go/manager"
 )
 
-/*
-var config_loader mysql_generator.ConfigLoader
-var database mysql_base.Database
-var db_op_manager mysql_base.DBOperateManager
-*/
-
 var db_mgr mysql_manager.DBManager
+var procedure *mysql_base.ProcedureOpList
 
 func main() {
-
 	config_path := "../src/github.com/huoshan017/mysql-go/generator/config.json"
-	/*if !config_loader.Load(config_path) {
-		log.Printf("load config %v failed\n", config_path)
-		return
-	}
-
-	err := database.Open("localhost", "root", "", config_loader.DBPkg)
-	if err != nil {
-		log.Printf("open database err %v\n", err.Error())
-		return
-	}
-	database.SetMaxLifeTime(time.Second * 5)
-	defer database.Close()
-
-	if config_loader.Tables != nil {
-		for _, t := range config_loader.Tables {
-			if !database.LoadTable(t) {
-				log.Printf("load table %v config failed\n", t.Name)
-				return
-			}
-		}
-	}
-
-	log.Printf("database loaded\n")
-
-	db_op_manager.Init(&database)
-
-	go func() {
-		for {
-			db_op_manager.Save()
-			time.Sleep(time.Minute * 5)
-		}
-	}()*/
 
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
 
-	if !db_mgr.Connect("localhost", "root", "", db_mgr.GetConfigLoader().DBPkg) {
+	if !db_mgr.Connect("localhost", "root", "", "game_db") {
 		return
 	}
 	defer db_mgr.Close()
+
+	db_mgr.Run()
 
 	for {
 		on_tick()
@@ -81,7 +44,6 @@ func do_insert(strs []string) {
 			Value: strs[i+1],
 		})
 	}
-	//db_op_manager.Insert(table_name, field_list)
 	db_mgr.Insert(table_name, field_list)
 }
 
@@ -233,6 +195,48 @@ func do_selects(strs []string) {
 
 }
 
+func do_pinsert(strs []string) {
+	if procedure == nil {
+		log.Printf("还没有创建新事务\n")
+		return
+	}
+	table_name := strs[1]
+	var field_list []*mysql_base.FieldValuePair
+	for i := 2; i < len(strs); i += 2 {
+		field_list = append(field_list, &mysql_base.FieldValuePair{
+			Name:  strs[i],
+			Value: strs[i+1],
+		})
+	}
+	procedure.Insert(table_name, field_list)
+}
+
+func do_pupdate(strs []string) {
+	if procedure == nil {
+		log.Printf("还没有创建新事务\n")
+		return
+	}
+	table_name := strs[1]
+	key := strs[2]
+	value := strs[3]
+	var field_list []*mysql_base.FieldValuePair
+	for i := 4; i < len(strs); i += 2 {
+		field_list = append(field_list, &mysql_base.FieldValuePair{strs[i], strs[i+1]})
+	}
+	procedure.Update(table_name, key, value, field_list)
+}
+
+func do_pdelete(strs []string) {
+	if procedure == nil {
+		log.Printf("还没有创建新事务\n")
+		return
+	}
+	table_name := strs[1]
+	key := strs[2]
+	value := strs[3]
+	procedure.Delete(table_name, key, value)
+}
+
 func on_tick() {
 	fmt.Printf("请输入命令:\n")
 	var cmd_str string
@@ -282,8 +286,35 @@ func on_tick() {
 		do_selects(strs)
 	} else if cmd == "save" {
 		db_mgr.Save()
-	} else if cmd == "quit" {
-		db_mgr.ToEnd()
+	} else if cmd == "new_procedure" {
+		procedure = mysql_base.CreateProcedureOpList()
+		log.Printf("创建了一个新的事务\n")
+	} else if cmd == "commit_procedure" {
+		if procedure == nil {
+			log.Printf("还没有创建事务\n")
+			return
+		}
+		db_mgr.AppendProcedureOpList(procedure)
+		procedure = nil
+		log.Printf("提交了新事务\n")
+	} else if cmd == "pinsert" {
+		if len(strs) < 4 {
+			log.Printf("pinsert命令参数不够\n")
+			return
+		}
+		do_pinsert(strs)
+	} else if cmd == "pupdate" {
+		if len(strs) < 6 {
+			log.Printf("pupdate命令参数不够\n")
+			return
+		}
+		do_pupdate(strs)
+	} else if cmd == "pdelete" {
+		if len(strs) < 4 {
+			log.Printf("pdelete命令参数不够\n")
+			return
+		}
+		do_pdelete(strs)
 	} else {
 		log.Printf("不支持的命令")
 	}

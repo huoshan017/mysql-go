@@ -5,7 +5,7 @@
 	
 	"field_structs": [
 		{
-			"struct_name": "DBItemData",
+			"name": "DBItemData",
 			"members": [
 				{ "name": "type_id", 	"index": 1,  "type": "int32" },
 				{ "name": "unique_id", 	"index": 2,  "type": "int64" },
@@ -14,14 +14,14 @@
 		},
 
 		{
-			"struct_name": "DBItems",
+			"name": "DBItems",
 			"members": [
 				{ "name": "items", 		"index": 1,  "type": "map<int32, DBItemData>" }
 			]
 		},
 
 		{
-			"struct_name": "DBSkillData",
+			"name": "DBSkillData",
 			"members": [
 				{ "name": "skill_id",	"index": 1,  "type": "int32" },
 				{ "name": "level",		"index": 2,  "type": "int32" }
@@ -29,14 +29,14 @@
 		},
 
 		{
-			"struct_name": "DBSkills",
+			"name": "DBSkills",
 			"members": [
 				{ "name": "skills",		"index": 1,  "type": "map<int32, DBSkillData>" }
 			]
 		},
 
 		{
-			"struct_name": "DBTaskData",
+			"name": "DBTaskData",
 			"members": [
 				{ "name": "task_id",	"index": 1,  "type": "int32" },
 				{ "name": "task_state",	"index": 2,  "type": "int32" },
@@ -46,14 +46,14 @@
 		},
 
 		{
-			"struct_name": "DBTasks",
+			"name": "DBTasks",
 			"members": [
 				{ "name": "tasks",		"index": 1,  "type": "map<int32, DBTaskData>" }
 			]
 		},
 
 		{
-			"struct_name": "DBActivityData",
+			"name": "DBActivityData",
 			"members": [
 				{ "name": "id",			"index": 1, "type": "int32" },
 				{ "name": "state",		"index": 2, "type": "int32" }
@@ -61,14 +61,14 @@
 		},
 
 		{
-			"struct_name": "DBActivitys",
+			"name": "DBActivitys",
 			"members": [
 				{ "name": "activities",	"index": 1, "type": "map<int32, DBActivityData>" }
 			]
 		},
 		
 		{
-			"struct_name": "DBFriends",
+			"name": "DBFriends",
 			"members": [
 				{ "name": "friends", 	"index": 1, "type": "map<int32, DBFriendData>" }
 			]
