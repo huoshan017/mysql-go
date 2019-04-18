@@ -13,7 +13,7 @@ import (
 type FieldStructMember struct {
 	Name  string `json:"name"`
 	Index int32  `json:"index"`
-	Type  int32  `json:"type"`
+	Type  string `json:"type"`
 }
 
 type FieldStruct struct {
@@ -23,6 +23,7 @@ type FieldStruct struct {
 
 type ConfigLoader struct {
 	DBPkg        string                    `json:"db_pkg"`
+	Charset      string                    `json:"charset"`
 	Tables       []*mysql_base.TableConfig `json:"tables"`
 	FieldStructs []*FieldStruct            `json:"field_structs"`
 }
@@ -133,6 +134,39 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			}
 		}
 	}
+	return true
+}
+
+func (this *ConfigLoader) GenerateFieldStructsProto(dest_path string) bool {
+	if this.FieldStructs == nil {
+		return false
+	}
+
+	var f *os.File
+	var err error
+	dest_file := dest_path + "/" + this.DBPkg + "_fieldstructs.proto"
+	f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())
+		return false
+	}
+
+	res := gen_proto(f, this.DBPkg, this.FieldStructs)
+
+	if !res {
+		log.Printf("写文件%v失败\n", f.Name)
+		return false
+	}
+
+	if err = f.Sync(); err != nil {
+		log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
+		return false
+	}
+	if err = f.Close(); err != nil {
+		log.Printf("关闭文件%v失败 %v\n", dest_file, err.Error())
+		return false
+	}
+
 	return true
 }
 
