@@ -12,7 +12,7 @@ import (
 	"github.com/huoshan017/mysql-go/manager"
 )
 
-var db_mgr mysql_manager.DBManager
+var db_mgr mysql_manager.DB
 var procedure *mysql_base.ProcedureOpList
 
 func main() {

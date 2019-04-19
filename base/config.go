@@ -12,6 +12,7 @@ type FieldConfig struct {
 	CreateFlags   string `json:"create_flags"`
 	RealType      int
 	RealIndexType int
+	StructName    string
 }
 
 type TableConfig struct {

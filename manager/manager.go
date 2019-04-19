@@ -20,7 +20,7 @@ const (
 	DB_STATE_TO_END  = 2
 )
 
-type DBManager struct {
+type DB struct {
 	config_loader mysql_generator.ConfigLoader
 	database      mysql_base.Database
 	db_op_manager mysql_base.DBOperateManager
@@ -28,7 +28,7 @@ type DBManager struct {
 	state         int32
 }
 
-func (this *DBManager) LoadConfig(config_path string) bool {
+func (this *DB) LoadConfig(config_path string) bool {
 	if !this.config_loader.Load(config_path) {
 		log.Printf("load config %v failed\n", config_path)
 		return false
@@ -36,7 +36,7 @@ func (this *DBManager) LoadConfig(config_path string) bool {
 	return true
 }
 
-func (this *DBManager) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
+func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 	err := this.database.Open(dbhost, dbuser, dbpassword, this.config_loader.DBPkg)
 	if err != nil {
 		log.Printf("open database err %v\n", err.Error())
@@ -57,31 +57,31 @@ func (this *DBManager) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 	return true
 }
 
-func (this *DBManager) SetConnectLifeTime(d time.Duration) {
+func (this *DB) SetConnectLifeTime(d time.Duration) {
 	this.database.SetMaxLifeTime(d)
 }
 
-func (this *DBManager) SetSaveIntervalTime(d time.Duration) {
+func (this *DB) SetSaveIntervalTime(d time.Duration) {
 	this.save_interval = d
 }
 
-func (this *DBManager) GetConfigLoader() *mysql_generator.ConfigLoader {
+func (this *DB) GetConfigLoader() *mysql_generator.ConfigLoader {
 	return &this.config_loader
 }
 
-func (this *DBManager) Close() {
+func (this *DB) Close() {
 	this.database.Close()
 }
 
-func (this *DBManager) ToEnd() bool {
+func (this *DB) ToEnd() bool {
 	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
 }
 
-func (this *DBManager) Save() {
+func (this *DB) Save() {
 	this.db_op_manager.Save()
 }
 
-func (this *DBManager) Run() {
+func (this *DB) Run() {
 	go func() {
 		var last_save_time int32
 		for {
@@ -97,42 +97,42 @@ func (this *DBManager) Run() {
 	}()
 }
 
-func (this *DBManager) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
+func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
 	this.db_op_manager.Insert(table_name, field_pair)
 }
 
-func (this *DBManager) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {
+func (this *DB) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {
 	this.db_op_manager.Update(table_name, key, value, field_pair)
 }
 
-func (this *DBManager) Delete(table_name string, key string, value interface{}) {
+func (this *DB) Delete(table_name string, key string, value interface{}) {
 	this.db_op_manager.Delete(table_name, key, value)
 }
 
-func (this *DBManager) AppendProcedureOpList(procedure_op_list *mysql_base.ProcedureOpList) {
+func (this *DB) AppendProcedureOpList(procedure_op_list *mysql_base.ProcedureOpList) {
 	this.db_op_manager.AppendProcedure(procedure_op_list)
 }
 
-func (this *DBManager) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
+func (this *DB) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
 	return this.database.SelectRecord(table_name, key, value, field_list, dest_list)
 }
 
-func (this *DBManager) SelectStar(table_name string, key string, value interface{}, dest_list []interface{}) bool {
+func (this *DB) SelectStar(table_name string, key string, value interface{}, dest_list []interface{}) bool {
 	return this.database.SelectRecord(table_name, key, value, nil, dest_list)
 }
 
-func (this *DBManager) SelectRecords(table_name string, key string, value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectRecords(table_name string, key string, value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, key, value, field_list, result_list)
 }
 
-func (this *DBManager) SelectStarRecords(table_name string, key string, value interface{}, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectStarRecords(table_name string, key string, value interface{}, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, key, value, nil, result_list)
 }
 
-func (this *DBManager) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, "", nil, field_list, result_list)
 }
 
-func (this *DBManager) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, "", nil, nil, result_list)
 }

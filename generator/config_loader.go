@@ -93,10 +93,16 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	var str string
 	var strs []string
 	for _, f := range tab.Fields {
+		// blob类型
 		if strings.Index(f.Type, ":") >= 0 {
 			strs = strings.Split(f.Type, ":")
+			if len(strs) < 2 {
+				log.Printf("ConfigLoader::load_table %v field blob type not found\n")
+				return false
+			}
 			str = strings.ToUpper(strs[0])
 			f.Type = strs[0]
+			f.StructName = strs[1]
 		} else {
 			str = strings.ToUpper(f.Type)
 		}

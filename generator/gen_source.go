@@ -71,11 +71,12 @@ func _upper_first_char(str string) string {
 
 func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
 	str := "package " + pkg_name + "\n\nimport (\n"
-	str += "	\"io/ioutil\"\n"
-	str += "	\"log\"\n"
-	str += "	\"strconv\"\n"
-	str += "	\"strings\"\n"
+	str += "	//\"io/ioutil\"\n"
+	str += "	//\"log\"\n"
+	str += "	//\"strconv\"\n"
+	str += "	//\"strings\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
+	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
 	str += ")\n\n"
 
 	// row struct
@@ -83,15 +84,11 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	struct_row_name := row_name + "Row"
 	str += ("type " + struct_row_name + " struct {\n")
 	for _, field := range table.Fields {
-		field_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(field.Type))
-		if !o {
-			log.Printf("cant get field type by string %v\n", field.Type)
-			return false
-		}
-		go_type := _field_type_to_go_type(field_type)
+		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
 		if go_type == "" {
-			log.Printf("get go type failed by field type %v", field_type)
-			return false
+			log.Printf("get go type failed by field type %v in table %v\n", field.Type, table.Name)
+			// 跳过不处理
+			continue
 		}
 		str += ("	" + field.Name + " " + go_type + "\n")
 	}
@@ -100,15 +97,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// table
 	struct_table_name := row_name + "Table"
 	str += ("type " + struct_table_name + " struct {\n")
-	str += "	db *mysql_base.Database\n"
+	str += "	db *mysql_manager.DB\n"
 	pf := table.GetPrimaryKeyFieldConfig()
 	if pf == nil {
 		log.Printf("cant get table %v primary key\n", table.Name)
 		return false
 	}
-	primary_type, o := mysql_base.GetMysqlFieldTypeByString(pf.Type)
+	primary_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(pf.Type))
 	if !o {
-		log.Printf("table %v primary type invalid", table.Name, pf.Type)
+		log.Printf("table %v primary type %v invalid", table.Name, pf.Type)
 		return false
 	}
 	if !(mysql_base.IsMysqlFieldIntType(primary_type) || mysql_base.IsMysqlFieldTextType(primary_type)) {
@@ -116,16 +113,72 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		return false
 	}
 	pt := _field_type_to_go_type(primary_type)
+	if pt == "" {
+		log.Printf("主键类型%v没有对应的数据类型\n")
+		return false
+	}
 	str += "	rows map[" + pt + "]*" + struct_row_name + "\n"
 	str += "}\n\n"
 
 	// init func
-	str += ("func (this *" + struct_table_name + ") Init(db *mysql_base.Database) {\n")
+	str += ("func (this *" + struct_table_name + ") Init(db *mysql_manager.DB) {\n")
 	str += ("	this.db = db\n")
 	str += "}\n\n"
 
+	var field_list string
+	for i, field := range table.Fields {
+		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
+		if go_type == "" {
+			continue
+		}
+		if i == 0 {
+			field_list = "\"" + field.Name + "\""
+		} else {
+			field_list += (", \"" + field.Name + "\"")
+		}
+	}
+	var dest_list string
+	for i, field := range table.Fields {
+		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
+		if go_type == "" {
+			continue
+		}
+		if i == 0 {
+			dest_list = "&v." + field.Name
+		} else {
+			dest_list += (", &v." + field.Name)
+		}
+	}
+
 	// select func
-	str += ("func (this *" + struct_table_name + ") Select()")
+	str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
+	str += ("	var field_list []string = []string{" + field_list + "}\n")
+	str += ("	var v " + struct_row_name + "\n")
+	str += ("	var dest_list []interface{} = []interface{}{" + dest_list + "}\n")
+	str += ("	if !this.db.Select(\"" + table.Name + "\", key, value, field_list, dest_list) {\n")
+	str += ("		return nil, false\n")
+	str += ("	}\n")
+	str += ("	return &v, true\n")
+	str += ("}\n\n")
+
+	// select multi func
+	str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}) ([]*" + struct_row_name + ", bool) {\n")
+	str += ("	var field_list []string = []string{" + field_list + "}\n")
+	str += ("	var result_list mysql_base.QueryResultList\n")
+	str += ("	if !this.db.SelectRecords(\"" + table.Name + "\", key, value, field_list, &result_list) {\n")
+	str += ("		return nil, false\n")
+	str += ("	}\n")
+	str += ("	var r []*" + struct_row_name + "\n")
+	str += ("	var v " + struct_row_name + "\n")
+	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
+	str += ("	for {\n")
+	str += ("		if !result_list.Get(dest_list) {\n")
+	str += ("			return r, false\n")
+	str += ("		}\n")
+	str += ("		r = append(r, &v)\n")
+	str += ("	}\n")
+	str += ("	return r, true\n")
+	str += ("}\n\n")
 
 	_, err := f.WriteString(str)
 	if err != nil {
