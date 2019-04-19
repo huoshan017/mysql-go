@@ -166,7 +166,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			}
 			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", &v." + field.Name + ")\n"
 			unmarshal_bytes_list += "	if err != nil {\n"
-			unmarshal_bytes_list += "		log.Printf(\"Unmarshal msg failed err(%s)!\\n\", err.Error())\n"
+			unmarshal_bytes_list += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%s)!\\n\", err.Error())\n"
 			unmarshal_bytes_list += "	}\n"
 		} else {
 			dest = "v." + field.Name
