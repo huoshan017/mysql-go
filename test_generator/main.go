@@ -15,19 +15,13 @@ func main() {
 		return
 	}
 
-	if !config_loader.Generate("../src/github.com/huoshan017/mysql-go/test_generator") {
+	if !config_loader.Generate("../src/github.com/huoshan017/mysql-go/") {
 		return
 	}
 
 	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/test_generator") {
 		return
 	}
-
-	/*cmd := exec.Command("../src/ih_server/third_party/protobuf/protoc.exe", "--go-out=../src/github.com/huoshan017/mysql-go/test_generator/game_db", "--proto_path=../src/github.com/huoshan017/mysql-go/test_generator", "game_db_field_structs.proto")
-	if err := cmd.Run(); err != nil {
-		log.Printf("execute err: %v", err.Error())
-		return
-	}*/
 
 	log.Printf("generated proto\n")
 }

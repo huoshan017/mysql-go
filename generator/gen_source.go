@@ -71,31 +71,37 @@ func _upper_first_char(str string) string {
 
 func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
 	str := "package " + pkg_name + "\n\nimport (\n"
-	str += "	//\"io/ioutil\"\n"
-	str += "	//\"log\"\n"
-	str += "	//\"strconv\"\n"
-	str += "	//\"strings\"\n"
+	if table.HasStructField() {
+		str += "	\"log\"\n"
+	}
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
+	if table.HasStructField() {
+		str += "	\"github.com/golang/protobuf/proto\"\n"
+	}
 	str += ")\n\n"
 
 	// row struct
-	row_name := _upper_first_char(table.Name)
-	struct_row_name := row_name + "Row"
+	struct_row_name := _upper_first_char(table.Name)
 	str += ("type " + struct_row_name + " struct {\n")
 	for _, field := range table.Fields {
-		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
-		if go_type == "" {
-			log.Printf("get go type failed by field type %v in table %v\n", field.Type, table.Name)
-			// 跳过不处理
-			continue
+		var go_type string
+		if field.StructName != "" {
+			go_type = field.StructName
+		} else {
+			go_type = _field_type_string_to_go_type(strings.ToUpper(field.Type))
+			if go_type == "" {
+				log.Printf("get go type failed by field type %v in table %v\n", field.Type, table.Name)
+				// 跳过不处理
+				continue
+			}
 		}
 		str += ("	" + field.Name + " " + go_type + "\n")
 	}
 	str += "}\n\n"
 
 	// table
-	struct_table_name := row_name + "Table"
+	struct_table_name := struct_row_name + "Table"
 	str += ("type " + struct_table_name + " struct {\n")
 	str += "	db *mysql_manager.DB\n"
 	pf := table.GetPrimaryKeyFieldConfig()
@@ -137,16 +143,38 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			field_list += (", \"" + field.Name + "\"")
 		}
 	}
+
+	var bytes_define_list string
 	var dest_list string
+	var unmarshal_bytes_list string
 	for i, field := range table.Fields {
 		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
 		if go_type == "" {
 			continue
 		}
-		if i == 0 {
-			dest_list = "&v." + field.Name
+
+		var dest string
+		if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+			dest = "data_" + field.Name
+			if bytes_define_list == "" {
+				bytes_define_list = dest
+			} else {
+				bytes_define_list += (", " + dest)
+			}
+			if unmarshal_bytes_list == "" {
+				unmarshal_bytes_list += "	var err error\n"
+			}
+			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", &v." + field.Name + ")\n"
+			unmarshal_bytes_list += "	if err != nil {\n"
+			unmarshal_bytes_list += "		log.Printf(\"Unmarshal msg failed err(%s)!\\n\", err.Error())\n"
+			unmarshal_bytes_list += "	}\n"
 		} else {
-			dest_list += (", &v." + field.Name)
+			dest = "v." + field.Name
+		}
+		if i == 0 {
+			dest_list = "&" + dest
+		} else {
+			dest_list += (", &" + dest)
 		}
 	}
 
@@ -154,10 +182,16 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
 	str += ("	var field_list []string = []string{" + field_list + "}\n")
 	str += ("	var v " + struct_row_name + "\n")
+	if bytes_define_list != "" {
+		str += ("	var " + bytes_define_list + " []byte\n")
+	}
 	str += ("	var dest_list []interface{} = []interface{}{" + dest_list + "}\n")
 	str += ("	if !this.db.Select(\"" + table.Name + "\", key, value, field_list, dest_list) {\n")
 	str += ("		return nil, false\n")
 	str += ("	}\n")
+	if unmarshal_bytes_list != "" {
+		str += unmarshal_bytes_list
+	}
 	str += ("	return &v, true\n")
 	str += ("}\n\n")
 
@@ -169,12 +203,18 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("		return nil, false\n")
 	str += ("	}\n")
 	str += ("	var r []*" + struct_row_name + "\n")
-	str += ("	var v " + struct_row_name + "\n")
-	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
+	if bytes_define_list != "" {
+		str += ("	var " + bytes_define_list + " []byte\n")
+	}
 	str += ("	for {\n")
-	str += ("		if !result_list.Get(dest_list) {\n")
-	str += ("			return r, false\n")
+	str += ("		var v " + struct_row_name + "\n")
+	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
+	str += ("		if !result_list.Get(dest_list...) {\n")
+	str += ("			break\n")
 	str += ("		}\n")
+	if unmarshal_bytes_list != "" {
+		str += unmarshal_bytes_list
+	}
 	str += ("		r = append(r, &v)\n")
 	str += ("	}\n")
 	str += ("	return r, true\n")

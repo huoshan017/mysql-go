@@ -69,34 +69,6 @@ func (this *DB) GetConfigLoader() *mysql_generator.ConfigLoader {
 	return &this.config_loader
 }
 
-func (this *DB) Close() {
-	this.database.Close()
-}
-
-func (this *DB) ToEnd() bool {
-	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
-}
-
-func (this *DB) Save() {
-	this.db_op_manager.Save()
-}
-
-func (this *DB) Run() {
-	go func() {
-		var last_save_time int32
-		for {
-			if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
-				break
-			}
-
-			if last_save_time > 0 && int32(time.Now().Unix())-last_save_time >= int32(this.save_interval) {
-				this.db_op_manager.Save()
-			}
-			time.Sleep(time.Second)
-		}
-	}()
-}
-
 func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
 	this.db_op_manager.Insert(table_name, field_pair)
 }
@@ -135,4 +107,36 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string, result_
 
 func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, "", nil, nil, result_list)
+}
+
+func (this *DB) Close() {
+	this.database.Close()
+}
+
+func (this *DB) ToEnd() bool {
+	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
+}
+
+func (this *DB) Save() {
+	this.db_op_manager.Save()
+}
+
+func (this *DB) Run() {
+	go func() {
+		var last_save_time int32
+		for {
+			if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
+				break
+			}
+
+			now_time := int32(time.Now().Unix())
+			if last_save_time == 0 {
+				last_save_time = now_time
+			} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval) {
+				this.db_op_manager.Save()
+				last_save_time = now_time
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 }

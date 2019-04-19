@@ -65,3 +65,27 @@ func (this *TableConfig) GetField(field_name string) *FieldConfig {
 	}
 	return field
 }
+
+func (this *TableConfig) HasBytesField() bool {
+	if this.Fields == nil {
+		return false
+	}
+	for _, f := range this.Fields {
+		if IsMysqlFieldBinaryType(f.RealType) || IsMysqlFieldBlobType(f.RealType) {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *TableConfig) HasStructField() bool {
+	if this.Fields == nil {
+		return false
+	}
+	for _, f := range this.Fields {
+		if f.StructName != "" {
+			return true
+		}
+	}
+	return false
+}
