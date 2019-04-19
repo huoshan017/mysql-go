@@ -20,6 +20,8 @@ func main() {
 		return
 	}
 
+	db_mgr.Run()
+
 	db_player.Init(&db_mgr)
 	db_player2.Init(&db_mgr)
 

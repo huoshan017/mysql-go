@@ -28,33 +28,33 @@ func main() {
 	var list mysql_base.List
 	var test_node_list = []*TestNode{
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT,
 			table_name: "Players",
 			field_list: []*mysql_base.FieldValuePair{&mysql_base.FieldValuePair{Name: "Id", Value: 1}},
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT,
 			table_name: "Players",
 			field_list: []*mysql_base.FieldValuePair{&mysql_base.FieldValuePair{Name: "Id", Value: 2}},
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE,
 			table_name: "Mails",
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_UPDATE_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_UPDATE,
 			table_name: "Skills",
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_INSERT,
 			table_name: "Globals",
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE,
 			table_name: "Guilds",
 		},
 		&TestNode{
-			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE_RECORD,
+			op_type:    mysql_base.DB_OPERATE_TYPE_DELETE,
 			table_name: "Servers",
 		},
 	}
