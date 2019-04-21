@@ -206,7 +206,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// select func
 	str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
-	str += ("	var field_list []string = []string{" + field_list + "}\n")
+	str += ("	var field_list = []string{" + field_list + "}\n")
 	str += ("	var v = Create_" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
@@ -223,7 +223,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// select multi func
 	str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}) ([]*" + struct_row_name + ", bool) {\n")
-	str += ("	var field_list []string = []string{" + field_list + "}\n")
+	str += ("	var field_list = []string{" + field_list + "}\n")
 	str += ("	var result_list mysql_base.QueryResultList\n")
 	str += ("	if !this.db.SelectRecords(\"" + table.Name + "\", key, value, field_list, &result_list) {\n")
 	str += ("		return nil, false\n")
