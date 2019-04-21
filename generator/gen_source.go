@@ -84,10 +84,11 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// row struct
 	struct_row_name := _upper_first_char(table.Name)
 	str += ("type " + struct_row_name + " struct {\n")
+	var row_func_list string
 	for _, field := range table.Fields {
 		var go_type string
 		if field.StructName != "" {
-			go_type = field.StructName
+			go_type = "*" + field.StructName
 		} else {
 			go_type = _field_type_string_to_go_type(strings.ToUpper(field.Type))
 			if go_type == "" {
@@ -97,8 +98,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			}
 		}
 		str += ("	" + field.Name + " " + go_type + "\n")
+		row_func_list += ("func (this *" + struct_row_name + ") Get_" + field.Name + "() " + go_type + " {\n")
+		row_func_list += ("	return this." + field.Name + "\n")
+		row_func_list += ("}\n\n")
+		row_func_list += ("func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n")
+		row_func_list += ("	this." + field.Name + " = v\n")
+		row_func_list += ("}\n\n")
 	}
 	str += "}\n\n"
+	str += row_func_list
 
 	// table
 	struct_table_name := struct_row_name + "Table"
@@ -154,7 +162,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		}
 
 		var dest string
-		if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
 			dest = "data_" + field.Name
 			if bytes_define_list == "" {
 				bytes_define_list = dest
@@ -164,17 +172,26 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			if unmarshal_bytes_list == "" {
 				unmarshal_bytes_list += "	var err error\n"
 			}
-			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", &v." + field.Name + ")\n"
+			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", v." + field.Name + ")\n"
 			unmarshal_bytes_list += "	if err != nil {\n"
 			unmarshal_bytes_list += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%s)!\\n\", err.Error())\n"
 			unmarshal_bytes_list += "	}\n"
 		} else {
 			dest = "v." + field.Name
 		}
+
 		if i == 0 {
-			dest_list = "&" + dest
+			if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+				dest_list = dest
+			} else {
+				dest_list = "&" + dest
+			}
 		} else {
-			dest_list += (", &" + dest)
+			if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+				dest_list += (", " + dest)
+			} else {
+				dest_list += (", &" + dest)
+			}
 		}
 	}
 
@@ -185,7 +202,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
-	str += ("	var dest_list []interface{} = []interface{}{" + dest_list + "}\n")
+	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("	if !this.db.Select(\"" + table.Name + "\", key, value, field_list, dest_list) {\n")
 	str += ("		return nil, false\n")
 	str += ("	}\n")

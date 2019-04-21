@@ -166,6 +166,19 @@
 				{ "name":"update_time",		"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
 				{ "name":"score",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" }
 			]
+		},
+		
+		{
+			"name":"t_battle_record",
+			"primary_key":"record_id",
+			"engine":"innodb",
+			"fields":[
+				{"name":"record_id",		"type":"int",			"length":0, 	"index_type":"",			"create_flags":"unsigned,not null"},
+				{"name":"save_time",		"type":"int",			"length":0,		"index_type":"",			"create_flags":"unsigned,not null"},
+				{"name":"save_data",		"type":"blob",			"length":0,		"index_type":"",			"create_flags":"not null"},
+				{"name":"attacker",			"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null"},
+				{"name":"defenser",			"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null"}
+			]
 		}
 	]
 }

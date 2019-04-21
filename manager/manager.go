@@ -132,11 +132,11 @@ func (this *DB) Run() {
 			now_time := int32(time.Now().Unix())
 			if last_save_time == 0 {
 				last_save_time = now_time
-			} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval) {
+			} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval.Seconds()) {
 				this.db_op_manager.Save()
 				last_save_time = now_time
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 2)
 		}
 	}()
 }
