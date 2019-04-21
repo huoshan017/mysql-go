@@ -136,7 +136,7 @@ func (this *DB) Run() {
 				this.db_op_manager.Save()
 				last_save_time = now_time
 			}
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second)
 		}
 	}()
 }
