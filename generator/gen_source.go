@@ -81,14 +81,16 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 	str += ")\n\n"
 
+	var init_mem_list string
+	var row_func_list string
 	// row struct
 	struct_row_name := _upper_first_char(table.Name)
 	str += ("type " + struct_row_name + " struct {\n")
-	var row_func_list string
 	for _, field := range table.Fields {
 		var go_type string
 		if field.StructName != "" {
 			go_type = "*" + field.StructName
+			init_mem_list += "		" + field.Name + ": &" + field.StructName + "{},\n"
 		} else {
 			go_type = _field_type_string_to_go_type(strings.ToUpper(field.Type))
 			if go_type == "" {
@@ -105,6 +107,13 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		row_func_list += ("	this." + field.Name + " = v\n")
 		row_func_list += ("}\n\n")
 	}
+	str += "}\n\n"
+	str += "func Create_" + struct_row_name + "() *" + struct_row_name + " {\n"
+	str += "	return &" + struct_row_name + "{\n"
+	if init_mem_list != "" {
+		str += init_mem_list
+	}
+	str += "	}\n"
 	str += "}\n\n"
 	str += row_func_list
 
@@ -182,13 +191,13 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 		if i == 0 {
 			if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
-				dest_list = dest
+				dest_list = "&" + dest
 			} else {
 				dest_list = "&" + dest
 			}
 		} else {
 			if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
-				dest_list += (", " + dest)
+				dest_list += (", &" + dest)
 			} else {
 				dest_list += (", &" + dest)
 			}
@@ -198,7 +207,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// select func
 	str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
 	str += ("	var field_list []string = []string{" + field_list + "}\n")
-	str += ("	var v " + struct_row_name + "\n")
+	str += ("	var v = Create_" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
@@ -209,7 +218,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if unmarshal_bytes_list != "" {
 		str += unmarshal_bytes_list
 	}
-	str += ("	return &v, true\n")
+	str += ("	return v, true\n")
 	str += ("}\n\n")
 
 	// select multi func
@@ -224,7 +233,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for {\n")
-	str += ("		var v " + struct_row_name + "\n")
+	str += ("		var v = Create_" + struct_row_name + "()\n")
 	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("		if !result_list.Get(dest_list...) {\n")
 	str += ("			break\n")
@@ -232,7 +241,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if unmarshal_bytes_list != "" {
 		str += unmarshal_bytes_list
 	}
-	str += ("		r = append(r, &v)\n")
+	str += ("		r = append(r, v)\n")
 	str += ("	}\n")
 	str += ("	return r, true\n")
 	str += ("}\n\n")
