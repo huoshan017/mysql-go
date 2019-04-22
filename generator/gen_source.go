@@ -336,3 +336,50 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	return true
 }
+
+func gen_format_field_list_some(table *mysql_base.TableConfig, struct_table_name, struct_row_name string) string {
+	var str string
+	// help function: _format_field_list
+	str += ("func (this *" + struct_table_name + ") _format_field_list_some(t * " + struct_row_name + ", fields []string) []*mysql_base.FieldValuePair {\n")
+	var field_assign_list, marshal_data_list, data_define_list string
+	for _, field := range table.Fields {
+		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+			continue
+		}
+		if field.StructName != "" {
+			if data_define_list == "" {
+				data_define_list += ("data_" + field.Name)
+			} else {
+				data_define_list += (", data_" + field.Name)
+			}
+			marshal_data_list += ("	if t.Get_" + field.Name + "() != nil {\n")
+			marshal_data_list += ("		data_" + field.Name + ", err = proto.Marshal(t.Get_" + field.Name + "())\n")
+			marshal_data_list += ("		if err != nil {\n")
+			marshal_data_list += ("			log.Printf(\"Marshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n")
+			marshal_data_list += ("		}\n")
+			marshal_data_list += ("	}\n")
+		}
+		field_assign_list += ("		&mysql_base.FieldValuePair{\n")
+		field_assign_list += ("			Name: \"" + field.Name + "\",\n")
+		if field.StructName != "" {
+			field_assign_list += ("			Value: data_" + field.Name + ",\n")
+		} else {
+			field_assign_list += ("			Value: t.Get_" + field.Name + "(),\n")
+		}
+		field_assign_list += ("		},\n")
+	}
+	if data_define_list != "" {
+		str += ("	var err error\n")
+		str += ("	var " + data_define_list + " []byte\n")
+	}
+	if marshal_data_list != "" {
+		str += marshal_data_list
+	}
+	str += ("	return []*mysql_base.FieldValuePair{\n")
+	if field_assign_list != "" {
+		str += field_assign_list
+	}
+	str += ("	}\n")
+	str += ("}\n")
+	return str
+}
