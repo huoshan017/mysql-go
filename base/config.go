@@ -20,6 +20,23 @@ type TableConfig struct {
 	PrimaryKey string         `json:"primary_key"`
 	Engine     string         `json:"engine"`
 	Fields     []*FieldConfig `json:"fields"`
+	FieldMap   map[string]*FieldConfig
+}
+
+func (this *TableConfig) AfterLoad() {
+	for _, f := range this.Fields {
+		if this.FieldMap == nil {
+			this.FieldMap = make(map[string]*FieldConfig)
+		}
+		this.FieldMap[f.Name] = f
+	}
+}
+
+func (this *TableConfig) GetField(field_name string) *FieldConfig {
+	if this.FieldMap == nil {
+		return nil
+	}
+	return this.FieldMap[field_name]
 }
 
 func (this *TableConfig) GetPrimaryKeyFieldConfig() (field_config *FieldConfig) {
@@ -51,19 +68,6 @@ func (this *TableConfig) IsPrimaryAutoIncrement() bool {
 		}
 	}
 	return false
-}
-
-func (this *TableConfig) GetField(field_name string) *FieldConfig {
-	var field *FieldConfig
-	if this.Fields != nil {
-		for _, f := range this.Fields {
-			if f.Name == field_name {
-				field = f
-				break
-			}
-		}
-	}
-	return field
 }
 
 func (this *TableConfig) HasBytesField() bool {

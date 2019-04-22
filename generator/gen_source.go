@@ -181,12 +181,12 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			if unmarshal_bytes_list == "" {
 				unmarshal_bytes_list += "	var err error\n"
 			}
-			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", v." + field.Name + ")\n"
+			unmarshal_bytes_list += "	err = proto.Unmarshal(" + dest + ", t." + field.Name + ")\n"
 			unmarshal_bytes_list += "	if err != nil {\n"
-			unmarshal_bytes_list += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%s)!\\n\", err.Error())\n"
+			unmarshal_bytes_list += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
 			unmarshal_bytes_list += "	}\n"
 		} else {
-			dest = "v." + field.Name
+			dest = "t." + field.Name
 		}
 
 		if i == 0 {
@@ -207,7 +207,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// select func
 	str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
 	str += ("	var field_list = []string{" + field_list + "}\n")
-	str += ("	var v = Create_" + struct_row_name + "()\n")
+	str += ("	var t = Create_" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
@@ -218,7 +218,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if unmarshal_bytes_list != "" {
 		str += unmarshal_bytes_list
 	}
-	str += ("	return v, true\n")
+	str += ("	return t, true\n")
 	str += ("}\n\n")
 
 	// select multi func
@@ -233,7 +233,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for {\n")
-	str += ("		var v = Create_" + struct_row_name + "()\n")
+	str += ("		var t = Create_" + struct_row_name + "()\n")
 	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("		if !result_list.Get(dest_list...) {\n")
 	str += ("			break\n")
@@ -241,10 +241,92 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if unmarshal_bytes_list != "" {
 		str += unmarshal_bytes_list
 	}
-	str += ("		r = append(r, v)\n")
+	str += ("		r = append(r, t)\n")
 	str += ("	}\n")
 	str += ("	return r, true\n")
 	str += ("}\n\n")
+
+	// select primary field
+	str += ("func (this *" + struct_table_name + ") SelectPrimaryField() ([]" + pt + ") {\n")
+	str += ("	var result_list mysql_base.QueryResultList\n")
+	str += ("	if !this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list) {\n")
+	str += ("		return nil\n")
+	str += ("	}\n")
+	str += ("	var value_list []" + pt + "\n")
+	str += ("	for {\n")
+	str += ("		var d " + pt + "\n")
+	str += ("		if !result_list.Get(&d) {\n")
+	str += ("			break\n")
+	str += ("		}\n")
+	str += ("		value_list = append(value_list, d)\n")
+	str += ("	}\n")
+	str += ("	return value_list\n")
+	str += ("}\n\n")
+
+	// help function: _format_field_list
+	str += ("func (this *" + struct_table_name + ") _format_field_list(t * " + struct_row_name + ") []*mysql_base.FieldValuePair {\n")
+	var field_assign_list, marshal_data_list, data_define_list string
+	for _, field := range table.Fields {
+		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+			continue
+		}
+		if field.StructName != "" {
+			if data_define_list == "" {
+				data_define_list += ("data_" + field.Name)
+			} else {
+				data_define_list += (", data_" + field.Name)
+			}
+			marshal_data_list += ("	if t.Get_" + field.Name + "() != nil {\n")
+			marshal_data_list += ("		data_" + field.Name + ", err = proto.Marshal(t.Get_" + field.Name + "())\n")
+			marshal_data_list += ("		if err != nil {\n")
+			marshal_data_list += ("			log.Printf(\"Marshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n")
+			marshal_data_list += ("		}\n")
+			marshal_data_list += ("	}\n")
+		}
+		field_assign_list += ("		&mysql_base.FieldValuePair{\n")
+		field_assign_list += ("			Name: \"" + field.Name + "\",\n")
+		if field.StructName != "" {
+			field_assign_list += ("			Value: data_" + field.Name + ",\n")
+		} else {
+			field_assign_list += ("			Value: t.Get_" + field.Name + "(),\n")
+		}
+		field_assign_list += ("		},\n")
+	}
+	if data_define_list != "" {
+		str += ("	var err error\n")
+		str += ("	var " + data_define_list + " []byte\n")
+	}
+	if marshal_data_list != "" {
+		str += marshal_data_list
+	}
+	str += ("	return []*mysql_base.FieldValuePair{\n")
+	if field_assign_list != "" {
+		str += field_assign_list
+	}
+	str += ("	}\n")
+	str += ("}\n")
+
+	// insert
+	str += ("func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n")
+	str += ("	var field_list = this._format_field_list(t)\n")
+	str += ("	this.db.Insert(\"" + table.Name + "\", field_list)\n")
+	str += ("}\n\n")
+
+	// delete
+	str += ("func (this *" + struct_table_name + ") DeleteByPrimaryField(t " + pt + ") {\n")
+	str += ("	this.db.Delete(\"" + table.Name + "\", \"" + pf.Name + "\", t)\n")
+	str += ("}\n\n")
+
+	// update
+	str += ("func (this *" + struct_table_name + ") UpdateByPrimaryField(v " + pt + ", update_fields []string, t *" + struct_row_name + ") {\n")
+	str += ("	var field_list []*mysql_base.FieldValuePair\n")
+	str += ("	if update_fields == nil || len(update_fields) == 0 {\n")
+	str += ("		field_list = this._format_field_list(t)\n")
+	str += ("	} else {\n")
+	str += ("		field_list = this._format_field_list_some(t, update_fields)\n")
+	str += ("	}\n")
+	str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", v, field_list)\n"
+	str += ("}\n")
 
 	_, err := f.WriteString(str)
 	if err != nil {

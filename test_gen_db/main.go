@@ -22,6 +22,8 @@ func main() {
 
 	db_mgr.Run()
 
+	game_db.SetDB(&db_mgr)
+
 	db_player.Init(&db_mgr)
 	db_player2.Init(&db_mgr)
 
@@ -47,6 +49,15 @@ func main() {
 		log.Printf("get the result list:\n")
 		for i, p := range ps {
 			log.Printf("	%v: %v\n", i, p)
+		}
+	}
+
+	var ids []int32
+	ids = db_player.SelectPrimaryField()
+	if ids != nil {
+		log.Printf("get primary field list:\n")
+		for i, id := range ids {
+			log.Printf("	%v: %v\n", i, id)
 		}
 	}
 }

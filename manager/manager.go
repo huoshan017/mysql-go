@@ -109,6 +109,10 @@ func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.
 	return this.database.SelectRecords(table_name, "", nil, nil, result_list)
 }
 
+func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
+}
+
 func (this *DB) Close() {
 	this.database.Close()
 }

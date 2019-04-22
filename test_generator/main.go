@@ -15,11 +15,15 @@ func main() {
 		return
 	}
 
-	if !config_loader.Generate("../src/github.com/huoshan017/mysql-go/") {
+	if !config_loader.Generate("../src/github.com/huoshan017/mysql-go") {
 		return
 	}
 
 	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/test_generator") {
+		return
+	}
+
+	if !config_loader.GenerateInitFunc("../src/github.com/huoshan017/mysql-go") {
 		return
 	}
 

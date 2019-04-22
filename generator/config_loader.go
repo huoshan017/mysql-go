@@ -62,6 +62,7 @@ func (this *ConfigLoader) Load(config string) bool {
 		if !this.load_table(tab) {
 			return false
 		}
+		tab.AfterLoad()
 	}
 
 	log.Printf("ConfigLoader::Load loaded config file %v\n", config)
@@ -149,11 +150,9 @@ func (this *ConfigLoader) GenerateFieldStructsProto(dest_path string) bool {
 	}
 
 	var f *os.File
-	var err error
 	dest_file := dest_path + "/" + this.DBPkg + "_field_structs.proto"
-	f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())
+	f = _get_file_creater(dest_file)
+	if f == nil {
 		return false
 	}
 
@@ -164,12 +163,7 @@ func (this *ConfigLoader) GenerateFieldStructsProto(dest_path string) bool {
 		return false
 	}
 
-	if err = f.Sync(); err != nil {
-		log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
-		return false
-	}
-	if err = f.Close(); err != nil {
-		log.Printf("关闭文件%v失败 %v\n", dest_file, err.Error())
+	if !_save_and_close_file(f, dest_file) {
 		return false
 	}
 
@@ -188,23 +182,53 @@ func create_dirs(dest_path string) (err error) {
 	return
 }
 
+func _get_file_creater(dest_file string) *os.File {
+	var f *os.File
+	var err error
+	f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())
+		return nil
+	}
+	return f
+}
+
+func _save_and_close_file(f *os.File, dest_file string) bool {
+	var err error
+	if err = f.Sync(); err != nil {
+		log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
+		return false
+	}
+	if err = f.Close(); err != nil {
+		log.Printf("关闭文件%v失败 %v\n", dest_file, err.Error())
+		return false
+	}
+	return true
+}
+
+func (this *ConfigLoader) _init_pkg_dirs(dest_path string) string {
+	pkg_path := dest_path + "/" + this.DBPkg
+	err := create_dirs(pkg_path)
+	if err != nil {
+		return ""
+	}
+	return pkg_path
+}
+
 func (this *ConfigLoader) Generate(dest_path string) bool {
 	if this.Tables == nil || len(this.Tables) == 0 {
 		return false
 	}
 
-	pkg_path := dest_path + "/" + this.DBPkg
-	err := create_dirs(pkg_path)
-	if err != nil {
+	pkg_path := this._init_pkg_dirs(dest_path)
+	if pkg_path == "" {
 		return false
 	}
 
 	for _, table := range this.Tables {
 		dest_file := pkg_path + "/" + table.Name + ".go"
-		var f *os.File
-		f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-		if err != nil {
-			log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())
+		f := _get_file_creater(dest_file)
+		if f == nil {
 			return false
 		}
 
@@ -215,15 +239,34 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 			return false
 		}
 
-		var err error
-		if err = f.Sync(); err != nil {
-			log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
+		if !_save_and_close_file(f, dest_file) {
 			return false
 		}
-		if err = f.Close(); err != nil {
-			log.Printf("关闭文件%v失败 %v\n", dest_file, err.Error())
-			return false
-		}
+	}
+
+	return true
+}
+
+func (this *ConfigLoader) GenerateInitFunc(dest_path string) bool {
+	if this.Tables == nil || len(this.Tables) == 0 {
+		return false
+	}
+
+	pkg_path := this._init_pkg_dirs(dest_path)
+	if pkg_path == "" {
+		return false
+	}
+
+	dest_file := pkg_path + "/init.go"
+	f := _get_file_creater(dest_file)
+	if f == nil {
+		return false
+	}
+
+	gen_init_source(f, this.DBPkg)
+
+	if !_save_and_close_file(f, dest_file) {
+		return false
 	}
 
 	return true
