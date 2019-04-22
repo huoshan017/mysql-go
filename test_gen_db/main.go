@@ -22,8 +22,6 @@ func main() {
 
 	db_mgr.Run()
 
-	game_db.SetDB(&db_mgr)
-
 	db_player.Init(&db_mgr)
 	db_player2.Init(&db_mgr)
 
