@@ -81,10 +81,27 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 	str += ")\n\n"
 
-	var init_mem_list string
-	var row_func_list string
-	// row struct
 	struct_row_name := _upper_first_char(table.Name)
+	struct_table_name := struct_row_name + "_Table"
+
+	field_pair_func_define := table.Name + "_field_pair_func"
+	field_pair_func_type := "func (t *" + struct_row_name + ") *mysql_base.FieldValuePair"
+	str += "type " + field_pair_func_define + " " + field_pair_func_type + "\n\n"
+
+	field_func_map := table.Name + "_fields_map"
+	str += "var " + field_func_map + " = map[string]" + field_pair_func_define + "{\n"
+	for _, field := range table.Fields {
+		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+			continue
+		}
+		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
+		str += "		return t.GetValuePair_" + field.Name + "()\n"
+		str += "	},\n"
+	}
+	str += "}\n\n"
+
+	// row struct
+	var init_mem_list, row_func_list string
 	str += ("type " + struct_row_name + " struct {\n")
 	for _, field := range table.Fields {
 		var go_type string
@@ -144,9 +161,22 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "	}\n"
 	str += "}\n\n"
 	str += row_func_list
+	str += "func (this *" + struct_row_name + ") GetValuePairList(fields_name []string) []*mysql_base.FieldValuePair {\n"
+	str += "	var field_list []*mysql_base.FieldValuePair\n"
+	str += "	for _, field_name := range fields_name {\n"
+	str += "		fun := " + field_func_map + "[field_name]\n"
+	str += "		if fun == nil {\n"
+	str += "			continue\n"
+	str += "		}\n"
+	str += "		value_pair := fun(this)\n"
+	str += "		if value_pair != nil {\n"
+	str += "			field_list = append(field_list, value_pair)\n"
+	str += "		}\n"
+	str += "	}\n"
+	str += "	return field_list\n"
+	str += "}\n\n"
 
 	// table
-	struct_table_name := struct_row_name + "_Table"
 	str += ("type " + struct_table_name + " struct {\n")
 	str += "	db *mysql_manager.DB\n"
 	pf := table.GetPrimaryKeyFieldConfig()
@@ -317,7 +347,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// update some field
 	str += "func (this *" + struct_table_name + ") UpdateSome(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
 	str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
-	str += "}\n"
+	str += "}\n\n"
+
+	// update by field name
+	str += "func (this *" + struct_table_name + ") UpdateWithFieldName(" + pf.Name + " " + pt + ", t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "	var field_list = t.GetValuePairList(fields_name)\n"
+	str += "	if field_list != nil {\n"
+	str += "		this.UpdateSome(" + pf.Name + ", field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
 
 	_, err := f.WriteString(str)
 	if err != nil {
