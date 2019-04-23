@@ -86,6 +86,7 @@
 	"tables" : [
 		{
 			"name":"t_global",
+			"single_row": true,
 			"primary_key": "id",
 			"engine":"myisam",
 			"fields":[

@@ -81,8 +81,8 @@ func (this *DB) Delete(table_name string, key string, value interface{}) {
 	this.db_op_manager.Delete(table_name, key, value)
 }
 
-func (this *DB) AppendProcedureOpList(procedure_op_list *mysql_base.ProcedureOpList) {
-	this.db_op_manager.AppendProcedure(procedure_op_list)
+func (this *DB) AppendProcedure(procedure *mysql_base.ProcedureOpList) {
+	this.db_op_manager.AppendProcedure(procedure)
 }
 
 func (this *DB) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {

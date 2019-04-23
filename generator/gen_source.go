@@ -175,6 +175,24 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "	}\n"
 	str += "	return field_list\n"
 	str += "}\n\n"
+	// _format_field_list
+	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
+	str += ("	var field_list []*mysql_base.FieldValuePair\n")
+	for _, field := range table.Fields {
+		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+			continue
+		}
+		if field.StructName != "" {
+			str += "	data_" + field.Name + " := this.Marshal_" + field.Name + "()\n"
+			str += "	if data_" + field.Name + " != nil {\n"
+			str += "		field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data_" + field.Name + " })\n"
+			str += "	}\n"
+		} else {
+			str += "	field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() })\n"
+		}
+	}
+	str += "	return field_list\n"
+	str += "}\n\n"
 
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
@@ -308,28 +326,9 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("	return value_list\n")
 	str += ("}\n\n")
 
-	// _format_field_list
-	str += ("func (this *" + struct_table_name + ") _format_field_list(t * " + struct_row_name + ") []*mysql_base.FieldValuePair {\n")
-	str += ("	var field_list []*mysql_base.FieldValuePair\n")
-	for _, field := range table.Fields {
-		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
-			continue
-		}
-		if field.StructName != "" {
-			str += "	data_" + field.Name + " := t.Marshal_" + field.Name + "()\n"
-			str += "	if data_" + field.Name + " != nil {\n"
-			str += "		field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data_" + field.Name + " })\n"
-			str += "	}\n"
-		} else {
-			str += "	field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: t.Get_" + field.Name + "() })\n"
-		}
-	}
-	str += "	return field_list\n"
-	str += "}\n\n"
-
 	// insert
 	str += ("func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n")
-	str += ("	var field_list = this._format_field_list(t)\n")
+	str += ("	var field_list = t._format_field_list()\n")
 	str += ("	this.db.Insert(\"" + table.Name + "\", field_list)\n")
 	str += ("}\n\n")
 
@@ -340,7 +339,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// update
 	str += "func (this *" + struct_table_name + ") UpdateAll(" + pf.Name + " " + pt + ", t *" + struct_row_name + ") {\n"
-	str += "	var field_list = this._format_field_list(t)\n"
+	str += "	var field_list = t._format_field_list()\n"
 	str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
 	str += "}\n\n"
 
@@ -364,4 +363,10 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 
 	return true
+}
+
+func gen_procedure_source(f *os.File, pkg_name string, table *mysql_base.TableConfig, struct_row_name, struct_table_name string) string {
+	var str string
+	str += "func (this *" + struct_table_name + ") "
+	return str
 }
