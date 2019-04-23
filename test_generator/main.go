@@ -19,13 +19,19 @@ func main() {
 		return
 	}
 
+	log.Printf("generated source\n")
+
 	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/test_generator") {
 		return
 	}
+
+	log.Printf("generated proto\n")
 
 	if !config_loader.GenerateInitFunc("../src/github.com/huoshan017/mysql-go") {
 		return
 	}
 
-	log.Printf("generated proto\n")
+	log.Printf("generated init funcs\n")
+
+	log.Printf("generated all\n")
 }

@@ -33,6 +33,6 @@ func _gen_struct(field_struct *FieldStruct) string {
 		str += ("	" + m.Type + " " + m.Name + " = " + strconv.Itoa(int(m.Index)) + ";\n")
 	}
 	str += "}\n"
-	log.Printf("gen struct:\n%v", str)
+	//log.Printf("gen struct:\n%v", str)
 	return str
 }
