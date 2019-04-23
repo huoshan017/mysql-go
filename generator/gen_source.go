@@ -59,9 +59,13 @@ func _upper_first_char(str string) string {
 	}
 	c := []byte(str)
 	var uppered bool
-	if int32(c[0]) >= int32('a') && int32(c[0]) <= int32('z') {
-		c[0] = byte(int32(c[0]) + int32('A') - int32('a'))
-		uppered = true
+	for i := 0; i < len(c); i++ {
+		if i == 0 || c[i-1] == '_' {
+			if int32(c[i]) >= int32('a') && int32(c[i]) <= int32('z') {
+				c[i] = byte(int32(c[i]) + int32('A') - int32('a'))
+				uppered = true
+			}
+		}
 	}
 	if !uppered {
 		return str
@@ -327,10 +331,12 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("}\n\n")
 
 	// insert
-	str += ("func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n")
-	str += ("	var field_list = t._format_field_list()\n")
-	str += ("	this.db.Insert(\"" + table.Name + "\", field_list)\n")
-	str += ("}\n\n")
+	str += "func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n"
+	str += "	var field_list = t._format_field_list()\n"
+	str += "	if field_list != nil {\n"
+	str += "		this.db.Insert(\"" + table.Name + "\", field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
 
 	// delete
 	str += ("func (this *" + struct_table_name + ") Delete(" + pf.Name + " " + pt + ") {\n")
@@ -338,9 +344,11 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("}\n\n")
 
 	// update
-	str += "func (this *" + struct_table_name + ") UpdateAll(" + pf.Name + " " + pt + ", t *" + struct_row_name + ") {\n"
+	str += "func (this *" + struct_table_name + ") Update(t *" + struct_row_name + ") {\n"
 	str += "	var field_list = t._format_field_list()\n"
-	str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
+	str += "	if field_list != nil {\n"
+	str += "		this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", t.Get_" + pf.Name + "(), field_list)\n"
+	str += "	}\n"
 	str += "}\n\n"
 
 	// update some field
@@ -349,12 +357,14 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "}\n\n"
 
 	// update by field name
-	str += "func (this *" + struct_table_name + ") UpdateWithFieldName(" + pf.Name + " " + pt + ", t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "func (this *" + struct_table_name + ") UpdateWithFieldName(t *" + struct_row_name + ", fields_name []string) {\n"
 	str += "	var field_list = t.GetValuePairList(fields_name)\n"
 	str += "	if field_list != nil {\n"
-	str += "		this.UpdateSome(" + pf.Name + ", field_list)\n"
+	str += "		this.UpdateSome(t.Get_" + pf.Name + "(), field_list)\n"
 	str += "	}\n"
 	str += "}\n\n"
+
+	str += gen_procedure_source(table, struct_row_name, pf, pt)
 
 	_, err := f.WriteString(str)
 	if err != nil {
@@ -365,8 +375,28 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	return true
 }
 
-func gen_procedure_source(f *os.File, pkg_name string, table *mysql_base.TableConfig, struct_row_name, struct_table_name string) string {
+func gen_procedure_source(table *mysql_base.TableConfig, struct_row_name string, primary_field *mysql_base.FieldConfig, primary_type string) string {
 	var str string
-	str += "func (this *" + struct_table_name + ") "
+	str += "func " + struct_row_name + "_InsertOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ") {\n"
+	str += "	field_list := t._format_field_list()\n"
+	str += "	if field_list != nil {\n"
+	str += "		procedure.Insert(\"" + table.Name + "\", field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
+	str += "func " + struct_row_name + "_DeleteOnProcedure(procedure *mysql_base.ProcedureOpList, " + primary_field.Name + " " + primary_type + ") {\n"
+	str += "	procedure.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
+	str += "}\n\n"
+	str += "func " + struct_row_name + "_UpdateOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ") {\n"
+	str += "	field_list := t._format_field_list()\n"
+	str += "	if field_list != nil {\n"
+	str += "		procedure.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
+	str += "func " + struct_row_name + "_UpdateWithFieldNameOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "	field_list := t.GetValuePairList(fields_name)\n"
+	str += "	if field_list != nil {\n"
+	str += "		procedure.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "	}\n"
+	str += "}\n"
 	return str
 }
