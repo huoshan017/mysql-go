@@ -118,7 +118,7 @@
 		},
 		
 		{
-			"name": "t_player2",
+			"name": "t_player_friend",
 			"primary_key": "id",
 			"engine": "innodb",
 			"fields": [

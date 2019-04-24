@@ -10,7 +10,7 @@ import (
 
 var db_mgr mysql_manager.DB
 var db_player game_db.T_Player_Table
-var db_player2 game_db.T_Player2_Table
+var db_player_friend game_db.T_Player_Friend_Table
 
 func main() {
 	config_path := "../src/github.com/huoshan017/mysql-go/generator/config.json"
@@ -24,12 +24,12 @@ func main() {
 	db_mgr.Run()
 
 	db_player.Init(&db_mgr)
-	db_player2.Init(&db_mgr)
+	db_player_friend.Init(&db_mgr)
 
-	id := 1
+	id := 3
 	var o bool
 	var p *game_db.T_Player
-	p, o = db_player.Select("id", 1)
+	p, o = db_player.Select("id", id)
 	if !o {
 		log.Printf("cant get result by id %v\n", id)
 		return
@@ -60,10 +60,14 @@ func main() {
 		}
 	}
 
-	p.Set_level(111)
-	p.Set_vip_level(111)
-	var procedure = mysql_base.CreateProcedureOpList()
-	game_db.T_Player_UpdateWithFieldNameOnProcedure(procedure, p, []string{"level", "vip_level"})
-	db_mgr.AppendProcedure(procedure)
+	var transaction *mysql_base.Transaction = db_mgr.NewTransaction()
+
+	p.AtomicExecute(func(t *game_db.T_Player) {
+		t.Set_level(333)
+		t.Set_vip_level(333)
+		vp_list := t.GetValuePairList([]string{"level", "vip_level"})
+		db_player.TransactionUpdateWithFieldPair(transaction, t.Get_id(), vp_list)
+	})
+	transaction.Done()
 	db_mgr.Save()
 }

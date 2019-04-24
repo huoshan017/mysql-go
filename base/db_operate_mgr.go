@@ -30,15 +30,22 @@ type OpData struct {
 	detail_list []*OpDetail
 }
 
-type ProcedureOpList struct {
+type Transaction struct {
+	op_mgr      *OperateManager
 	detail_list []*OpDetail
 }
 
-func CreateProcedureOpList() *ProcedureOpList {
-	return &ProcedureOpList{}
+func CreateTransaction(op_mgr *OperateManager) *Transaction {
+	return &Transaction{op_mgr: op_mgr}
 }
 
-func (this *ProcedureOpList) Insert(table_name string, field_list []*FieldValuePair) {
+func (this *Transaction) Done() {
+	if this.op_mgr != nil {
+		this.op_mgr.appendTransaction(this)
+	}
+}
+
+func (this *Transaction) Insert(table_name string, field_list []*FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_INSERT,
@@ -46,7 +53,7 @@ func (this *ProcedureOpList) Insert(table_name string, field_list []*FieldValueP
 	})
 }
 
-func (this *ProcedureOpList) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
+func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_UPDATE,
@@ -56,7 +63,7 @@ func (this *ProcedureOpList) Update(table_name string, key string, value interfa
 	})
 }
 
-func (this *ProcedureOpList) Delete(table_name string, key string, value interface{}) {
+func (this *Transaction) Delete(table_name string, key string, value interface{}) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_DELETE,
@@ -65,30 +72,30 @@ func (this *ProcedureOpList) Delete(table_name string, key string, value interfa
 	})
 }
 
-type DBOperateManager struct {
+type OperateManager struct {
 	op_list *List
 	locker  sync.RWMutex
 	db      *Database
 	enable  bool
 }
 
-func (this *DBOperateManager) Init(db *Database) {
+func (this *OperateManager) Init(db *Database) {
 	this.op_list = &List{}
 	this.db = db
 	this.enable = true
 }
 
-func (this *DBOperateManager) GetDB() *Database {
+func (this *OperateManager) GetDB() *Database {
 	return this.db
 }
 
-func (this *DBOperateManager) Enable(enable bool) {
+func (this *OperateManager) Enable(enable bool) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 	this.enable = enable
 }
 
-func (this *DBOperateManager) Insert(table_name string, field_list []*FieldValuePair) {
+func (this *OperateManager) Insert(table_name string, field_list []*FieldValuePair) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -108,7 +115,7 @@ func (this *DBOperateManager) Insert(table_name string, field_list []*FieldValue
 	})
 }
 
-func (this *DBOperateManager) Delete(table_name string, field_name string, field_value interface{}) {
+func (this *OperateManager) Delete(table_name string, field_name string, field_value interface{}) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -129,7 +136,7 @@ func (this *DBOperateManager) Delete(table_name string, field_name string, field
 	})
 }
 
-func (this *DBOperateManager) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
+func (this *OperateManager) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -151,7 +158,11 @@ func (this *DBOperateManager) Update(table_name string, key string, value interf
 	})
 }
 
-func (this *DBOperateManager) AppendProcedure(procedure *ProcedureOpList) {
+func (this *OperateManager) NewTransaction() *Transaction {
+	return CreateTransaction(this)
+}
+
+func (this *OperateManager) appendTransaction(transaction *Transaction) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -161,11 +172,11 @@ func (this *DBOperateManager) AppendProcedure(procedure *ProcedureOpList) {
 
 	this.op_list.Append(&OpData{
 		sql_type:    DB_SQL_TYPE_PROCEDURE,
-		detail_list: procedure.detail_list,
+		detail_list: transaction.detail_list,
 	})
 }
 
-func (this *DBOperateManager) _op_cmd(d *OpDetail) {
+func (this *OperateManager) _op_cmd(d *OpDetail) {
 	switch d.op_type {
 	case DB_OPERATE_TYPE_INSERT:
 		{
@@ -182,13 +193,13 @@ func (this *DBOperateManager) _op_cmd(d *OpDetail) {
 	}
 }
 
-func (this *DBOperateManager) _check_op_list_empty() bool {
+func (this *OperateManager) _check_op_list_empty() bool {
 	this.locker.RLock()
 	defer this.locker.RUnlock()
 	return this.op_list.GetLength() == 0
 }
 
-func (this *DBOperateManager) _get_tmp_op_list() *List {
+func (this *OperateManager) _get_tmp_op_list() *List {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 	if this.op_list.GetLength() == 0 {
@@ -199,8 +210,7 @@ func (this *DBOperateManager) _get_tmp_op_list() *List {
 	return tmp_list
 }
 
-// 在一个goroutine中执行
-func (this *DBOperateManager) Save() {
+func (this *OperateManager) Save() {
 	if this._check_op_list_empty() {
 		log.Printf("DBOperateManager::Save @@@ no operation to execute\n")
 		return

@@ -73,11 +73,122 @@ func _upper_first_char(str string) string {
 	return string(c)
 }
 
+func gen_row_func(struct_row_name string, go_type string, field *mysql_base.FieldConfig) string {
+	var str string
+	str += ("func (this *" + struct_row_name + ") Get_" + field.Name + "() " + go_type + " {\n")
+	str += ("	return this." + field.Name + "\n")
+	str += ("}\n\n")
+	str += ("func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n")
+	str += ("	this." + field.Name + " = v\n")
+	str += ("}\n\n")
+	if field.StructName != "" {
+		str += "func (this *" + struct_row_name + ") Marshal_" + field.Name + "() []byte {\n"
+		str += "	data, err := proto.Marshal(this." + field.Name + ")\n"
+		str += "	if err != nil {\n"
+		str += "		log.Printf(\"Marshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
+		str += "		return nil\n"
+		str += "	}\n"
+		str += "	return data\n"
+		str += "}\n\n"
+		str += "func (this *" + struct_row_name + ") Unmarshal_" + field.Name + "(data []byte) bool {\n"
+		str += "	err := proto.Unmarshal(data, this." + field.Name + ")\n"
+		str += "	if err != nil {\n"
+		str += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
+		str += "		return false\n"
+		str += "	}\n"
+		str += "	return true\n"
+		str += "}\n\n"
+		str += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "	data := this.Marshal_" + field.Name + "()\n"
+		str += "	if data == nil {\n"
+		str += "		return nil\n"
+		str += "	}\n"
+		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data }\n"
+		str += "}\n\n"
+	} else {
+		str += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() }\n"
+		str += "}\n\n"
+	}
+	return str
+}
+
+func gen_row_get_fvp_list_with_name_func(struct_row_name, field_func_map string) string {
+	var str string
+	str += "func (this *" + struct_row_name + ") GetValuePairList(fields_name []string) []*mysql_base.FieldValuePair {\n"
+	str += "	var field_list []*mysql_base.FieldValuePair\n"
+	str += "	for _, field_name := range fields_name {\n"
+	str += "		fun := " + field_func_map + "[field_name]\n"
+	str += "		if fun == nil {\n"
+	str += "			continue\n"
+	str += "		}\n"
+	str += "		value_pair := fun(this)\n"
+	str += "		if value_pair != nil {\n"
+	str += "			field_list = append(field_list, value_pair)\n"
+	str += "		}\n"
+	str += "	}\n"
+	str += "	return field_list\n"
+	str += "}\n\n"
+	return str
+}
+
+func gen_row_format_all_fvp_func(struct_row_name string, table *mysql_base.TableConfig) string {
+	var str string
+	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
+	str += ("	var field_list []*mysql_base.FieldValuePair\n")
+	for _, field := range table.Fields {
+		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+			continue
+		}
+		if field.StructName != "" {
+			str += "	data_" + field.Name + " := this.Marshal_" + field.Name + "()\n"
+			str += "	if data_" + field.Name + " != nil {\n"
+			str += "		field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data_" + field.Name + " })\n"
+			str += "	}\n"
+		} else {
+			str += "	field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() })\n"
+		}
+	}
+	str += "	return field_list\n"
+	str += "}\n\n"
+	return str
+}
+
+func gen_row_lock_func(struct_row_name string) string {
+	var str string
+	str += "func (this *" + struct_row_name + ") Lock() {\n"
+	str += "	this.locker.Lock()\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") Unlock() {\n"
+	str += "	this.locker.Unlock()\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") RLock() {\n"
+	str += "	this.locker.RLock()\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") RUnlock() {\n"
+	str += "	this.locker.RUnlock()\n"
+	str += "}\n\n"
+	var row_atomic_exec_func = struct_row_name + "_atomic_exec_func"
+	str += "type " + row_atomic_exec_func + " func(*" + struct_row_name + ")\n\n"
+	str += "func (this *" + struct_row_name + ") AtomicExecute(exec_func " + row_atomic_exec_func + ") {\n"
+	str += "	this.locker.Lock()\n"
+	str += "	defer this.locker.Unlock()\n"
+	str += "	exec_func(this)\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") AtomicExecuteReadOnly(exec_func " + row_atomic_exec_func + ") {\n"
+	str += "	this.locker.RLock()\n"
+	str += "	defer this.locker.RUnlock()\n"
+	str += "	exec_func(this)\n"
+	str += "}\n\n"
+	return str
+}
+
 func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
 	str := "package " + pkg_name + "\n\nimport (\n"
 	if table.HasStructField() {
 		str += "	\"log\"\n"
 	}
+	str += "	\"sync\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
 	if table.HasStructField() {
@@ -120,42 +231,9 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			}
 		}
 		str += ("	" + field.Name + " " + go_type + "\n")
-		row_func_list += ("func (this *" + struct_row_name + ") Get_" + field.Name + "() " + go_type + " {\n")
-		row_func_list += ("	return this." + field.Name + "\n")
-		row_func_list += ("}\n\n")
-		row_func_list += ("func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n")
-		row_func_list += ("	this." + field.Name + " = v\n")
-		row_func_list += ("}\n\n")
-		if field.StructName != "" {
-			row_func_list += "func (this *" + struct_row_name + ") Marshal_" + field.Name + "() []byte {\n"
-			row_func_list += "	data, err := proto.Marshal(this." + field.Name + ")\n"
-			row_func_list += "	if err != nil {\n"
-			row_func_list += "		log.Printf(\"Marshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
-			row_func_list += "		return nil\n"
-			row_func_list += "	}\n"
-			row_func_list += "	return data\n"
-			row_func_list += "}\n\n"
-			row_func_list += "func (this *" + struct_row_name + ") Unmarshal_" + field.Name + "(data []byte) bool {\n"
-			row_func_list += "	err := proto.Unmarshal(data, this." + field.Name + ")\n"
-			row_func_list += "	if err != nil {\n"
-			row_func_list += "		log.Printf(\"Unmarshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
-			row_func_list += "		return false\n"
-			row_func_list += "	}\n"
-			row_func_list += "	return true\n"
-			row_func_list += "}\n\n"
-			row_func_list += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
-			row_func_list += "	data := this.Marshal_" + field.Name + "()\n"
-			row_func_list += "	if data == nil {\n"
-			row_func_list += "		return nil\n"
-			row_func_list += "	}\n"
-			row_func_list += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data }\n"
-			row_func_list += "}\n\n"
-		} else {
-			row_func_list += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
-			row_func_list += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() }\n"
-			row_func_list += "}\n\n"
-		}
+		row_func_list += gen_row_func(struct_row_name, go_type, field)
 	}
+	str += "	locker sync.RWMutex\n"
 	str += "}\n\n"
 	str += "func Create_" + struct_row_name + "() *" + struct_row_name + " {\n"
 	str += "	return &" + struct_row_name + "{\n"
@@ -165,38 +243,9 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "	}\n"
 	str += "}\n\n"
 	str += row_func_list
-	str += "func (this *" + struct_row_name + ") GetValuePairList(fields_name []string) []*mysql_base.FieldValuePair {\n"
-	str += "	var field_list []*mysql_base.FieldValuePair\n"
-	str += "	for _, field_name := range fields_name {\n"
-	str += "		fun := " + field_func_map + "[field_name]\n"
-	str += "		if fun == nil {\n"
-	str += "			continue\n"
-	str += "		}\n"
-	str += "		value_pair := fun(this)\n"
-	str += "		if value_pair != nil {\n"
-	str += "			field_list = append(field_list, value_pair)\n"
-	str += "		}\n"
-	str += "	}\n"
-	str += "	return field_list\n"
-	str += "}\n\n"
-	// _format_field_list
-	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
-	str += ("	var field_list []*mysql_base.FieldValuePair\n")
-	for _, field := range table.Fields {
-		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
-			continue
-		}
-		if field.StructName != "" {
-			str += "	data_" + field.Name + " := this.Marshal_" + field.Name + "()\n"
-			str += "	if data_" + field.Name + " != nil {\n"
-			str += "		field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data_" + field.Name + " })\n"
-			str += "	}\n"
-		} else {
-			str += "	field_list = append(field_list, &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() })\n"
-		}
-	}
-	str += "	return field_list\n"
-	str += "}\n\n"
+	str += gen_row_get_fvp_list_with_name_func(struct_row_name, field_func_map)
+	str += gen_row_format_all_fvp_func(struct_row_name, table)
+	str += gen_row_lock_func(struct_row_name)
 
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
@@ -344,7 +393,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("}\n\n")
 
 	// update
-	str += "func (this *" + struct_table_name + ") Update(t *" + struct_row_name + ") {\n"
+	str += "func (this *" + struct_table_name + ") UpdateAll(t *" + struct_row_name + ") {\n"
 	str += "	var field_list = t._format_field_list()\n"
 	str += "	if field_list != nil {\n"
 	str += "		this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", t.Get_" + pf.Name + "(), field_list)\n"
@@ -352,7 +401,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "}\n\n"
 
 	// update some field
-	str += "func (this *" + struct_table_name + ") UpdateSome(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
+	str += "func (this *" + struct_table_name + ") UpdateWithFieldPair(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
 	str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
 	str += "}\n\n"
 
@@ -360,11 +409,11 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "func (this *" + struct_table_name + ") UpdateWithFieldName(t *" + struct_row_name + ", fields_name []string) {\n"
 	str += "	var field_list = t.GetValuePairList(fields_name)\n"
 	str += "	if field_list != nil {\n"
-	str += "		this.UpdateSome(t.Get_" + pf.Name + "(), field_list)\n"
+	str += "		this.UpdateWithFieldPair(t.Get_" + pf.Name + "(), field_list)\n"
 	str += "	}\n"
 	str += "}\n\n"
 
-	str += gen_procedure_source(table, struct_row_name, pf, pt)
+	str += gen_procedure_source(table, struct_table_name, struct_row_name, pf, pt)
 
 	_, err := f.WriteString(str)
 	if err != nil {
@@ -375,27 +424,53 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	return true
 }
 
-func gen_procedure_source(table *mysql_base.TableConfig, struct_row_name string, primary_field *mysql_base.FieldConfig, primary_type string) string {
+func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, struct_row_name string, primary_field *mysql_base.FieldConfig, primary_type string) string {
 	var str string
-	str += "func " + struct_row_name + "_InsertOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ") {\n"
+	str += "func (this *" + struct_table_name + ") TransactionInsert(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
 	str += "	field_list := t._format_field_list()\n"
 	str += "	if field_list != nil {\n"
-	str += "		procedure.Insert(\"" + table.Name + "\", field_list)\n"
+	str += "		transaction.Insert(\"" + table.Name + "\", field_list)\n"
 	str += "	}\n"
 	str += "}\n\n"
-	str += "func " + struct_row_name + "_DeleteOnProcedure(procedure *mysql_base.ProcedureOpList, " + primary_field.Name + " " + primary_type + ") {\n"
-	str += "	procedure.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
+	str += "func (this *" + struct_table_name + ") TransactionDelete(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
+	str += "	transaction.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
 	str += "}\n\n"
-	str += "func " + struct_row_name + "_UpdateOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ") {\n"
+	str += "func (this *" + struct_table_name + ") TransactionUpdateAll(transaction *mysql_base.Transaction, t*" + struct_row_name + ") {\n"
 	str += "	field_list := t._format_field_list()\n"
 	str += "	if field_list != nil {\n"
-	str += "		procedure.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
 	str += "	}\n"
 	str += "}\n\n"
-	str += "func " + struct_row_name + "_UpdateWithFieldNameOnProcedure(procedure *mysql_base.ProcedureOpList, t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldPair(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ", field_list []*mysql_base.FieldValuePair) {\n"
+	str += "	transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ", field_list)\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldName(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
 	str += "	field_list := t.GetValuePairList(fields_name)\n"
 	str += "	if field_list != nil {\n"
-	str += "		procedure.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
+
+	//////////////////////////////////////////////////
+	str += "func TransactionInsert_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
+	str += "	field_list := t._format_field_list()\n"
+	str += "	if field_list != nil {\n"
+	str += "		transaction.Insert(\"" + table.Name + "\", field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
+	str += "func TransactionDelete_" + struct_row_name + "(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
+	str += "	transaction.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
+	str += "}\n\n"
+	str += "func TransactionUpdateAll_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
+	str += "	field_list := t._format_field_list()\n"
+	str += "	if field_list != nil {\n"
+	str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
+	str += "	}\n"
+	str += "}\n\n"
+	str += "func TransactionUpdate_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "	field_list := t.GetValuePairList(fields_name)\n"
+	str += "	if field_list != nil {\n"
+	str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
 	str += "	}\n"
 	str += "}\n"
 	return str

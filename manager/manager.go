@@ -21,19 +21,29 @@ const (
 )
 
 type DB struct {
-	config_loader mysql_generator.ConfigLoader
+	config_loader *mysql_generator.ConfigLoader
 	database      mysql_base.Database
-	db_op_manager mysql_base.DBOperateManager
+	op_mgr        mysql_base.OperateManager
 	save_interval time.Duration
 	state         int32
 }
 
 func (this *DB) LoadConfig(config_path string) bool {
-	if !this.config_loader.Load(config_path) {
+	config_loader := &mysql_generator.ConfigLoader{}
+	if !config_loader.Load(config_path) {
 		log.Printf("load config %v failed\n", config_path)
 		return false
 	}
+	this.config_loader = config_loader
 	return true
+}
+
+func (this *DB) AttachConfig(config_loader *mysql_generator.ConfigLoader) {
+	this.config_loader = config_loader
+}
+
+func (this *DB) GetConfigLoader() *mysql_generator.ConfigLoader {
+	return this.config_loader
 }
 
 func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
@@ -51,7 +61,7 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 			}
 		}
 	}
-	this.db_op_manager.Init(&this.database)
+	this.op_mgr.Init(&this.database)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	this.state = DB_STATE_RUNNING
 	return true
@@ -65,24 +75,16 @@ func (this *DB) SetSaveIntervalTime(d time.Duration) {
 	this.save_interval = d
 }
 
-func (this *DB) GetConfigLoader() *mysql_generator.ConfigLoader {
-	return &this.config_loader
-}
-
 func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
-	this.db_op_manager.Insert(table_name, field_pair)
+	this.op_mgr.Insert(table_name, field_pair)
 }
 
 func (this *DB) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {
-	this.db_op_manager.Update(table_name, key, value, field_pair)
+	this.op_mgr.Update(table_name, key, value, field_pair)
 }
 
 func (this *DB) Delete(table_name string, key string, value interface{}) {
-	this.db_op_manager.Delete(table_name, key, value)
-}
-
-func (this *DB) AppendProcedure(procedure *mysql_base.ProcedureOpList) {
-	this.db_op_manager.AppendProcedure(procedure)
+	this.op_mgr.Delete(table_name, key, value)
 }
 
 func (this *DB) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
@@ -113,6 +115,10 @@ func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_li
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
 }
 
+func (this *DB) NewTransaction() *mysql_base.Transaction {
+	return this.op_mgr.NewTransaction()
+}
+
 func (this *DB) Close() {
 	this.database.Close()
 }
@@ -122,7 +128,7 @@ func (this *DB) ToEnd() bool {
 }
 
 func (this *DB) Save() {
-	this.db_op_manager.Save()
+	this.op_mgr.Save()
 }
 
 func (this *DB) Run() {
@@ -137,7 +143,7 @@ func (this *DB) Run() {
 			if last_save_time == 0 {
 				last_save_time = now_time
 			} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval.Seconds()) {
-				this.db_op_manager.Save()
+				this.op_mgr.Save()
 				last_save_time = now_time
 			}
 			time.Sleep(time.Second)
