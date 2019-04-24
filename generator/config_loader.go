@@ -263,7 +263,7 @@ func (this *ConfigLoader) GenerateInitFunc(dest_path string) bool {
 		return false
 	}
 
-	gen_init_source(f, this.DBPkg)
+	gen_init_source(f, this.DBPkg, this.Tables)
 
 	if !_save_and_close_file(f, dest_file) {
 		return false

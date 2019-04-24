@@ -168,7 +168,7 @@ func gen_row_lock_func(struct_row_name string) string {
 	str += "func (this *" + struct_row_name + ") RUnlock() {\n"
 	str += "	this.locker.RUnlock()\n"
 	str += "}\n\n"
-	var row_atomic_exec_func = struct_row_name + "_atomic_exec_func"
+	var row_atomic_exec_func = struct_row_name + "_AtomicExecFunc"
 	str += "type " + row_atomic_exec_func + " func(*" + struct_row_name + ")\n\n"
 	str += "func (this *" + struct_row_name + ") AtomicExecute(exec_func " + row_atomic_exec_func + ") {\n"
 	str += "	this.locker.Lock()\n"
