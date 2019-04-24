@@ -21,12 +21,26 @@ func main() {
 
 	db_mgr.Run()
 
-	game_db.Init(&db_mgr)
+	tb_mgr := game_db.NewTablesManager(&db_mgr)
+	db_player_table := tb_mgr.Get_T_Player_Table()
+	db_global_table := tb_mgr.Get_T_Global_Table()
 
-	id := 4
+	id := 5
 	var o bool
+	var gd *game_db.T_Global
+	gd, o = db_global_table.Select()
+	if !o {
+		log.Printf("cant get global table data\n")
+		return
+	}
+
+	gd.Set_curr_guild_id(2)
+	gd.Set_curr_mail_id(3)
+	gd.Set_curr_player_id(4)
+	db_global_table.UpdateAll(gd)
+
 	var p *game_db.T_Player
-	p, o = game_db.Get_T_Player_Table().Select("id", id)
+	p, o = db_player_table.Select("id", id)
 	if !o {
 		log.Printf("cant get result by id %v\n", id)
 		return
@@ -35,7 +49,7 @@ func main() {
 	log.Printf("get the result %v by id %v\n", p, id)
 
 	var ps []*game_db.T_Player
-	ps, o = game_db.Get_T_Player_Table().SelectMulti("", nil)
+	ps, o = db_player_table.SelectMulti("", nil)
 	if !o {
 		log.Printf("cant get result list\n")
 		return
@@ -49,7 +63,7 @@ func main() {
 	}
 
 	var ids []int32
-	ids = game_db.Get_T_Player_Table().SelectPrimaryField()
+	ids = db_player_table.SelectPrimaryField()
 	if ids != nil {
 		log.Printf("get primary field list:\n")
 		for i, id := range ids {
@@ -60,11 +74,10 @@ func main() {
 	var transaction *mysql_base.Transaction = db_mgr.NewTransaction()
 
 	p.AtomicExecute(func(t *game_db.T_Player) {
-		t.Set_level(444)
-		t.Set_vip_level(4444)
+		t.Set_level(555)
+		t.Set_vip_level(5555)
 		fvp_list := t.GetValuePairList([]string{"level", "vip_level"})
-		game_db.Get_T_Player_Table().TransactionUpdateWithFieldPair(transaction, t.Get_id(), fvp_list)
-		game_db.Get_T_Player_Table().UpdateWithFieldPair(t.Get_id(), fvp_list)
+		db_player_table.TransactionUpdateWithFieldPair(transaction, t.Get_id(), fvp_list)
 	})
 	transaction.Done()
 	db_mgr.Save()

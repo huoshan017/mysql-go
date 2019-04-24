@@ -87,10 +87,8 @@
 		{
 			"name":"t_global",
 			"single_row": true,
-			"primary_key": "id",
 			"engine":"myisam",
 			"fields":[
-				{ "name":"id",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
 				{ "name":"curr_player_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
 				{ "name":"curr_guild_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
 				{ "name":"curr_mail_id", 	"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" }

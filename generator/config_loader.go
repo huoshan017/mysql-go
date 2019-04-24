@@ -86,7 +86,7 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 		}
 	}
 
-	if !has_primary {
+	if !has_primary && !tab.SingleRow {
 		log.Printf("ConfigLoader::load_table %v not found primary key\n", tab.Name)
 		return false
 	}

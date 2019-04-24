@@ -7,14 +7,18 @@ import (
 )
 
 func (this *Database) LoadTable(tab *TableConfig) bool {
-	primary_field := tab.GetPrimaryKeyFieldConfig()
-	if primary_field == nil {
-		log.Printf("Database::LoadTable %v cant get primary key field config\n", tab.Name)
-		return false
-	}
-
 	// create table
-	sql_str := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length /*primary_field.CreateFlags*/, strings.Replace(primary_field.CreateFlags, ",", " ", -1), tab.PrimaryKey, tab.Engine)
+	var sql_str string
+	if !tab.SingleRow {
+		primary_field := tab.GetPrimaryKeyFieldConfig()
+		if primary_field == nil {
+			log.Printf("Database::LoadTable %v cant get primary key field config\n", tab.Name)
+			return false
+		}
+		sql_str = fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length /*primary_field.CreateFlags*/, strings.Replace(primary_field.CreateFlags, ",", " ", -1), tab.PrimaryKey, tab.Engine)
+	} else {
+		sql_str = fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`place_hold` int(11), PRIMARY KEY(`place_hold`)) ENGINE=%s", tab.Name, tab.Engine)
+	}
 	if !this.Exec(sql_str, nil, nil) {
 		return false
 	}
@@ -25,6 +29,13 @@ func (this *Database) LoadTable(tab *TableConfig) bool {
 			continue
 		}
 		if !this.add_field(tab.Name, f) {
+			return false
+		}
+	}
+
+	if tab.SingleRow {
+		sql_str = fmt.Sprintf("INSERT IGNORE INTO `%s` (`place_hold`) VALUES (1)", tab.Name)
+		if !this.Exec(sql_str, nil, nil) {
 			return false
 		}
 	}

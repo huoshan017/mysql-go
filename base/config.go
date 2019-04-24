@@ -18,6 +18,7 @@ type FieldConfig struct {
 type TableConfig struct {
 	Name       string         `json:"name"`
 	PrimaryKey string         `json:"primary_key"`
+	SingleRow  bool           `json:"single_row"`
 	Engine     string         `json:"engine"`
 	Fields     []*FieldConfig `json:"fields"`
 	FieldMap   map[string]*FieldConfig
