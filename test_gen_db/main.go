@@ -34,10 +34,12 @@ func main() {
 		return
 	}
 
-	gd.Set_curr_guild_id(2)
-	gd.Set_curr_mail_id(3)
-	gd.Set_curr_player_id(4)
-	db_global_table.UpdateAll(gd)
+	gd.Set_curr_guild_id(20)
+	gd.Set_curr_mail_id(30)
+	gd.Set_curr_player_id(40)
+	//db_global_table.UpdateAll(gd)
+
+	db_global_table.UpdateWithFieldPair(gd.GetValuePairList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
 
 	var p *game_db.T_Player
 	p, o = db_player_table.Select("id", id)
