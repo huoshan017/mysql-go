@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/generator"
+	"github.com/huoshan017/mysql-go/generate"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 )
 
 type DB struct {
-	config_loader *mysql_generator.ConfigLoader
+	config_loader *mysql_generate.ConfigLoader
 	database      mysql_base.Database
 	op_mgr        mysql_base.OperateManager
 	save_interval time.Duration
@@ -29,7 +29,7 @@ type DB struct {
 }
 
 func (this *DB) LoadConfig(config_path string) bool {
-	config_loader := &mysql_generator.ConfigLoader{}
+	config_loader := &mysql_generate.ConfigLoader{}
 	if !config_loader.Load(config_path) {
 		log.Printf("load config %v failed\n", config_path)
 		return false
@@ -38,11 +38,11 @@ func (this *DB) LoadConfig(config_path string) bool {
 	return true
 }
 
-func (this *DB) AttachConfig(config_loader *mysql_generator.ConfigLoader) {
+func (this *DB) AttachConfig(config_loader *mysql_generate.ConfigLoader) {
 	this.config_loader = config_loader
 }
 
-func (this *DB) GetConfigLoader() *mysql_generator.ConfigLoader {
+func (this *DB) GetConfigLoader() *mysql_generate.ConfigLoader {
 	return this.config_loader
 }
 

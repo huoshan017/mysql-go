@@ -4,13 +4,13 @@ import (
 	"log"
 	//"os/exec"
 
-	"github.com/huoshan017/mysql-go/generator"
+	"github.com/huoshan017/mysql-go/generate"
 )
 
-var config_loader mysql_generator.ConfigLoader
+var config_loader mysql_generate.ConfigLoader
 
 func main() {
-	config_file := "../src/github.com/huoshan017/mysql-go/generator/config.json"
+	config_file := "../src/github.com/huoshan017/mysql-go/generate/config.json"
 	if !config_loader.Load(config_file) {
 		return
 	}
@@ -21,7 +21,7 @@ func main() {
 
 	log.Printf("generated source\n")
 
-	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/test_generator") {
+	if !config_loader.GenerateFieldStructsProto("../src/github.com/huoshan017/mysql-go/test_generate") {
 		return
 	}
 

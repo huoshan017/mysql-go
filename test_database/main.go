@@ -16,7 +16,7 @@ var db_mgr mysql_manager.DB
 var procedure *mysql_base.ProcedureOpList
 
 func main() {
-	config_path := "../src/github.com/huoshan017/mysql-go/generator/config.json"
+	config_path := "../src/github.com/huoshan017/mysql-go/generate/config.json"
 
 	if !db_mgr.LoadConfig(config_path) {
 		return
