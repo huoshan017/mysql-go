@@ -75,12 +75,22 @@ func _upper_first_char(str string) string {
 
 func gen_row_func(struct_row_name string, go_type string, field *mysql_base.FieldConfig) string {
 	var str string
-	str += ("func (this *" + struct_row_name + ") Get_" + field.Name + "() " + go_type + " {\n")
-	str += ("	return this." + field.Name + "\n")
-	str += ("}\n\n")
-	str += ("func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n")
-	str += ("	this." + field.Name + " = v\n")
-	str += ("}\n\n")
+	str += "func (this *" + struct_row_name + ") Get_" + field.Name + "() " + go_type + " {\n"
+	str += "	return this." + field.Name + "\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n"
+	str += "	this." + field.Name + " = v\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") GetWithLock_" + field.Name + "() " + go_type + " {\n"
+	str += "	this.locker.RLock()\n"
+	str += "	defer this.locker.RUnlock()\n"
+	str += "	return this." + field.Name + "\n"
+	str += "}\n\n"
+	str += "func (this *" + struct_row_name + ") SetWithLock_" + field.Name + "(v " + go_type + ") {\n"
+	str += "	this.locker.Lock()\n"
+	str += "	defer this.locker.Unlock()\n"
+	str += "	this." + field.Name + " = v\n"
+	str += "}\n\n"
 	if field.StructName != "" {
 		str += "func (this *" + struct_row_name + ") Marshal_" + field.Name + "() []byte {\n"
 		str += "	data, err := proto.Marshal(this." + field.Name + ")\n"
