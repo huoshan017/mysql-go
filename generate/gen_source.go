@@ -408,6 +408,11 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("func (this *" + struct_table_name + ") Delete(" + pf.Name + " " + pt + ") {\n")
 		str += ("	this.db.Delete(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ")\n")
 		str += ("}\n\n")
+
+		// create row func
+		str += "func (this *" + struct_table_name + ") NewRow(" + pf.Name + " " + pt + ") *" + struct_row_name + " {\n"
+		str += "	return &" + struct_row_name + "{ " + pf.Name + ": " + pf.Name + ", }\n"
+		str += "}\n\n"
 	}
 
 	// update
