@@ -11,8 +11,6 @@ import (
 	"github.com/huoshan017/mysql-go/example/src/game/game_db"
 )
 
-var db_mgr mysql_manager.DB
-
 func main() {
 	if len(os.Args) < 2 {
 		log.Printf("args not enough\n")
@@ -31,6 +29,8 @@ func main() {
 		return
 	}
 
+	var db_mgr mysql_manager.DB
+
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
@@ -45,10 +45,9 @@ func main() {
 	db_global_table := tb_mgr.Get_T_Global_Table()
 
 	id := 5
-	var o bool
 	var gd *game_db.T_Global
-	gd, o = db_global_table.GetRow()
-	if !o {
+	gd = db_global_table.GetRow()
+	if gd == nil {
 		log.Printf("cant get global table data\n")
 		return
 	}
@@ -58,6 +57,7 @@ func main() {
 
 	db_global_table.UpdateWithFieldPair(gd.GetValuePairList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
 
+	var o bool
 	var p *game_db.T_Player
 	p, o = db_player_table.Select("id", id)
 	if !o {
