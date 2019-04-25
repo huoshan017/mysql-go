@@ -13,7 +13,7 @@ import (
 )
 
 var db_mgr mysql_manager.DB
-var procedure *mysql_base.ProcedureOpList
+var transaction *mysql_base.Transaction
 
 func main() {
 	config_path := "../src/github.com/huoshan017/mysql-go/generate/config.json"
@@ -196,7 +196,7 @@ func do_selects(strs []string) {
 }
 
 func do_pinsert(strs []string) {
-	if procedure == nil {
+	if transaction == nil {
 		log.Printf("还没有创建新事务\n")
 		return
 	}
@@ -208,11 +208,11 @@ func do_pinsert(strs []string) {
 			Value: strs[i+1],
 		})
 	}
-	procedure.Insert(table_name, field_list)
+	transaction.Insert(table_name, field_list)
 }
 
 func do_pupdate(strs []string) {
-	if procedure == nil {
+	if transaction == nil {
 		log.Printf("还没有创建新事务\n")
 		return
 	}
@@ -223,18 +223,18 @@ func do_pupdate(strs []string) {
 	for i := 4; i < len(strs); i += 2 {
 		field_list = append(field_list, &mysql_base.FieldValuePair{strs[i], strs[i+1]})
 	}
-	procedure.Update(table_name, key, value, field_list)
+	transaction.Update(table_name, key, value, field_list)
 }
 
 func do_pdelete(strs []string) {
-	if procedure == nil {
+	if transaction == nil {
 		log.Printf("还没有创建新事务\n")
 		return
 	}
 	table_name := strs[1]
 	key := strs[2]
 	value := strs[3]
-	procedure.Delete(table_name, key, value)
+	transaction.Delete(table_name, key, value)
 }
 
 func on_tick() {
@@ -287,15 +287,15 @@ func on_tick() {
 	} else if cmd == "save" {
 		db_mgr.Save()
 	} else if cmd == "new_procedure" {
-		procedure = mysql_base.CreateProcedureOpList()
+		transaction = db_mgr.NewTransaction()
 		log.Printf("创建了一个新的事务\n")
 	} else if cmd == "commit_procedure" {
-		if procedure == nil {
+		if transaction == nil {
 			log.Printf("还没有创建事务\n")
 			return
 		}
-		db_mgr.AppendProcedureOpList(procedure)
-		procedure = nil
+		transaction.Done()
+		transaction = nil
 		log.Printf("提交了新事务\n")
 	} else if cmd == "pinsert" {
 		if len(strs) < 4 {
