@@ -47,7 +47,7 @@ func main() {
 	id := 5
 	var o bool
 	var gd *game_db.T_Global
-	gd, o = db_global_table.Select()
+	gd, o = db_global_table.GetRow()
 	if !o {
 		log.Printf("cant get global table data\n")
 		return
