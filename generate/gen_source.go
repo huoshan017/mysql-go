@@ -260,6 +260,9 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
 	str += "	db *mysql_manager.DB\n"
+	if table.SingleRow {
+		str += "	row *" + struct_row_name + "\n"
+	}
 	str += "}\n\n"
 
 	// init func
@@ -422,6 +425,17 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		// create row func
 		str += "func (this *" + struct_table_name + ") NewRow(" + pf.Name + " " + pt + ") *" + struct_row_name + " {\n"
 		str += "	return &" + struct_row_name + "{ " + pf.Name + ": " + pf.Name + ", }\n"
+		str += "}\n\n"
+	} else {
+		str += "func (this *" + struct_table_name + ") GetRow() *" + struct_row_name + " {\n"
+		str += "	if this.row == nil {\n"
+		str += "		row, o := this.Select()\n"
+		str += "		if !o {\n"
+		str += "			return nil\n"
+		str += "		}\n"
+		str += "		this.row = row\n"
+		str += "	}\n"
+		str += "	return this.row\n"
 		str += "}\n\n"
 	}
 
