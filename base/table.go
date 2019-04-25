@@ -63,6 +63,10 @@ func _get_field_type_str(field *FieldConfig) (field_type_str string) {
 		return
 	}
 
+	if IsMysqlFieldBlobType(field_type) {
+		return
+	}
+
 	if field.Length == MYSQL_FIELD_DEFAULT_LENGTH {
 		default_length, o := GetMysqlFieldTypeDefaultLength(field_type)
 		if !o {

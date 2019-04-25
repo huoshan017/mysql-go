@@ -8,7 +8,7 @@
 	
 	"tables" : [
 		{
-			"name": "t_accounts",
+			"name": "t_account",
 			"primary_key": "account",
 			"engine": "innodb",
 			"fields": [

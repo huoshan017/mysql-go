@@ -47,7 +47,7 @@ func (this *DB) GetConfigLoader() *mysql_generate.ConfigLoader {
 }
 
 func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
-	err := this.database.Open(dbhost, dbuser, dbpassword, this.config_loader.DBPkg)
+	err := this.database.Open(dbhost, dbuser, dbpassword, dbname)
 	if err != nil {
 		log.Printf("open database err %v\n", err.Error())
 		return false

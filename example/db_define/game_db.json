@@ -80,6 +80,36 @@
 			"members": [
 				{ "name": "friends", 	"index": 1, "type": "map<int32, DBFriendData>" }
 			]
+		},
+		
+		{
+			"name": "DBRoleCommon",
+			"members": [
+				{ "index": 1, "type": "int32", "name": "displace_role_id" },
+				{ "index": 2, "type": "int32", "name": "displace_new_role_table_id"},
+				{ "index": 3, "type": "int32", "name": "displace_group_id" },
+				{ "index": 4, "type": "int32", "name": "power_update_time" }
+			]
+		},
+		
+		{
+			"name": "DBRoleData",
+			"members": [
+				{ "name": "id",			"index": 1, "type": "int32" },
+				{ "name": "table_id",	"index": 2, "type": "int32" },
+				{ "name": "rank",		"index": 3, "type": "int32" },
+				{ "name": "level",		"index": 4, "type": "int32" },
+				{ "name": "equips",		"index": 5, "type": "repeated int32" },
+				{ "name": "is_lock",	"index": 6, "type": "int32" },
+				{ "name": "state",		"index": 7, "type": "int32" }
+			]
+		},
+		
+		{
+			"name": "DBRoles",
+			"members": [
+				{ "index": 1, "type": "map<int32, DBRoleData>", "name": "roles" }
+			]
 		}
 	],
 	
@@ -90,8 +120,7 @@
 			"engine":"myisam",
 			"fields":[
 				{ "name":"curr_player_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
-				{ "name":"curr_guild_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
-				{ "name":"curr_mail_id", 	"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" }
+				{ "name":"curr_guild_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" }
 			]
 		},
 		
@@ -108,10 +137,17 @@
 				{ "name":"level",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
 				{ "name":"vip_level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
 				{ "name":"exp",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
+				{ "name":"head",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
+				{ "name":"create_time",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
+				{ "name":"token",			"type":"char",				"length":64,	"index_type":"none",	"create_flags":"not null,default" },
+				{ "name":"last_login",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
+				{ "name":"last_logout",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
 				{ "name":"items",			"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"skills",			"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"tasks",			"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"activities",		"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" }
+				{ "name":"activities",		"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" },
+				{ "name":"role_common",		"type":"blob",				"length":0, 	"index_type":"none",	"create_flags":"" },
+				{ "name":"roles",			"type":"mediumblob:DBRoles","length":0,		"index_type":"none",	"create_flags":"" }
 			]
 		},
 		
