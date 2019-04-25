@@ -63,7 +63,6 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 	}
 	this.op_mgr.Init(&this.database)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
-	this.state = DB_STATE_RUNNING
 	return true
 }
 
@@ -123,8 +122,12 @@ func (this *DB) Close() {
 	this.database.Close()
 }
 
-func (this *DB) ToEnd() bool {
+func (this *DB) EndRun() bool {
 	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
+}
+
+func (this *DB) IsEnd() bool {
+	return atomic.LoadInt32(&this.state) == DB_STATE_NO_RUN
 }
 
 func (this *DB) Save() {
@@ -133,6 +136,7 @@ func (this *DB) Save() {
 
 func (this *DB) Run() {
 	go func() {
+		this.state = DB_STATE_RUNNING
 		var last_save_time int32
 		for {
 			if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
