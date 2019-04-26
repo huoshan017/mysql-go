@@ -75,7 +75,11 @@ func (this *DB) SetSaveIntervalTime(d time.Duration) {
 }
 
 func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
-	this.op_mgr.Insert(table_name, field_pair)
+	this.op_mgr.Insert(table_name, field_pair, false)
+}
+
+func (this *DB) InsertIgnore(table_name string, field_pair []*mysql_base.FieldValuePair) {
+	this.op_mgr.Insert(table_name, field_pair, true)
 }
 
 func (this *DB) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {

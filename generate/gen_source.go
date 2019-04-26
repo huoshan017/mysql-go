@@ -417,6 +417,14 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += "	}\n"
 		str += "}\n\n"
 
+		// insert ignore
+		str += "func (this *" + struct_table_name + ") InsertIgnore(t *" + struct_row_name + ") {\n"
+		str += "	var field_list = t._format_field_list()\n"
+		str += "	if field_list != nil {\n"
+		str += "		this.db.InsertIgnore(\"" + table.Name + "\", field_list)\n"
+		str += "	}\n"
+		str += "}\n\n"
+
 		// delete
 		str += ("func (this *" + struct_table_name + ") Delete(" + pf.Name + " " + pt + ") {\n")
 		str += ("	this.db.Delete(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ")\n")

@@ -146,7 +146,7 @@
 				{ "name":"skills",			"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"tasks",			"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
 				{ "name":"activities",		"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"role_common",		"type":"blob",				"length":0, 	"index_type":"none",	"create_flags":"" },
+				{ "name":"role_common",		"type":"blob:DBRoleCommon",	"length":0, 	"index_type":"none",	"create_flags":"" },
 				{ "name":"roles",			"type":"mediumblob:DBRoles","length":0,		"index_type":"none",	"create_flags":"" }
 			]
 		},

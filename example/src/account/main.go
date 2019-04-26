@@ -52,7 +52,7 @@ func main() {
 	for _, a := range account_list {
 		account := account_db.Create_T_Account()
 		account.Set_account(a)
-		account_table.Insert(account)
+		account_table.InsertIgnore(account)
 	}
 
 	db_mgr.Save()

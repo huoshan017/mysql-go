@@ -34,6 +34,17 @@ func (this *Database) InsertRecord(table_name string, field_args ...*FieldValueP
 	return
 }
 
+func (this *Database) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
+	var fl = len(field_args)
+	if fl > 0 {
+		field_list, placehold_list, args := _gen_insert_params(field_args...)
+		res = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+	} else {
+		res = this.Exec("INSERT IGNORE INTO "+table_name+";", &last_insert_id, nil)
+	}
+	return
+}
+
 func _gen_insert_params_2(fields []string, values []interface{}) (field_list, placehold_list string) {
 	for i := 0; i < len(fields); i++ {
 		if i == 0 {
@@ -147,6 +158,16 @@ func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValue
 	}
 	field_list, placehold_list, args := _gen_insert_params(field_args...)
 	res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+	return
+}
+
+func (this *Procedure) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
+	fl := len(field_args)
+	if fl == 0 {
+		return
+	}
+	field_list, placehold_list, args := _gen_insert_params(field_args...)
+	res = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	return
 }
 

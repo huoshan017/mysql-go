@@ -11,10 +11,11 @@ const (
 )
 
 const (
-	DB_OPERATE_TYPE_SELECT = iota
-	DB_OPERATE_TYPE_INSERT = 1
-	DB_OPERATE_TYPE_DELETE = 2
-	DB_OPERATE_TYPE_UPDATE = 3
+	DB_OPERATE_TYPE_SELECT        = iota
+	DB_OPERATE_TYPE_INSERT        = 1
+	DB_OPERATE_TYPE_DELETE        = 2
+	DB_OPERATE_TYPE_UPDATE        = 3
+	DB_OPERATE_TYPE_INSERT_IGNORE = 4
 )
 
 type OpDetail struct {
@@ -49,6 +50,14 @@ func (this *Transaction) Insert(table_name string, field_list []*FieldValuePair)
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_INSERT,
+		field_list: field_list,
+	})
+}
+
+func (this *Transaction) InsertIgnore(table_name string, field_list []*FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_INSERT_IGNORE,
 		field_list: field_list,
 	})
 }
@@ -95,7 +104,7 @@ func (this *OperateManager) Enable(enable bool) {
 	this.enable = enable
 }
 
-func (this *OperateManager) Insert(table_name string, field_list []*FieldValuePair) {
+func (this *OperateManager) Insert(table_name string, field_list []*FieldValuePair, ignore bool) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -108,7 +117,13 @@ func (this *OperateManager) Insert(table_name string, field_list []*FieldValuePa
 		detail_list: []*OpDetail{
 			&OpDetail{
 				table_name: table_name,
-				op_type:    DB_OPERATE_TYPE_INSERT,
+				op_type: func() int32 {
+					if !ignore {
+						return DB_OPERATE_TYPE_INSERT
+					} else {
+						return DB_OPERATE_TYPE_INSERT_IGNORE
+					}
+				}(),
 				field_list: field_list,
 			},
 		},
@@ -179,17 +194,13 @@ func (this *OperateManager) appendTransaction(transaction *Transaction) {
 func (this *OperateManager) _op_cmd(d *OpDetail) {
 	switch d.op_type {
 	case DB_OPERATE_TYPE_INSERT:
-		{
-			this.db.InsertRecord(d.table_name, d.field_list...)
-		}
+		this.db.InsertRecord(d.table_name, d.field_list...)
 	case DB_OPERATE_TYPE_DELETE:
-		{
-			this.db.DeleteRecord(d.table_name, d.key, d.value)
-		}
+		this.db.DeleteRecord(d.table_name, d.key, d.value)
 	case DB_OPERATE_TYPE_UPDATE:
-		{
-			this.db.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
-		}
+		this.db.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
+	case DB_OPERATE_TYPE_INSERT_IGNORE:
+		this.db.InsertIgnoreRecord(d.table_name, d.field_list...)
 	}
 }
 
@@ -247,6 +258,8 @@ func (this *OperateManager) Save() {
 						o = procedure.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
 					} else if d.op_type == DB_OPERATE_TYPE_DELETE {
 						o = procedure.DeleteRecord(d.table_name, d.key, d.value)
+					} else if d.op_type == DB_OPERATE_TYPE_INSERT_IGNORE {
+						o, _ = procedure.InsertIgnoreRecord(d.table_name, d.field_list...)
 					}
 					if !o {
 						procedure.Rollback()
