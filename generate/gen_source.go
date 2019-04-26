@@ -108,7 +108,7 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 		str += "	}\n"
 		str += "	return true\n"
 		str += "}\n\n"
-		str += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "func (this *" + struct_row_name + ") GetFVP_" + field.Name + "() *mysql_base.FieldValuePair {\n"
 		str += "	data := this.Marshal_" + field.Name + "()\n"
 		str += "	if data == nil {\n"
 		str += "		return nil\n"
@@ -116,7 +116,7 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data }\n"
 		str += "}\n\n"
 	} else {
-		str += "func (this *" + struct_row_name + ") GetValuePair_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "func (this *" + struct_row_name + ") GetFVP_" + field.Name + "() *mysql_base.FieldValuePair {\n"
 		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() }\n"
 		str += "}\n\n"
 	}
@@ -125,7 +125,7 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 
 func gen_row_get_fvp_list_with_name_func(struct_row_name, field_func_map string) string {
 	var str string
-	str += "func (this *" + struct_row_name + ") GetValuePairList(fields_name []string) []*mysql_base.FieldValuePair {\n"
+	str += "func (this *" + struct_row_name + ") GetFVPList(fields_name []string) []*mysql_base.FieldValuePair {\n"
 	str += "	var field_list []*mysql_base.FieldValuePair\n"
 	str += "	for _, field_name := range fields_name {\n"
 	str += "		fun := " + field_func_map + "[field_name]\n"
@@ -220,7 +220,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
-		str += "		return t.GetValuePair_" + field.Name + "()\n"
+		str += "		return t.GetFVP_" + field.Name + "()\n"
 		str += "	},\n"
 	}
 	str += "}\n\n"
@@ -461,22 +461,22 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// update some field
 	if !table.SingleRow {
-		str += "func (this *" + struct_table_name + ") UpdateWithFieldPair(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") UpdateWithFVPList(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
 	} else {
-		str += "func (this *" + struct_table_name + ") UpdateWithFieldPair(field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") UpdateWithFVPList(field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	this.db.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
 	}
 	str += "}\n\n"
 
 	// update by field name
 	str += "func (this *" + struct_table_name + ") UpdateWithFieldName(t *" + struct_row_name + ", fields_name []string) {\n"
-	str += "	var field_list = t.GetValuePairList(fields_name)\n"
+	str += "	var field_list = t.GetFVPList(fields_name)\n"
 	str += "	if field_list != nil {\n"
 	if !table.SingleRow {
-		str += "		this.UpdateWithFieldPair(t.Get_" + pf.Name + "(), field_list)\n"
+		str += "		this.UpdateWithFVPList(t.Get_" + pf.Name + "(), field_list)\n"
 	} else {
-		str += "		this.UpdateWithFieldPair(field_list)\n"
+		str += "		this.UpdateWithFVPList(field_list)\n"
 	}
 	str += "	}\n"
 	str += "}\n\n"
@@ -519,16 +519,16 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 	str += "}\n\n"
 
 	if !table.SingleRow {
-		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldPair(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ", field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ", field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ", field_list)\n"
 	} else {
-		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldPair(transaction *mysql_base.Transaction, field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_base.Transaction, field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	transaction.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
 	}
 	str += "}\n\n"
 
 	str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldName(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
-	str += "	field_list := t.GetValuePairList(fields_name)\n"
+	str += "	field_list := t.GetFVPList(fields_name)\n"
 	str += "	if field_list != nil {\n"
 	if !table.SingleRow {
 		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
@@ -556,7 +556,7 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 		str += "	}\n"
 		str += "}\n\n"
 		str += "func TransactionUpdate_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
-		str += "	field_list := t.GetValuePairList(fields_name)\n"
+		str += "	field_list := t.GetFVPList(fields_name)\n"
 		str += "	if field_list != nil {\n"
 		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
 		str += "	}\n"

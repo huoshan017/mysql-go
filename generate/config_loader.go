@@ -150,8 +150,6 @@ func (this *ConfigLoader) GenerateFieldStructsProto(dest_path_file string) bool 
 	}
 
 	var f *os.File
-	//dest_file := dest_path + "/" + this.DBPkg + "_field_structs.proto"
-	//dest_file := dest_path + "/" + dest_proto
 	f = _get_file_creater(dest_path_file)
 	if f == nil {
 		return false
