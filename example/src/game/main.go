@@ -44,7 +44,6 @@ func main() {
 	db_player_table := tb_mgr.Get_T_Player_Table()
 	db_global_table := tb_mgr.Get_T_Global_Table()
 
-	id := 5
 	var gd *game_db.T_Global
 	gd = db_global_table.GetRow()
 	if gd == nil {
@@ -55,10 +54,11 @@ func main() {
 	gd.Set_curr_guild_id(20)
 	gd.Set_curr_player_id(40)
 
-	db_global_table.UpdateWithFieldPair(gd.GetValuePairList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
+	db_global_table.UpdateWithFVPList(gd.GetFVPList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
 
 	var o bool
 	var p *game_db.T_Player
+	id := 5
 	p, o = db_player_table.Select("id", id)
 	if !o {
 		log.Printf("cant get result by id %v\n", id)
@@ -95,8 +95,8 @@ func main() {
 	p.AtomicExecute(func(t *game_db.T_Player) {
 		t.Set_level(555)
 		t.Set_vip_level(5555)
-		fvp_list := t.GetValuePairList([]string{"level", "vip_level"})
-		db_player_table.TransactionUpdateWithFieldPair(transaction, t.Get_id(), fvp_list)
+		fvp_list := t.GetFVPList([]string{"level", "vip_level"})
+		db_player_table.TransactionUpdateWithFVPList(transaction, t.Get_id(), fvp_list)
 	})
 	transaction.Done()
 	db_mgr.Save()
