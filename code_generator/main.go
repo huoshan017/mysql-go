@@ -8,8 +8,6 @@ import (
 	"github.com/huoshan017/mysql-go/generate"
 )
 
-var config_loader mysql_generate.ConfigLoader
-
 func main() {
 	if len(os.Args) < 4 {
 		log.Printf("args num not enough\n")
@@ -23,7 +21,6 @@ func main() {
 
 	var config_path string
 	if nil != arg_config_file {
-		//flag.Parse()
 		config_path = *arg_config_file
 		log.Printf("config file path %v\n", config_path)
 	} else {
@@ -33,7 +30,6 @@ func main() {
 
 	var dest_path string
 	if nil != arg_dest_path {
-		//flag.Parse()
 		dest_path = *arg_dest_path
 		log.Printf("dest path %v\n", dest_path)
 	} else {
@@ -43,7 +39,6 @@ func main() {
 
 	var dest_proto string
 	if nil != arg_dest_proto {
-		//flag.Parse()
 		dest_proto = *arg_dest_proto
 		log.Printf("dest proto %v\n", dest_proto)
 	} else {
@@ -51,6 +46,7 @@ func main() {
 		return
 	}
 
+	var config_loader mysql_generate.ConfigLoader
 	if !config_loader.Load(config_path) {
 		return
 	}

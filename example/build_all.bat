@@ -1,11 +1,11 @@
 cd src/account
-call build.bat
+build.bat
 cd ../..
 
 cd src/login
-call build.bat
+build.bat
 cd ../..
 
 cd src/game
-call build.bat
+build.bat
 cd ../..
