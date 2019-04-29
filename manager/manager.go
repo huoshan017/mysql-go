@@ -61,7 +61,7 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 			}
 		}
 	}
-	this.op_mgr.Init(&this.database)
+	this.op_mgr.Init(&this.database, this.config_loader.GetTablesName())
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	return true
 }

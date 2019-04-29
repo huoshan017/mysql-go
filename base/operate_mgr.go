@@ -82,15 +82,20 @@ func (this *Transaction) Delete(table_name string, key string, value interface{}
 }
 
 type OperateManager struct {
-	op_list *List
-	locker  sync.RWMutex
-	db      *Database
-	enable  bool
+	op_list      *List
+	table_op_map map[string]map[interface{}]*OpData
+	locker       sync.RWMutex
+	db           *Database
+	enable       bool
 }
 
-func (this *OperateManager) Init(db *Database) {
+func (this *OperateManager) Init(db *Database, tables_name []string) {
 	this.op_list = &List{}
 	this.db = db
+	this.table_op_map = make(map[string]map[interface{}]*OpData)
+	for _, tn := range tables_name {
+		this.table_op_map[tn] = make(map[interface{}]*OpData)
+	}
 	this.enable = true
 }
 

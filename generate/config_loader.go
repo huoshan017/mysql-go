@@ -270,3 +270,16 @@ func (this *ConfigLoader) GenerateInitFunc(dest_path string) bool {
 
 	return true
 }
+
+func (this *ConfigLoader) GetTablesName() []string {
+	if this.Tables == nil {
+		return nil
+	}
+
+	var tables_name []string
+	for _, t := range this.Tables {
+		tables_name = append(tables_name, t.Name)
+	}
+
+	return tables_name
+}
