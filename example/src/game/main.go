@@ -5,10 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/manager"
-
 	"github.com/huoshan017/mysql-go/example/src/game/game_db"
+	"github.com/huoshan017/mysql-go/manager"
 )
 
 func main() {
@@ -90,7 +88,7 @@ func main() {
 		}
 	}
 
-	var transaction *mysql_base.Transaction = db_mgr.NewTransaction()
+	var transaction *mysql_manager.Transaction = db_mgr.NewTransaction()
 
 	p.AtomicExecute(func(t *game_db.T_Player) {
 		t.Set_level(555)

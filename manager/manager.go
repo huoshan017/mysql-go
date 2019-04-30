@@ -23,7 +23,7 @@ const (
 type DB struct {
 	config_loader *mysql_generate.ConfigLoader
 	database      mysql_base.Database
-	op_mgr        mysql_base.OperateManager
+	op_mgr        OperateManager
 	save_interval time.Duration
 	state         int32
 }
@@ -61,7 +61,7 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 			}
 		}
 	}
-	this.op_mgr.Init(&this.database, this.config_loader.GetTablesName())
+	this.op_mgr.Init(&this.database, this.config_loader)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	return true
 }
@@ -118,7 +118,7 @@ func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_li
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
 }
 
-func (this *DB) NewTransaction() *mysql_base.Transaction {
+func (this *DB) NewTransaction() *Transaction {
 	return this.op_mgr.NewTransaction()
 }
 

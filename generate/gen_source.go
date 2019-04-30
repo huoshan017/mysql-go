@@ -496,18 +496,18 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 	var str string
 
 	if !table.SingleRow {
-		str += "func (this *" + struct_table_name + ") TransactionInsert(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
+		str += "func (this *" + struct_table_name + ") TransactionInsert(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
 		str += "	field_list := t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
 		str += "		transaction.Insert(\"" + table.Name + "\", field_list)\n"
 		str += "	}\n"
 		str += "}\n\n"
-		str += "func (this *" + struct_table_name + ") TransactionDelete(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
+		str += "func (this *" + struct_table_name + ") TransactionDelete(transaction *mysql_manager.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
 		str += "	transaction.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
 		str += "}\n\n"
 	}
 
-	str += "func (this *" + struct_table_name + ") TransactionUpdateAll(transaction *mysql_base.Transaction, t*" + struct_row_name + ") {\n"
+	str += "func (this *" + struct_table_name + ") TransactionUpdateAll(transaction *mysql_manager.Transaction, t*" + struct_row_name + ") {\n"
 	str += "	field_list := t._format_field_list()\n"
 	str += "	if field_list != nil {\n"
 	if !table.SingleRow {
@@ -519,15 +519,15 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 	str += "}\n\n"
 
 	if !table.SingleRow {
-		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ", field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_manager.Transaction, " + primary_field.Name + " " + primary_type + ", field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ", field_list)\n"
 	} else {
-		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_base.Transaction, field_list []*mysql_base.FieldValuePair) {\n"
+		str += "func (this *" + struct_table_name + ") TransactionUpdateWithFVPList(transaction *mysql_manager.Transaction, field_list []*mysql_base.FieldValuePair) {\n"
 		str += "	transaction.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
 	}
 	str += "}\n\n"
 
-	str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldName(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
+	str += "func (this *" + struct_table_name + ") TransactionUpdateWithFieldName(transaction *mysql_manager.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
 	str += "	field_list := t.GetFVPList(fields_name)\n"
 	str += "	if field_list != nil {\n"
 	if !table.SingleRow {
@@ -540,22 +540,22 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 
 	//////////////////////////////////////////////////
 	if !table.SingleRow {
-		str += "func TransactionInsert_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
+		str += "func TransactionInsert_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
 		str += "	field_list := t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
 		str += "		transaction.Insert(\"" + table.Name + "\", field_list)\n"
 		str += "	}\n"
 		str += "}\n\n"
-		str += "func TransactionDelete_" + struct_row_name + "(transaction *mysql_base.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
+		str += "func TransactionDelete_" + struct_row_name + "(transaction *mysql_manager.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
 		str += "	transaction.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
 		str += "}\n\n"
-		str += "func TransactionUpdateAll_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ") {\n"
+		str += "func TransactionUpdateAll_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
 		str += "	field_list := t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
 		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
 		str += "	}\n"
 		str += "}\n\n"
-		str += "func TransactionUpdate_" + struct_row_name + "(transaction *mysql_base.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
+		str += "func TransactionUpdate_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
 		str += "	field_list := t.GetFVPList(fields_name)\n"
 		str += "	if field_list != nil {\n"
 		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"

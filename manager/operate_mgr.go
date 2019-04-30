@@ -1,8 +1,11 @@
-package mysql_base
+package mysql_manager
 
 import (
 	"log"
 	"sync"
+
+	"github.com/huoshan017/mysql-go/base"
+	"github.com/huoshan017/mysql-go/generate"
 )
 
 const (
@@ -23,7 +26,7 @@ type OpDetail struct {
 	op_type    int32
 	key        string
 	value      interface{}
-	field_list []*FieldValuePair
+	field_list []*mysql_base.FieldValuePair
 }
 
 type OpData struct {
@@ -46,7 +49,7 @@ func (this *Transaction) Done() {
 	}
 }
 
-func (this *Transaction) Insert(table_name string, field_list []*FieldValuePair) {
+func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_INSERT,
@@ -54,7 +57,7 @@ func (this *Transaction) Insert(table_name string, field_list []*FieldValuePair)
 	})
 }
 
-func (this *Transaction) InsertIgnore(table_name string, field_list []*FieldValuePair) {
+func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_INSERT_IGNORE,
@@ -62,7 +65,7 @@ func (this *Transaction) InsertIgnore(table_name string, field_list []*FieldValu
 	})
 }
 
-func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
+func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
 	this.detail_list = append(this.detail_list, &OpDetail{
 		table_name: table_name,
 		op_type:    DB_OPERATE_TYPE_UPDATE,
@@ -81,25 +84,37 @@ func (this *Transaction) Delete(table_name string, key string, value interface{}
 	})
 }
 
+type table_info struct {
+	table_primary_field string
+	row_op_map          map[interface{}]*OpData
+}
+
+func (this *table_info) init(primary_field string) {
+	this.table_primary_field = primary_field
+	this.row_op_map = make(map[interface{}]*OpData)
+}
+
 type OperateManager struct {
-	op_list      *List
-	table_op_map map[string]map[interface{}]*OpData
+	op_list      *mysql_base.List
+	table_op_map map[string]*table_info
 	locker       sync.RWMutex
-	db           *Database
+	db           *mysql_base.Database
 	enable       bool
 }
 
-func (this *OperateManager) Init(db *Database, tables_name []string) {
-	this.op_list = &List{}
+func (this *OperateManager) Init(db *mysql_base.Database, config_loader *mysql_generate.ConfigLoader) {
+	this.op_list = &mysql_base.List{}
 	this.db = db
-	this.table_op_map = make(map[string]map[interface{}]*OpData)
-	for _, tn := range tables_name {
-		this.table_op_map[tn] = make(map[interface{}]*OpData)
+	this.table_op_map = make(map[string]*table_info)
+	for _, table := range config_loader.Tables {
+		ti := &table_info{}
+		ti.init(table.PrimaryKey)
+		this.table_op_map[table.Name] = ti
 	}
 	this.enable = true
 }
 
-func (this *OperateManager) GetDB() *Database {
+func (this *OperateManager) GetDB() *mysql_base.Database {
 	return this.db
 }
 
@@ -109,7 +124,7 @@ func (this *OperateManager) Enable(enable bool) {
 	this.enable = enable
 }
 
-func (this *OperateManager) Insert(table_name string, field_list []*FieldValuePair, ignore bool) {
+func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.FieldValuePair, ignore bool) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -156,7 +171,7 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 	})
 }
 
-func (this *OperateManager) Update(table_name string, key string, value interface{}, field_list []*FieldValuePair) {
+func (this *OperateManager) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -215,14 +230,14 @@ func (this *OperateManager) _check_op_list_empty() bool {
 	return this.op_list.GetLength() == 0
 }
 
-func (this *OperateManager) _get_tmp_op_list() *List {
+func (this *OperateManager) _get_tmp_op_list() *mysql_base.List {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 	if this.op_list.GetLength() == 0 {
 		return nil
 	}
 	tmp_list := this.op_list
-	this.op_list = &List{}
+	this.op_list = &mysql_base.List{}
 	return tmp_list
 }
 
