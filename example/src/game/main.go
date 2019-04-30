@@ -55,9 +55,16 @@ func main() {
 	db_global_table.UpdateWithFVPList(gd.GetFVPList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
 
 	var o bool
-	var p *game_db.T_Player
+	var p, p2 *game_db.T_Player
 	id := 5
 	p, o = db_player_table.Select("id", id)
+	if !o {
+		log.Printf("cant get result by id %v\n", id)
+		return
+	}
+
+	id = 6
+	p2, o = db_player_table.Select("id", id)
 	if !o {
 		log.Printf("cant get result by id %v\n", id)
 		return
@@ -91,11 +98,20 @@ func main() {
 	var transaction *mysql_manager.Transaction = db_mgr.NewTransaction()
 
 	p.AtomicExecute(func(t *game_db.T_Player) {
-		t.Set_level(555)
-		t.Set_vip_level(5555)
-		fvp_list := t.GetFVPList([]string{"level", "vip_level"})
-		db_player_table.TransactionUpdateWithFVPList(transaction, t.Get_id(), fvp_list)
+		t.Set_level(444)
+		t.Set_vip_level(4444)
+		t.Set_head(4545)
+		db_player_table.TransactionUpdateWithFieldName(transaction, t, []string{"level", "vip_level", "head"})
 	})
+
+	p2.AtomicExecute(func(t *game_db.T_Player) {
+		t.Set_level(666)
+		t.Set_vip_level(6666)
+		t.Set_head(6565)
+		db_player_table.TransactionUpdateWithFieldName(transaction, t, []string{"level", "vip_level", "head"})
+	})
+
 	transaction.Done()
+
 	db_mgr.Save()
 }

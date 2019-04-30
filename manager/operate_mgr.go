@@ -30,7 +30,9 @@ type OpDetail struct {
 }
 
 type OpData struct {
+	id          uint32
 	sql_type    int32
+	detail      *OpDetail
 	detail_list []*OpDetail
 }
 
@@ -97,6 +99,7 @@ func (this *table_info) init(primary_field string) {
 type OperateManager struct {
 	op_list      *mysql_base.List
 	table_op_map map[string]*table_info
+	curr_op_id   uint32
 	locker       sync.RWMutex
 	db           *mysql_base.Database
 	enable       bool
@@ -132,20 +135,20 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 		return
 	}
 
+	this.curr_op_id += 1
 	this.op_list.Append(&OpData{
+		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail_list: []*OpDetail{
-			&OpDetail{
-				table_name: table_name,
-				op_type: func() int32 {
-					if !ignore {
-						return DB_OPERATE_TYPE_INSERT
-					} else {
-						return DB_OPERATE_TYPE_INSERT_IGNORE
-					}
-				}(),
-				field_list: field_list,
-			},
+		detail: &OpDetail{
+			table_name: table_name,
+			op_type: func() int32 {
+				if !ignore {
+					return DB_OPERATE_TYPE_INSERT
+				} else {
+					return DB_OPERATE_TYPE_INSERT_IGNORE
+				}
+			}(),
+			field_list: field_list,
 		},
 	})
 }
@@ -158,15 +161,15 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 		return
 	}
 
+	this.curr_op_id += 1
 	this.op_list.Append(&OpData{
+		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail_list: []*OpDetail{
-			&OpDetail{
-				table_name: table_name,
-				op_type:    DB_OPERATE_TYPE_DELETE,
-				key:        field_name,
-				value:      field_value,
-			},
+		detail: &OpDetail{
+			table_name: table_name,
+			op_type:    DB_OPERATE_TYPE_DELETE,
+			key:        field_name,
+			value:      field_value,
 		},
 	})
 }
@@ -179,16 +182,16 @@ func (this *OperateManager) Update(table_name string, key string, value interfac
 		return
 	}
 
+	this.curr_op_id += 1
 	this.op_list.Append(&OpData{
+		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail_list: []*OpDetail{
-			&OpDetail{
-				table_name: table_name,
-				op_type:    DB_OPERATE_TYPE_UPDATE,
-				key:        key,
-				value:      value,
-				field_list: field_list,
-			},
+		detail: &OpDetail{
+			table_name: table_name,
+			op_type:    DB_OPERATE_TYPE_UPDATE,
+			key:        key,
+			value:      value,
+			field_list: field_list,
 		},
 	})
 }
@@ -205,7 +208,9 @@ func (this *OperateManager) appendTransaction(transaction *Transaction) {
 		return
 	}
 
+	this.curr_op_id += 1
 	this.op_list.Append(&OpData{
+		id:          this.curr_op_id,
 		sql_type:    DB_SQL_TYPE_PROCEDURE,
 		detail_list: transaction.detail_list,
 	})
@@ -222,6 +227,30 @@ func (this *OperateManager) _op_cmd(d *OpDetail) {
 	case DB_OPERATE_TYPE_INSERT_IGNORE:
 		this.db.InsertIgnoreRecord(d.table_name, d.field_list...)
 	}
+}
+
+func (this *OperateManager) _op_transaction(dl []*OpDetail) {
+	procedure := this.db.BeginProcedure()
+	if procedure == nil {
+		return
+	}
+	for _, d := range dl {
+		var o bool
+		if d.op_type == DB_OPERATE_TYPE_INSERT {
+			o, _ = procedure.InsertRecord(d.table_name, d.field_list...)
+		} else if d.op_type == DB_OPERATE_TYPE_UPDATE {
+			o = procedure.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
+		} else if d.op_type == DB_OPERATE_TYPE_DELETE {
+			o = procedure.DeleteRecord(d.table_name, d.key, d.value)
+		} else if d.op_type == DB_OPERATE_TYPE_INSERT_IGNORE {
+			o, _ = procedure.InsertIgnoreRecord(d.table_name, d.field_list...)
+		}
+		if !o {
+			procedure.Rollback()
+			break
+		}
+	}
+	procedure.Commit()
 }
 
 func (this *OperateManager) _check_op_list_empty() bool {
@@ -260,33 +289,13 @@ func (this *OperateManager) Save() {
 		}
 
 		if op_data.sql_type == DB_SQL_TYPE_COMMAND {
-			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
-				d := op_data.detail_list[0]
+			d := op_data.detail
+			if d != nil {
 				this._op_cmd(d)
 			}
 		} else if op_data.sql_type == DB_SQL_TYPE_PROCEDURE {
 			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
-				procedure := this.db.BeginProcedure()
-				if procedure == nil {
-					continue
-				}
-				for _, d := range op_data.detail_list {
-					var o bool
-					if d.op_type == DB_OPERATE_TYPE_INSERT {
-						o, _ = procedure.InsertRecord(d.table_name, d.field_list...)
-					} else if d.op_type == DB_OPERATE_TYPE_UPDATE {
-						o = procedure.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
-					} else if d.op_type == DB_OPERATE_TYPE_DELETE {
-						o = procedure.DeleteRecord(d.table_name, d.key, d.value)
-					} else if d.op_type == DB_OPERATE_TYPE_INSERT_IGNORE {
-						o, _ = procedure.InsertIgnoreRecord(d.table_name, d.field_list...)
-					}
-					if !o {
-						procedure.Rollback()
-						break
-					}
-				}
-				procedure.Commit()
+				this._op_transaction(op_data.detail_list)
 			}
 		}
 		node = node.GetNext()
