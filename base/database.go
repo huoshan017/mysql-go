@@ -47,8 +47,7 @@ func (this *QueryResultList) Get2(dest []interface{}) bool {
 }
 
 func (this *QueryResultList) HasData() bool {
-	this.rows.NextResultSet()
-	return true
+	return this.rows.NextResultSet()
 }
 
 type Database struct {
