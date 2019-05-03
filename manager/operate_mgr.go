@@ -267,6 +267,7 @@ func (this *OperateManager) _get_tmp_op_list() *mysql_base.List {
 	}
 	tmp_list := this.op_list
 	this.op_list = &mysql_base.List{}
+	this.curr_op_id = 0
 	return tmp_list
 }
 
@@ -289,9 +290,8 @@ func (this *OperateManager) Save() {
 		}
 
 		if op_data.sql_type == DB_SQL_TYPE_COMMAND {
-			d := op_data.detail
-			if d != nil {
-				this._op_cmd(d)
+			if op_data.detail != nil {
+				this._op_cmd(op_data.detail)
 			}
 		} else if op_data.sql_type == DB_SQL_TYPE_PROCEDURE {
 			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
