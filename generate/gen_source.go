@@ -393,7 +393,16 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	if !table.SingleRow {
 		// select primary field
-		str += ("func (this *" + struct_table_name + ") SelectPrimaryField() ([]" + pt + ") {\n")
+		str += ("func (this *" + struct_table_name + ") SelectByPrimaryField(key " + pt + ") *" + struct_row_name + " {\n")
+		str += ("	v, o := this.Select(\"" + pf.Name + "\", key)\n")
+		str += ("	if !o {\n")
+		str += ("		return nil\n")
+		str += ("	}\n")
+		str += ("	return v\n")
+		str += ("}\n\n")
+
+		// select all primary field
+		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryField() ([]" + pt + ") {\n")
 		str += ("	var result_list mysql_base.QueryResultList\n")
 		str += ("	if !this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list) {\n")
 		str += ("		return nil\n")
