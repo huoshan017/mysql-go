@@ -339,10 +339,10 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// select multi func
 	if !table.SingleRow {
-		str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}) ([]*" + struct_row_name + ", bool) {\n")
+		str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}, order_by string, desc bool, offset, limit int) ([]*" + struct_row_name + ", bool) {\n")
 		str += ("	var field_list = []string{" + field_list + "}\n")
 		str += ("	var result_list mysql_base.QueryResultList\n")
-		str += ("	if !this.db.SelectRecords(\"" + table.Name + "\", key, value, field_list, &result_list) {\n")
+		str += ("	if !this.db.SelectRecordsOrderby(\"" + table.Name + "\", key, value, order_by, desc, offset, limit, field_list, &result_list) {\n")
 		str += ("		return nil, false\n")
 		str += ("	}\n")
 		str += ("	var r []*" + struct_row_name + "\n")
@@ -548,7 +548,7 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 	str += "}\n\n"
 
 	//////////////////////////////////////////////////
-	if !table.SingleRow {
+	/*if !table.SingleRow {
 		str += "func TransactionInsert_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
 		str += "	field_list := t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
@@ -570,6 +570,6 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
 		str += "	}\n"
 		str += "}\n"
-	}
+	}*/
 	return str
 }

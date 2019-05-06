@@ -90,6 +90,10 @@ func (this *DB) Delete(table_name string, key string, value interface{}) {
 	this.op_mgr.Delete(table_name, key, value)
 }
 
+func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.Query(query_sql, result_list)
+}
+
 func (this *DB) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
 	return this.database.SelectRecord(table_name, key, value, field_list, dest_list)
 }
@@ -116,6 +120,10 @@ func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.
 
 func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
+}
+
+func (this *DB) SelectRecordsOrderby(table_name string, key string, value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecordsOrderby(table_name, key, value, order_by, desc, offset, limit, field_list, result_list)
 }
 
 func (this *DB) NewTransaction() *Transaction {

@@ -2,6 +2,7 @@ package mysql_base
 
 import (
 	"log"
+	"strconv"
 )
 
 type FieldValuePair struct {
@@ -77,13 +78,10 @@ func (this *Database) InsertRecord2(table_name string, fields []string, values [
 	return
 }
 
-func _gen_select_query_str(table_name string, field_list []string, key string) string {
+func _gen_select_query_str(table_name string, field_list []string, key string, order_by string, descent bool, offset, limit int) string {
 	var query_str string
 	if field_list == nil || len(field_list) == 0 {
 		query_str = "SELECT * FROM " + table_name
-		if key != "" {
-			query_str += (" WHERE " + key + "=?;")
-		}
 	} else {
 		query_str = "SELECT "
 		for i := 0; i < len(field_list); i++ {
@@ -93,10 +91,30 @@ func _gen_select_query_str(table_name string, field_list []string, key string) s
 			}
 		}
 		query_str += (" FROM " + table_name)
-		if key != "" {
-			query_str += (" WHERE " + key + "=?;")
+	}
+
+	var limit_str string
+	if order_by != "" {
+		if descent {
+			limit_str += "ORDER BY " + order_by + " DESC"
+		} else {
+			limit_str += "ORDER BY " + order_by + " ASC"
 		}
 	}
+	if offset >= 0 {
+		limit_str += " LIMIT " + strconv.Itoa(offset) + ", " + strconv.Itoa(limit)
+	}
+
+	if key != "" {
+		if limit_str != "" {
+			query_str += (" WHERE " + key + "=? " + limit_str + ";")
+		} else {
+			query_str += (" WHERE " + key + "=?;")
+		}
+	} else {
+		query_str += (" " + limit_str + ";")
+	}
+
 	return query_str
 }
 
@@ -105,7 +123,7 @@ func (this *Database) SelectRecord(table_name, key_name string, key_value interf
 		log.Printf("Database::SelectRecord result dest_list cant not empty\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	query_str := _gen_select_query_str(table_name, field_list, key_name, "", false, -1, -1)
 	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
 }
 
@@ -114,7 +132,20 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 		log.Printf("Database::SelectRecords result_list cant not null\n")
 		return false
 	}
-	query_str := _gen_select_query_str(table_name, field_list, key_name)
+	query_str := _gen_select_query_str(table_name, field_list, key_name, "", false, -1, -1)
+	if key_name != "" {
+		return this.QueryWith(query_str, []interface{}{key_value}, result_list)
+	} else {
+		return this.Query(query_str, result_list)
+	}
+}
+
+func (this *Database) SelectRecordsOrderby(table_name, key_name string, key_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *QueryResultList) bool {
+	if result_list == nil {
+		log.Printf("Database::SelectRecords result_list cant not null\n")
+		return false
+	}
+	query_str := _gen_select_query_str(table_name, field_list, key_name, order_by, desc, offset, limit)
 	if key_name != "" {
 		return this.QueryWith(query_str, []interface{}{key_value}, result_list)
 	} else {
@@ -180,7 +211,7 @@ func (this *Procedure) UpdateRecord(table_name string, key_name string, key_valu
 	return this.ExecWith(query_str, args, nil, nil)
 }
 
-func (this *Procedure) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
+/*func (this *Procedure) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
 	if dest_list == nil || len(dest_list) == 0 {
 		log.Printf("Procedure::SelectRecord result dest_list could not empty\n")
 		return false
@@ -196,7 +227,7 @@ func (this *Procedure) SelectRecords(table_name, key_name string, key_value inte
 	}
 	query_str := _gen_select_query_str(table_name, field_list, key_name)
 	return this.QueryWith(query_str, []interface{}{key_value}, result_list)
-}
+}*/
 
 func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
 	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
