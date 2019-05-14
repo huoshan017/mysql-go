@@ -127,6 +127,35 @@ func (this *OperateManager) Enable(enable bool) {
 	this.enable = enable
 }
 
+func (this *OperateManager) get_exist_op_data(table_name string, key string, value interface{}) *OpData {
+	var op_data *OpData
+	tom := this.table_op_map[table_name]
+	if tom != nil {
+		if key == tom.table_primary_field {
+			op_data = tom.row_op_map[value]
+		}
+	}
+	return op_data
+}
+
+func (this *OperateManager) get_op_data_with_field_list(table_name string, field_list []*mysql_base.FieldValuePair) *OpData {
+	var value interface{}
+	table_op := this.table_op_map[table_name]
+	if table_op != nil {
+		for _, f := range field_list {
+			if table_op.table_primary_field == f.Name {
+				value = f.Value
+				break
+			}
+		}
+	}
+	var op_data *OpData
+	if value != nil {
+		op_data = table_op.row_op_map[value]
+	}
+	return op_data
+}
+
 func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.FieldValuePair, ignore bool) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
@@ -135,7 +164,14 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 		return
 	}
 
-	this.curr_op_id += 1
+	if !ignore {
+		op_data := this.get_op_data_with_field_list(table_name, field_list)
+		if op_data != nil {
+			log.Printf("mysql_manager: operate manager insert table %v new row already exist\n", table_name)
+			return
+		}
+	}
+
 	this.op_list.Append(&OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
@@ -151,6 +187,8 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 			field_list: field_list,
 		},
 	})
+
+	this.curr_op_id += 1
 }
 
 func (this *OperateManager) Delete(table_name string, field_name string, field_value interface{}) {
@@ -161,7 +199,22 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 		return
 	}
 
-	this.curr_op_id += 1
+	op_data := this.get_exist_op_data(table_name, field_name, field_value)
+	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
+		if op_data.detail != nil {
+			// 已经有删除的命令，直接跳过
+			if op_data.detail.op_type == DB_OPERATE_TYPE_DELETE {
+				return
+			}
+			op_data.detail.op_type = DB_OPERATE_TYPE_DELETE
+			if op_data.detail.field_list != nil {
+				op_data.detail.field_list = nil
+			}
+			this.op_list.MoveToLast(op_data)
+			return
+		}
+	}
+
 	this.op_list.Append(&OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
@@ -172,6 +225,36 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 			value:      field_value,
 		},
 	})
+
+	this.curr_op_id += 1
+}
+
+func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (merged_list []*mysql_base.FieldValuePair) {
+	if field_list1 == nil {
+		return
+	}
+
+	if field_list2 == nil {
+		merged_list = field_list1
+		return
+	}
+
+	var fm1 = make(map[string]*mysql_base.FieldValuePair)
+	var fm2 = make(map[string]*mysql_base.FieldValuePair)
+	for i := 0; i < len(field_list1); i++ {
+		fm1[field_list1[i].Name] = field_list1[i]
+	}
+	for i := 0; i < len(field_list2); i++ {
+		fm2[field_list2[i].Name] = field_list2[i]
+	}
+
+	merged_list = field_list1
+	for _, f2 := range fm2 {
+		if fm1[f2.Name] == nil {
+			merged_list = append(merged_list, f2)
+		}
+	}
+	return
 }
 
 func (this *OperateManager) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
@@ -182,7 +265,20 @@ func (this *OperateManager) Update(table_name string, key string, value interfac
 		return
 	}
 
-	this.curr_op_id += 1
+	op_data := this.get_exist_op_data(table_name, key, value)
+	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
+		if op_data.detail != nil {
+			// 已经删除
+			if op_data.detail.op_type == DB_OPERATE_TYPE_DELETE {
+				return
+			}
+			if op_data.detail.op_type == DB_OPERATE_TYPE_INSERT || op_data.detail.op_type == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.op_type == DB_OPERATE_TYPE_UPDATE {
+				op_data.detail.field_list = field_list_cover(field_list, op_data.detail.field_list)
+				this.op_list.MoveToLast(op_data)
+			}
+			return
+		}
+	}
 	this.op_list.Append(&OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
@@ -194,6 +290,8 @@ func (this *OperateManager) Update(table_name string, key string, value interfac
 			field_list: field_list,
 		},
 	})
+
+	this.curr_op_id += 1
 }
 
 func (this *OperateManager) NewTransaction() *Transaction {
@@ -208,12 +306,13 @@ func (this *OperateManager) appendTransaction(transaction *Transaction) {
 		return
 	}
 
-	this.curr_op_id += 1
 	this.op_list.Append(&OpData{
 		id:          this.curr_op_id,
 		sql_type:    DB_SQL_TYPE_PROCEDURE,
 		detail_list: transaction.detail_list,
 	})
+
+	this.curr_op_id += 1
 }
 
 func (this *OperateManager) _op_cmd(d *OpDetail) {
