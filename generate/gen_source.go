@@ -337,8 +337,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("	return t, true\n")
 	str += ("}\n\n")
 
-	// select multi func
 	if !table.SingleRow {
+		// select multi func
 		str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}, order_by string, desc bool, offset, limit int) ([]*" + struct_row_name + ", bool) {\n")
 		str += ("	var field_list = []string{" + field_list + "}\n")
 		str += ("	var result_list mysql_base.QueryResultList\n")
@@ -364,6 +364,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("	}\n")
 		str += ("	return r, true\n")
 		str += ("}\n\n")
+
+		// select all
+		str += "func (this *" + struct_table_name + ") SelectAll() []*" + struct_row_name + " {\n"
+		str += "	all, o := this.SelectMulti(\"\", nil, \"\", false, -1, -1)\n"
+		str += "	if !o {\n"
+		str += "		return nil\n"
+		str += "	}\n"
+		str += "	return all\n"
+		str += "}\n\n"
 	}
 
 	// primary field

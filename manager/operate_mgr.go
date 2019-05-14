@@ -127,18 +127,18 @@ func (this *OperateManager) Enable(enable bool) {
 	this.enable = enable
 }
 
-func (this *OperateManager) get_exist_op_data(table_name string, key string, value interface{}) *OpData {
+func (this *OperateManager) get_table_op_data(table_name string, field_name string, field_value interface{}) *OpData {
 	var op_data *OpData
-	tom := this.table_op_map[table_name]
-	if tom != nil {
-		if key == tom.table_primary_field {
-			op_data = tom.row_op_map[value]
+	table_op := this.table_op_map[table_name]
+	if table_op != nil && table_op.row_op_map != nil {
+		if field_name == table_op.table_primary_field {
+			op_data = table_op.row_op_map[field_value]
 		}
 	}
 	return op_data
 }
 
-func (this *OperateManager) get_op_data_with_field_list(table_name string, field_list []*mysql_base.FieldValuePair) *OpData {
+func (this *OperateManager) get_table_op_data_with_field_list(table_name string, field_list []*mysql_base.FieldValuePair) (*OpData, string, interface{}) {
 	var value interface{}
 	table_op := this.table_op_map[table_name]
 	if table_op != nil {
@@ -150,10 +150,20 @@ func (this *OperateManager) get_op_data_with_field_list(table_name string, field
 		}
 	}
 	var op_data *OpData
-	if value != nil {
+	if value != nil && table_op.row_op_map != nil {
 		op_data = table_op.row_op_map[value]
 	}
-	return op_data
+	return op_data, table_op.table_primary_field, value
+}
+
+func (this *OperateManager) insert_table_op_data(table_name string, field_value interface{}, op_data *OpData) {
+	table_op := this.table_op_map[table_name]
+	if table_op != nil {
+		if table_op.row_op_map == nil {
+			table_op.row_op_map = make(map[interface{}]*OpData)
+		}
+		table_op.row_op_map[field_value] = op_data
+	}
 }
 
 func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.FieldValuePair, ignore bool) {
@@ -164,15 +174,18 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 		return
 	}
 
+	var op_data *OpData
+	var field_name string
+	var field_value interface{}
 	if !ignore {
-		op_data := this.get_op_data_with_field_list(table_name, field_list)
+		op_data, field_name, field_value = this.get_table_op_data_with_field_list(table_name, field_list)
 		if op_data != nil {
-			log.Printf("mysql_manager: operate manager insert table %v new row already exist\n", table_name)
+			log.Printf("mysql_manager: operate manager insert table %v new row with(field_name:%v, field_value:%v) already exist\n", table_name, field_name, field_value)
 			return
 		}
 	}
 
-	this.op_list.Append(&OpData{
+	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
 		detail: &OpDetail{
@@ -186,9 +199,10 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 			}(),
 			field_list: field_list,
 		},
-	})
-
+	}
+	this.op_list.Append(op_data)
 	this.curr_op_id += 1
+	this.insert_table_op_data(table_name, field_value, op_data)
 }
 
 func (this *OperateManager) Delete(table_name string, field_name string, field_value interface{}) {
@@ -199,7 +213,7 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 		return
 	}
 
-	op_data := this.get_exist_op_data(table_name, field_name, field_value)
+	op_data := this.get_table_op_data(table_name, field_name, field_value)
 	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
 		if op_data.detail != nil {
 			// 已经有删除的命令，直接跳过
@@ -211,11 +225,12 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 				op_data.detail.field_list = nil
 			}
 			this.op_list.MoveToLast(op_data)
+			this.curr_op_id += 1
 			return
 		}
 	}
 
-	this.op_list.Append(&OpData{
+	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
 		detail: &OpDetail{
@@ -224,9 +239,10 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 			key:        field_name,
 			value:      field_value,
 		},
-	})
-
+	}
+	this.op_list.Append(op_data)
 	this.curr_op_id += 1
+	this.insert_table_op_data(table_name, field_value, op_data)
 }
 
 func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (merged_list []*mysql_base.FieldValuePair) {
@@ -257,7 +273,7 @@ func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (me
 	return
 }
 
-func (this *OperateManager) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
+func (this *OperateManager) Update(table_name string, field_name string, field_value interface{}, field_list []*mysql_base.FieldValuePair) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
 
@@ -265,7 +281,7 @@ func (this *OperateManager) Update(table_name string, key string, value interfac
 		return
 	}
 
-	op_data := this.get_exist_op_data(table_name, key, value)
+	op_data := this.get_table_op_data(table_name, field_name, field_value)
 	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
 		if op_data.detail != nil {
 			// 已经删除
@@ -275,23 +291,26 @@ func (this *OperateManager) Update(table_name string, key string, value interfac
 			if op_data.detail.op_type == DB_OPERATE_TYPE_INSERT || op_data.detail.op_type == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.op_type == DB_OPERATE_TYPE_UPDATE {
 				op_data.detail.field_list = field_list_cover(field_list, op_data.detail.field_list)
 				this.op_list.MoveToLast(op_data)
+				this.curr_op_id += 1
 			}
 			return
 		}
 	}
-	this.op_list.Append(&OpData{
+
+	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
 		detail: &OpDetail{
 			table_name: table_name,
 			op_type:    DB_OPERATE_TYPE_UPDATE,
-			key:        key,
-			value:      value,
+			key:        field_name,
+			value:      field_value,
 			field_list: field_list,
 		},
-	})
-
+	}
+	this.op_list.Append(op_data)
 	this.curr_op_id += 1
+	this.insert_table_op_data(table_name, field_value, op_data)
 }
 
 func (this *OperateManager) NewTransaction() *Transaction {
@@ -400,4 +419,7 @@ func (this *OperateManager) Save() {
 		node = node.GetNext()
 	}
 	tmp_list.Clear()
+	for _, f := range this.table_op_map {
+		f.row_op_map = nil
+	}
 }

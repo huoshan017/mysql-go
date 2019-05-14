@@ -72,22 +72,8 @@ func main() {
 
 	log.Printf("get the result %v by id %v\n", p, id)
 
-	var ps []*game_db.T_Player
-	ps, o = db_player_table.SelectMulti("", nil)
-	if !o {
-		log.Printf("cant get result list\n")
-		return
-	}
-
-	if ps != nil {
-		log.Printf("get the result list:\n")
-		for i, p := range ps {
-			log.Printf("	%v: %v\n", i, p)
-		}
-	}
-
 	var ids []int32
-	ids = db_player_table.SelectPrimaryField()
+	ids = db_player_table.SelectAllPrimaryField()
 	if ids != nil {
 		log.Printf("get primary field list:\n")
 		for i, id := range ids {
@@ -112,6 +98,12 @@ func main() {
 	})
 
 	transaction.Done()
+
+	for level := int32(1); level <= 9999999; level++ {
+		p.Set_level(level)
+		p.Set_vip_level(level)
+		db_player_table.UpdateWithFieldName(p, []string{"level", "vip_level"})
+	}
 
 	db_mgr.Save()
 }
