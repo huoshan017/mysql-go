@@ -166,6 +166,14 @@ func (this *OperateManager) insert_table_op_data(table_name string, field_value 
 	}
 }
 
+func (this *OperateManager) reset_table_op_data() {
+	if this.table_op_map != nil {
+		for _, t := range this.table_op_map {
+			t.row_op_map = nil
+		}
+	}
+}
+
 func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.FieldValuePair, ignore bool) {
 	this.locker.Lock()
 	defer this.locker.Unlock()
@@ -419,7 +427,5 @@ func (this *OperateManager) Save() {
 		node = node.GetNext()
 	}
 	tmp_list.Clear()
-	for _, f := range this.table_op_map {
-		f.row_op_map = nil
-	}
+	this.reset_table_op_data()
 }
