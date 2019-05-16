@@ -99,7 +99,7 @@ func main() {
 
 	transaction.Done()
 
-	for level := int32(1); level <= 9999999; level++ {
+	for level := int32(1); level <= 999; level++ {
 		p.Set_level(level)
 		p.Set_vip_level(level)
 		db_player_table.UpdateWithFieldName(p, []string{"level", "vip_level"})
