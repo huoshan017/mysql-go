@@ -255,18 +255,14 @@ func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (me
 		return
 	}
 
-	var fm1 = make(map[string]*mysql_base.FieldValuePair)
-	var fm2 = make(map[string]*mysql_base.FieldValuePair)
+	var fm = make(map[string]*mysql_base.FieldValuePair)
 	for i := 0; i < len(field_list1); i++ {
-		fm1[field_list1[i].Name] = field_list1[i]
-	}
-	for i := 0; i < len(field_list2); i++ {
-		fm2[field_list2[i].Name] = field_list2[i]
+		fm[field_list1[i].Name] = field_list1[i]
 	}
 
 	merged_list = field_list1
-	for _, f2 := range fm2 {
-		if fm1[f2.Name] == nil {
+	for _, f2 := range field_list2 {
+		if fm[f2.Name] == nil {
 			merged_list = append(merged_list, f2)
 		}
 	}
