@@ -82,32 +82,32 @@ func (this *DB) InsertIgnore(table_name string, field_pair []*mysql_base.FieldVa
 	this.op_mgr.Insert(table_name, field_pair, true)
 }
 
-func (this *DB) Update(table_name string, key string, value interface{}, field_pair []*mysql_base.FieldValuePair) {
-	this.op_mgr.Update(table_name, key, value, field_pair)
+func (this *DB) Update(table_name string, field_name string, field_value interface{}, field_pair []*mysql_base.FieldValuePair) {
+	this.op_mgr.Update(table_name, field_name, field_value, field_pair)
 }
 
-func (this *DB) Delete(table_name string, key string, value interface{}) {
-	this.op_mgr.Delete(table_name, key, value)
+func (this *DB) Delete(table_name string, field_name string, field_value interface{}) {
+	this.op_mgr.Delete(table_name, field_name, field_value)
 }
 
 func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResultList) bool {
 	return this.database.Query(query_sql, result_list)
 }
 
-func (this *DB) Select(table_name string, key string, value interface{}, field_list []string, dest_list []interface{}) bool {
-	return this.database.SelectRecord(table_name, key, value, field_list, dest_list)
+func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) bool {
+	return this.database.SelectRecord(table_name, field_name, field_value, field_list, dest_list)
 }
 
-func (this *DB) SelectStar(table_name string, key string, value interface{}, dest_list []interface{}) bool {
-	return this.database.SelectRecord(table_name, key, value, nil, dest_list)
+func (this *DB) SelectStar(table_name string, field_name string, field_value interface{}, dest_list []interface{}) bool {
+	return this.database.SelectRecord(table_name, field_name, field_value, nil, dest_list)
 }
 
-func (this *DB) SelectRecords(table_name string, key string, value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
-	return this.database.SelectRecords(table_name, key, value, field_list, result_list)
+func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, field_name, field_value, field_list, result_list)
 }
 
-func (this *DB) SelectStarRecords(table_name string, key string, value interface{}, result_list *mysql_base.QueryResultList) bool {
-	return this.database.SelectRecords(table_name, key, value, nil, result_list)
+func (this *DB) SelectStarRecords(table_name string, field_name string, field_value interface{}, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecords(table_name, field_name, field_value, nil, result_list)
 }
 
 func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
@@ -122,8 +122,8 @@ func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_li
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
 }
 
-func (this *DB) SelectRecordsOrderby(table_name string, key string, value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *mysql_base.QueryResultList) bool {
-	return this.database.SelectRecordsOrderby(table_name, key, value, order_by, desc, offset, limit, field_list, result_list)
+func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecordsOrderby(table_name, field_name, field_value, order_by, desc, offset, limit, field_list, result_list)
 }
 
 func (this *DB) NewTransaction() *Transaction {
