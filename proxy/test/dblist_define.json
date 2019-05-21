@@ -1,0 +1,47 @@
+{
+	"define_list": [
+		{ "id": 1, "name": "../../example/db_define/account_db.json" },
+		{ "id": 2, "name": "../../example/db_define/game_db.json" },
+		{ "id": 3, "name": "../../example/db_define/login_db.json" }
+	],
+	
+	"mysql_hosts": [
+		{
+			"enable": true,
+			"id": 1,
+			"code": "main",
+			"ip": "localhost",
+			"user": "root",
+			"password": "",
+			"db_list": [
+				{
+					"name": "account_db",
+					"define": 1
+				},
+				{
+					"name_list": ["game_db", "game2_db", "game3_db"],
+					"define": 2
+				},
+				{
+					"name": "login_db",
+					"define": 3
+				}
+			]
+		},
+		{
+			"enable": false,
+			"id": 2,
+			"code": "other",
+			"ip": "192.168.0.16",
+			"user": "root",
+			"password": "moyu@123",
+			"db_defines": [
+				{
+					"disable": false,
+					"name_list": ["game4_db", "game5_db", "game6_db", "game7_db", "game8_db", "game9_db", "game10_db"],
+					"define": 2
+				}
+			]
+		}
+	]
+}
