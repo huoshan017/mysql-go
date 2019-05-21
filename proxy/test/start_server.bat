@@ -1,3 +1,3 @@
 cd ../bin
-server.exe -c ../test/dblist_define.json
+proxy_server.exe -c ../test/dblist_define.json
 cd ../test
