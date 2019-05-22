@@ -5,9 +5,15 @@ import (
 	"net"
 	"net/rpc"
 
-	"github.com/huoshan017/mysql-go/proxy/client"
 	"github.com/huoshan017/mysql-go/proxy/common"
 )
+
+type PingProc struct {
+}
+
+func (this *PingProc) Ping(args *mysql_proxy_common.PingArgs, reply *mysql_proxy_common.PongReply) error {
+	return nil
+}
 
 type Service struct {
 	listener *net.TCPListener
@@ -20,13 +26,6 @@ func (this *Service) Register(rcvr interface{}) bool {
 		return false
 	}
 	return true
-}
-
-type PingProc struct {
-}
-
-func (this *PingProc) Ping(args *mysql_proxy.PingArgs, reply *mysql_proxy.PongReply) error {
-	return nil
 }
 
 func (this *Service) Listen(addr string) error {

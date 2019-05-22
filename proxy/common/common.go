@@ -5,3 +5,9 @@ const (
 	CONNECTION_TYPE_ONLY_READ = 1
 	CONNECTION_TYPE_WRITE     = 2
 )
+
+type PingArgs struct {
+}
+
+type PongReply struct {
+}

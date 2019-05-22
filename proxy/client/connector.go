@@ -42,15 +42,9 @@ func NewClient() *Client {
 	return client
 }
 
-type PingArgs struct {
-}
-
-type PongReply struct {
-}
-
 func (this *Client) ping() error {
-	args := &PingArgs{}
-	reply := &PongReply{}
+	args := &mysql_proxy_common.PingArgs{}
+	reply := &mysql_proxy_common.PongReply{}
 	err := this.Call("PingProc.Ping", args, reply)
 	if err != nil {
 		log.Printf("RPC client ping error[%v]\n", err.Error())
