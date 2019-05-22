@@ -3,10 +3,11 @@ package mysql_proxy
 import (
 	"encoding/gob"
 	"errors"
-	"ih_server/libs/log"
-	"net/rpc"
+	"log"
 	"sync/atomic"
 	"time"
+
+	"github.com/huoshan017/mysql-go/proxy/common"
 )
 
 const (
@@ -22,8 +23,14 @@ const (
 
 type OnConnectFunc func(arg interface{})
 
+type ClientInter interface {
+	Call(string, interface{}, interface{}) error
+	Close() error
+}
+
 type Client struct {
-	c          *rpc.Client
+	c          ClientInter
+	conn_type  int32
 	state      int32 // 只在Run协程中修改
 	addr       string
 	on_connect OnConnectFunc
@@ -46,7 +53,7 @@ func (this *Client) ping() error {
 	reply := &PongReply{}
 	err := this.Call("PingProc.Ping", args, reply)
 	if err != nil {
-		log.Warn("RPC client ping error[%v]", err.Error())
+		log.Printf("RPC client ping error[%v]\n", err.Error())
 	}
 	return err
 }
@@ -63,16 +70,16 @@ func (this *Client) Run() {
 				break
 			}
 			if this.state == RPC_CLIENT_STATE_DISCONNECT {
-				if !this.Dial(this.addr) {
-					log.Info("RPC reconnect addr[%v] failed", this.addr)
+				if !this.Dial(this.addr, this.conn_type) {
+					log.Printf("RPC reconnect addr[%v] failed\n", this.addr)
 				} else {
-					log.Info("RPC reconnect addr[%v] succeed", this.addr)
+					log.Printf("RPC reconnect addr[%v] succeed\n", this.addr)
 				}
 			} else {
 				err := this.ping()
 				if err != nil {
 					atomic.CompareAndSwapInt32(&this.state, RPC_CLIENT_STATE_CONNECTED, RPC_CLIENT_STATE_DISCONNECT)
-					log.Warn("RPC connection disconnected, ready to reconnect...")
+					log.Printf("RPC connection disconnected, ready to reconnect...\n")
 					time.Sleep(time.Second * PING_INTERVAL)
 					continue
 				}
@@ -82,13 +89,27 @@ func (this *Client) Run() {
 	}()
 }
 
-func (this *Client) Dial(addr string) bool {
-	c, e := rpc.Dial("tcp", addr)
-	if e != nil {
-		log.Error("RPC Dial addr[%v] error[%v]", addr, e.Error())
+func (this *Client) Dial(addr string, conn_type int32) bool {
+	var c ClientInter
+	var e error
+	if conn_type == mysql_proxy_common.CONNECTION_TYPE_ONLY_READ {
+		c, e = mysql_proxy_common.Dial("tcp", addr)
+		if e != nil {
+			log.Printf("RPC Dial addr[%v] error[%v]\n", addr, e.Error())
+			return false
+		}
+	} else if conn_type == mysql_proxy_common.CONNECTION_TYPE_WRITE {
+		c, e = mysql_proxy_common.DialOnlyWrite("tcp", addr)
+		if e != nil {
+			log.Printf("RPC Dial addr[%v] error[%v]\n", addr, e.Error())
+			return false
+		}
+	} else {
+		log.Printf("RPC Dial connection invalid type: %v\n", conn_type)
 		return false
 	}
 	this.c = c
+	this.conn_type = conn_type
 	this.state = RPC_CLIENT_STATE_CONNECTED
 	this.addr = addr
 	this.to_close = 0

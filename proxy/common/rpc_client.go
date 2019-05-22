@@ -237,6 +237,11 @@ func Dial(network, address string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	var buf = []byte{byte(CONNECTION_TYPE_ONLY_READ)}
+	_, err = conn.Write(buf)
+	if err != nil {
+		return nil, err
+	}
 	return NewClient(conn), nil
 }
 

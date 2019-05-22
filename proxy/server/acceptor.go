@@ -1,9 +1,11 @@
 package main
 
 import (
-	"ih_server/libs/log"
+	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/huoshan017/mysql-go/proxy/client"
 )
 
 type Service struct {
@@ -13,7 +15,7 @@ type Service struct {
 func (this *Service) Register(rcvr interface{}) bool {
 	err := rpc.Register(rcvr)
 	if err != nil {
-		log.Debug("rpc service register error[%v]", err.Error())
+		log.Printf("rpc service register error[%v]\n", err.Error())
 		return false
 	}
 	return true
@@ -22,7 +24,7 @@ func (this *Service) Register(rcvr interface{}) bool {
 type PingProc struct {
 }
 
-func (this *PingProc) Ping(args *PingArgs, reply *PongReply) error {
+func (this *PingProc) Ping(args *mysql_proxy.PingArgs, reply *mysql_proxy.PongReply) error {
 	return nil
 }
 
@@ -37,7 +39,7 @@ func (this *Service) Listen(addr string) error {
 	}
 	this.listener = l
 
-	log.Info("rpc service listen to %v", addr)
+	log.Printf("rpc service listen to %v\n", addr)
 	return nil
 }
 
@@ -48,7 +50,7 @@ func (this *Service) Serve() {
 		if err != nil {
 			continue
 		}
-		log.Info("rpc service accept a new connection[%v]", i)
+		log.Printf("rpc service accept a new connection[%v]\n", i)
 		i += 1
 		go rpc.ServeConn(conn)
 	}

@@ -23,7 +23,6 @@ const (
 type DB struct {
 	config_loader *mysql_generate.ConfigLoader
 	database      mysql_base.Database
-	op_mgr        OperateManager
 	save_interval time.Duration
 	state         int32
 }
@@ -61,7 +60,7 @@ func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
 			}
 		}
 	}
-	this.op_mgr.Init(&this.database, this.config_loader)
+	//this.op_mgr.Init(&this.database, this.config_loader)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	return true
 }
@@ -75,19 +74,19 @@ func (this *DB) SetSaveIntervalTime(d time.Duration) {
 }
 
 func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
-	this.op_mgr.Insert(table_name, field_pair, false)
+	//this.op_mgr.Insert(table_name, field_pair, false)
 }
 
 func (this *DB) InsertIgnore(table_name string, field_pair []*mysql_base.FieldValuePair) {
-	this.op_mgr.Insert(table_name, field_pair, true)
+	//this.op_mgr.Insert(table_name, field_pair, true)
 }
 
 func (this *DB) Update(table_name string, field_name string, field_value interface{}, field_pair []*mysql_base.FieldValuePair) {
-	this.op_mgr.Update(table_name, field_name, field_value, field_pair)
+	//this.op_mgr.Update(table_name, field_name, field_value, field_pair)
 }
 
 func (this *DB) Delete(table_name string, field_name string, field_value interface{}) {
-	this.op_mgr.Delete(table_name, field_name, field_value)
+	//this.op_mgr.Delete(table_name, field_name, field_value)
 }
 
 func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResultList) bool {
@@ -126,9 +125,9 @@ func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field
 	return this.database.SelectRecordsOrderby(table_name, field_name, field_value, order_by, desc, offset, limit, field_list, result_list)
 }
 
-func (this *DB) NewTransaction() *Transaction {
+/*func (this *DB) NewTransaction() *Transaction {
 	return this.op_mgr.NewTransaction()
-}
+}*/
 
 func (this *DB) Close() {
 	this.database.Close()
@@ -143,11 +142,11 @@ func (this *DB) IsEnd() bool {
 }
 
 func (this *DB) Save() {
-	this.op_mgr.Save()
+	//this.op_mgr.Save()
 }
 
 func (this *DB) Run() {
-	go func() {
+	/*go func() {
 		this.state = DB_STATE_RUNNING
 		var last_save_time int32
 		for {
@@ -164,5 +163,5 @@ func (this *DB) Run() {
 			}
 			time.Sleep(time.Second)
 		}
-	}()
+	}()*/
 }
