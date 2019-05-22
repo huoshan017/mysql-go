@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 
 	"github.com/huoshan017/mysql-go/proxy/client"
+	"github.com/huoshan017/mysql-go/proxy/common"
 )
 
 type Service struct {
@@ -44,16 +45,8 @@ func (this *Service) Listen(addr string) error {
 }
 
 func (this *Service) Serve() {
-	var i = 1
-	for {
-		conn, err := this.listener.Accept()
-		if err != nil {
-			continue
-		}
-		log.Printf("rpc service accept a new connection[%v]\n", i)
-		i += 1
-		go rpc.ServeConn(conn)
-	}
+	server := mysql_proxy_common.NewServer()
+	server.Accept(this.listener)
 }
 
 func (this *Service) Close() {
