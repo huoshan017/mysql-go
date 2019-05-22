@@ -21,12 +21,12 @@ const (
 	PING_INTERVAL = 5
 )
 
-type OnConnectFunc func(arg interface{})
-
 type ClientInter interface {
 	Call(string, interface{}, interface{}) error
 	Close() error
 }
+
+type OnConnectFunc func(arg interface{})
 
 type Client struct {
 	c          ClientInter
