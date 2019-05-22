@@ -9,7 +9,7 @@
 		{
 			"enable": true,
 			"id": 1,
-			"code": "main",
+			"alias": "main",
 			"ip": "localhost",
 			"user": "root",
 			"password": "",
@@ -31,7 +31,7 @@
 		{
 			"enable": false,
 			"id": 2,
-			"code": "other",
+			"alias": "other",
 			"ip": "192.168.0.16",
 			"user": "root",
 			"password": "moyu@123",

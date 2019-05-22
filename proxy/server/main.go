@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var db_list_loader DbListLoader
+var db_list DbList
 
 func main() {
 	if len(os.Args) < 2 {
@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	err := db_list_loader.Load(config_path)
+	err := db_list.Load(config_path)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return

@@ -25,39 +25,39 @@ type Db struct {
 type DbHost struct {
 	Enable   bool   `json:"enable"`
 	Id       int32  `json:"id"`
-	Code     string `json:"code"`
+	Alias    string `json:"alias"`
 	Ip       string `json:"ip"`
 	User     string `json:"user"`
 	Password string `json:"password"`
 	DbList   []*Db  `json:"db_list"`
 }
 
-type DbListLoader struct {
+type DbList struct {
 	DefineList []*DbDefine `json:"define_list"`
 	MysqlHosts []*DbHost   `json:"mysql_hosts"`
 
-	config_loaders      map[int32]*mysql_generate.ConfigLoader
-	db_mgr_list         map[int32]map[string]*mysql_manager.DB
-	db_mgr_list_by_code map[string]map[string]*mysql_manager.DB
+	config_loaders       map[int32]*mysql_generate.ConfigLoader
+	db_mgr_list          map[int32]map[string]*mysql_manager.DB
+	db_mgr_list_by_alias map[string]map[string]*mysql_manager.DB
 }
 
-func (this *DbListLoader) Load(config string) error {
+func (this *DbList) Load(config string) error {
 	data, err := ioutil.ReadFile(config)
 	if nil != err {
-		s := fmt.Sprintf("DbListLoader failed to readfile err(%s)", err.Error())
+		s := fmt.Sprintf("mysql-proxy-server: DbList failed to readfile err(%s)", err.Error())
 		return errors.New(s)
 	}
 
 	err = json.Unmarshal(data, this)
 	if nil != err {
-		s := fmt.Sprintf("DbListLoader json unmarshal failed err(%s)!\n", err.Error())
+		s := fmt.Sprintf("mysql-proxy-server: DbList json unmarshal failed err(%s)!\n", err.Error())
 		return errors.New(s)
 	}
 
 	for _, d := range this.DefineList {
 		var config_loader mysql_generate.ConfigLoader
 		if !config_loader.Load(d.Name) {
-			return errors.New(fmt.Sprintf("DbListLoader failed to load db define %v", d.Name))
+			return errors.New(fmt.Sprintf("mysql-proxy-server: DbList failed to load db define %v", d.Name))
 		}
 		if this.config_loaders == nil {
 			this.config_loaders = make(map[int32]*mysql_generate.ConfigLoader)
@@ -66,7 +66,7 @@ func (this *DbListLoader) Load(config string) error {
 	}
 
 	if this.config_loaders == nil {
-		return errors.New("DbListLoader not found any db deine")
+		return errors.New("mysql-proxy-server: DbList not found any db deine")
 	}
 
 	for _, h := range this.MysqlHosts {
@@ -79,7 +79,7 @@ func (this *DbListLoader) Load(config string) error {
 			}
 			var c *mysql_generate.ConfigLoader
 			if c = this.config_loaders[d.Define]; c == nil {
-				return errors.New(fmt.Sprintf("DbListLoader not found db define by id %v ", d.Define))
+				return errors.New(fmt.Sprintf("mysql-proxy-server: DbList not found db define by id %v ", d.Define))
 			}
 			if d.Name != "" {
 				var db_mgr mysql_manager.DB
@@ -88,7 +88,7 @@ func (this *DbListLoader) Load(config string) error {
 					return err
 				}
 				this.insert_db_mgr_list(&db_mgr, h.Id, d.Name)
-				this.insert_db_mgr_list_by_code(&db_mgr, h.Code, d.Name)
+				this.insert_db_mgr_list_by_alias(&db_mgr, h.Alias, d.Name)
 			} else if d.NameList != nil {
 				for _, name := range d.NameList {
 					var db_mgr mysql_manager.DB
@@ -97,10 +97,10 @@ func (this *DbListLoader) Load(config string) error {
 						return err
 					}
 					this.insert_db_mgr_list(&db_mgr, h.Id, name)
-					this.insert_db_mgr_list_by_code(&db_mgr, h.Code, name)
+					this.insert_db_mgr_list_by_alias(&db_mgr, h.Alias, name)
 				}
 			} else {
-				return errors.New(fmt.Sprintf("DbListLoader not found db host %v name or name list", h.Id))
+				return errors.New(fmt.Sprintf("mysql-proxy-server: DbList not found db host %v name or name list", h.Id))
 			}
 		}
 	}
@@ -108,16 +108,16 @@ func (this *DbListLoader) Load(config string) error {
 	return nil
 }
 
-func (this *DbListLoader) connect_db(db_mgr *mysql_manager.DB, attach_define *mysql_generate.ConfigLoader, host *DbHost, db_name string) error {
+func (this *DbList) connect_db(db_mgr *mysql_manager.DB, attach_define *mysql_generate.ConfigLoader, host *DbHost, db_name string) error {
 	db_mgr.AttachConfig(attach_define)
 	if !db_mgr.Connect(host.Ip, host.User, host.Password, db_name) {
-		return errors.New(fmt.Sprintf("DbListLoader connect db: host(%v) user(%v) db_name(%v) failed", host.Ip, host.User, db_name))
+		return errors.New(fmt.Sprintf("mysql-proxy-server: DbList connect db: host(%v) user(%v) db_name(%v) failed", host.Ip, host.User, db_name))
 	}
 	db_mgr.Run()
 	return nil
 }
 
-func (this *DbListLoader) insert_db_mgr_list(db_mgr *mysql_manager.DB, db_host_id int32, db_name string) {
+func (this *DbList) insert_db_mgr_list(db_mgr *mysql_manager.DB, db_host_id int32, db_name string) {
 	if this.db_mgr_list == nil {
 		this.db_mgr_list = make(map[int32]map[string]*mysql_manager.DB)
 	}
@@ -129,19 +129,19 @@ func (this *DbListLoader) insert_db_mgr_list(db_mgr *mysql_manager.DB, db_host_i
 	dml[db_name] = db_mgr
 }
 
-func (this *DbListLoader) insert_db_mgr_list_by_code(db_mgr *mysql_manager.DB, db_host_code string, db_name string) {
-	if this.db_mgr_list_by_code == nil {
-		this.db_mgr_list_by_code = make(map[string]map[string]*mysql_manager.DB)
+func (this *DbList) insert_db_mgr_list_by_alias(db_mgr *mysql_manager.DB, db_host_alias string, db_name string) {
+	if this.db_mgr_list_by_alias == nil {
+		this.db_mgr_list_by_alias = make(map[string]map[string]*mysql_manager.DB)
 	}
-	dml := this.db_mgr_list_by_code[db_host_code]
+	dml := this.db_mgr_list_by_alias[db_host_alias]
 	if dml == nil {
 		dml = make(map[string]*mysql_manager.DB)
-		this.db_mgr_list_by_code[db_host_code] = dml
+		this.db_mgr_list_by_alias[db_host_alias] = dml
 	}
 	dml[db_name] = db_mgr
 }
 
-func (this *DbListLoader) GetDB(db_host_id int32, db_name string) *mysql_manager.DB {
+func (this *DbList) GetDB(db_host_id int32, db_name string) *mysql_manager.DB {
 	if this.db_mgr_list == nil {
 		return nil
 	}
@@ -152,11 +152,11 @@ func (this *DbListLoader) GetDB(db_host_id int32, db_name string) *mysql_manager
 	return db_list[db_name]
 }
 
-func (this *DbListLoader) GetDB2(db_host_code string, db_name string) *mysql_manager.DB {
-	if this.db_mgr_list_by_code == nil {
+func (this *DbList) GetDB2(db_host_alias string, db_name string) *mysql_manager.DB {
+	if this.db_mgr_list_by_alias == nil {
 		return nil
 	}
-	db_list := this.db_mgr_list_by_code[db_host_code]
+	db_list := this.db_mgr_list_by_alias[db_host_alias]
 	if db_list == nil {
 		return nil
 	}
