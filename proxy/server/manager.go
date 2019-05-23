@@ -61,22 +61,31 @@ var proc_service ProcService
 type ProxyReadProc struct {
 }
 
-func _get_db_and_table_config(head *mysql_proxy_common.ArgsHead, table_name string) (db *mysql_manager.DB, table_config *mysql_base.TableConfig, err error) {
+func _get_db(head *mysql_proxy_common.ArgsHead) (db *mysql_manager.DB, err error) {
 	host_id := head.GetDBHostId()
 	db_name := head.GetDBName()
 	db = db_list.GetDB(host_id, db_name)
 	if db == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: not found db with host_id(%v) and db_name(%v)", host_id, db_name))
+		err = errors.New(fmt.Sprintf("mysql-proxy-server: not found db with host_id(%v) and db_name(%v)", head.GetDBHostId(), head.GetDBName()))
+		return
+	}
+	return
+
+}
+
+func _get_db_and_table_config(head *mysql_proxy_common.ArgsHead, table_name string) (db *mysql_manager.DB, table_config *mysql_base.TableConfig, err error) {
+	db, err = _get_db(head)
+	if err != nil {
 		return
 	}
 	config_loader := db.GetConfigLoader()
 	if config_loader == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not get config loader", host_id, db_name))
+		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not get config loader", head.GetDBHostId(), head.GetDBName()))
 		return
 	}
 	table_config = config_loader.GetTable(table_name)
 	if table_config == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not found table name %v", host_id, db_name, table_name))
+		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not found table name %v", head.GetDBHostId(), head.GetDBName(), table_name))
 		return
 	}
 	return
@@ -222,6 +231,37 @@ func (this *ProxyReadProc) SelectRecordsOrderby(args *mysql_proxy_common.SelectR
 }
 
 type ProxyWriteProc struct {
+}
+
+func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordArgs, reply *mysql_proxy_common.InsertRecordReply) error {
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+	if args.Ignore {
+		db.InsertIgnore(args.TableName, args.FieldValuePairs)
+	} else {
+		db.Insert(args.TableName, args.FieldValuePairs)
+	}
+	return nil
+}
+
+func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordArgs, reply *mysql_proxy_common.UpdateRecordReply) error {
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+	db.Update(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
+	return nil
+}
+
+func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordArgs, reply *mysql_proxy_common.DeleteRecordReply) error {
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+	db.Delete(args.TableName, args.WhereFieldName, args.WhereFieldValue)
+	return nil
 }
 
 type ProcService struct {

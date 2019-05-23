@@ -1,5 +1,9 @@
 package mysql_proxy_common
 
+import (
+	"github.com/huoshan017/mysql-go/base"
+)
+
 const (
 	CONNECTION_TYPE_NONE      = iota
 	CONNECTION_TYPE_ONLY_READ = 1
@@ -93,4 +97,38 @@ type SelectRecordsOrderbyArgs struct {
 
 type SelectRecordsOrderbyReply struct {
 	ResultList [][]interface{}
+}
+
+// insert record
+type InsertRecordArgs struct {
+	Head            *ArgsHead
+	TableName       string
+	FieldValuePairs []*mysql_base.FieldValuePair
+	Ignore          bool
+}
+
+type InsertRecordReply struct {
+}
+
+// update record
+type UpdateRecordArgs struct {
+	Head            *ArgsHead
+	TableName       string
+	WhereFieldName  string
+	WhereFieldValue interface{}
+	FieldValuePairs []*mysql_base.FieldValuePair
+}
+
+type UpdateRecordReply struct {
+}
+
+// delete record
+type DeleteRecordArgs struct {
+	Head            *ArgsHead
+	TableName       string
+	WhereFieldName  string
+	WhereFieldValue interface{}
+}
+
+type DeleteRecordReply struct {
 }
