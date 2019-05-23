@@ -22,6 +22,14 @@ type ArgsHead struct {
 	db_name       string
 }
 
+func (this *ArgsHead) SetDBHostId(db_host_id int32) {
+	this.db_host_id = db_host_id
+}
+
+func (this *ArgsHead) SetDBHostAlias(db_host_alias string) {
+	this.db_host_alias = db_host_alias
+}
+
 func (this *ArgsHead) GetDBHostId() int32 {
 	return this.db_host_id
 }

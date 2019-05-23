@@ -2,9 +2,10 @@ package mysql_proxy
 
 import (
 	"log"
-	"sync/atomic"
+	//"sync/atomic"
 	"time"
 
+	"github.com/huoshan017/mysql-go/base"
 	"github.com/huoshan017/mysql-go/proxy/common"
 )
 
@@ -44,36 +45,138 @@ func (this *DB) Connect(proxy_address string, db_host_id int32, db_host_alias st
 	return true
 }
 
-func (this *DB) Insert(table_name string, field_pair []*mysql_base.FieldValuePair) {
-
+func (this *DB) _gen_head() *mysql_proxy_common.ArgsHead {
+	var head mysql_proxy_common.ArgsHead
+	head.SetDBHostId(this.db_host_id)
+	head.SetDBHostAlias(this.db_host_alias)
+	return &head
 }
 
-func (this *DB) InsertIgnore(table_name string, field_pair []*mysql_base.FieldValuePair) {
-	//this.op_mgr.Insert(table_name, field_pair, true)
+func (this *DB) _insert(table_name string, field_pairs []*mysql_base.FieldValuePair, ignore bool) {
+	var args = &mysql_proxy_common.InsertRecordArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		FieldValuePairs: field_pairs,
+		Ignore:          ignore,
+	}
+	var reply mysql_proxy_common.InsertRecordReply
+	err := this.write_client.Call("ProxyWriteProc.InsertRecord", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call InsertRecord err %v\n", err.Error())
+	}
 }
 
-func (this *DB) Update(table_name string, field_name string, field_value interface{}, field_pair []*mysql_base.FieldValuePair) {
-	//this.op_mgr.Update(table_name, field_name, field_value, field_pair)
+func (this *DB) Insert(table_name string, field_pairs []*mysql_base.FieldValuePair) {
+	this._insert(table_name, field_pairs, true)
+}
+
+func (this *DB) InsertIgnore(table_name string, field_pairs []*mysql_base.FieldValuePair) {
+	this._insert(table_name, field_pairs, false)
+}
+
+func (this *DB) Update(table_name string, field_name string, field_value interface{}, field_pairs []*mysql_base.FieldValuePair) {
+	var args = &mysql_proxy_common.UpdateRecordArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		WhereFieldName:  field_name,
+		WhereFieldValue: field_value,
+		FieldValuePairs: field_pairs,
+	}
+	var reply mysql_proxy_common.UpdateRecordReply
+	err := this.write_client.Call("ProxyWriteProc.UpdateRecord", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call UpdateRecord err %v\n", err.Error())
+	}
 }
 
 func (this *DB) Delete(table_name string, field_name string, field_value interface{}) {
-	//this.op_mgr.Delete(table_name, field_name, field_value)
+	var args = &mysql_proxy_common.DeleteRecordArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		WhereFieldName:  field_name,
+		WhereFieldValue: field_value,
+	}
+	var reply mysql_proxy_common.DeleteRecordReply
+	err := this.write_client.Call("ProxyWriteProc.DeleteRecord", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call DeleteRecord err %v\n", err.Error())
+	}
 }
 
 func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) bool {
-	//return this.database.SelectRecord(table_name, field_name, field_value, field_list, dest_list)
+	var args = &mysql_proxy_common.SelectArgs{
+		Head:             this._gen_head(),
+		TableName:        table_name,
+		WhereFieldName:   field_name,
+		WhereFieldValue:  field_value,
+		SelectFieldNames: field_list,
+	}
+	var reply mysql_proxy_common.SelectReply
+	err := this.read_client.Call("ProxyReadProc.Select", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call Select err %v\n", err.Error())
+		return false
+	}
+	if len(dest_list) != len(reply.Result) {
+		log.Printf("mysql-proxy-client: Select arg dest_list length must equal to SelectReply ResultList length\n")
+		return false
+	}
+	for i := 0; i < len(dest_list); i++ {
+		if !_copy_reply_value_2_dest(dest_list[i], reply.Result[i]) {
+			return false
+		}
+	}
+	return true
 }
 
-func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
-	//return this.database.SelectRecords(table_name, field_name, field_value, field_list, result_list)
-}
-
-func (this *DB) SelectStarRecords(table_name string, field_name string, field_value interface{}, result_list *mysql_base.QueryResultList) bool {
-	//return this.database.SelectRecords(table_name, field_name, field_value, nil, result_list)
+func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, dest_lists [][]interface{}) bool {
+	var args = &mysql_proxy_common.SelectRecordsArgs{
+		Head:             this._gen_head(),
+		TableName:        table_name,
+		WhereFieldName:   field_name,
+		WhereFieldValue:  field_value,
+		SelectFieldNames: field_list,
+	}
+	var reply mysql_proxy_common.SelectRecordsReply
+	err := this.read_client.Call("ProxyReadProc.SelectRecords", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select records err: %v\n", err.Error())
+		return false
+	}
+	if len(dest_list) != len(reply.ResultList) {
+		log.Printf("mysql-proxy-client: SelectRecords arg dest_list length must equal to SelectReply ResultList length\n")
+		return false
+	}
+	for i := 0; i < len(dest_list); i++ {
+		if !_copy_reply_value_2_dest(dest_list[i], reply.Result[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
-	//return this.database.SelectRecords(table_name, "", nil, field_list, result_list)
+	var args = &mysql_proxy_common.SelectAllRecordsArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		FieldValuePairs: field_list,
+	}
+	var reply mysql_proxy_common.SelectAllRecordsReply
+	err := this.read_client.Call("ProxyReadProc.SelectAllRecords", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select all records err: %v\n", err.Error())
+		return false
+	}
+	if len(dest_list) != len(reply.ResultList) {
+		log.Printf("mysql-proxy-client: SelectRecords arg dest_list length must equal to SelectReply ResultList length\n")
+		return false
+	}
+	for i := 0; i < len(dest_list); i++ {
+		if !_copy_reply_value_2_dest(dest_list[i], reply.Result[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_list *mysql_base.QueryResultList) bool {
@@ -89,15 +192,6 @@ func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field
 }*/
 
 func (this *DB) Close() {
-	this.database.Close()
-}
-
-func (this *DB) EndRun() bool {
-	return atomic.CompareAndSwapInt32(&this.state, DB_STATE_RUNNING, DB_STATE_TO_END)
-}
-
-func (this *DB) IsEnd() bool {
-	return atomic.LoadInt32(&this.state) == DB_STATE_NO_RUN
 }
 
 func (this *DB) Save() {

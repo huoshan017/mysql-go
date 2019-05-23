@@ -272,6 +272,7 @@ func (this *ProcService) init() {
 	this.service = &Service{}
 	this.service.Register(&ProxyReadProc{})
 	this.service.Register(&ProxyWriteProc{})
+	RegisterUserType(&mysql_base.FieldValuePair{})
 }
 
 func (this *ProcService) Start(addr string) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"log"
 	"net"
 	"net/rpc"
@@ -50,4 +51,8 @@ func (this *Service) Serve() {
 
 func (this *Service) Close() {
 	this.listener.Close()
+}
+
+func RegisterUserType(rcvr interface{}) {
+	gob.Register(rcvr)
 }
