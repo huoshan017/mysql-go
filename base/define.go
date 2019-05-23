@@ -344,3 +344,48 @@ func IsMysqlFieldTimestampType(field_type int) bool {
 	}
 	return false
 }
+
+var mysql_field_type_string_maps = map[int]string{
+	MYSQL_FIELD_TYPE_TINYINT:    "int8",
+	MYSQL_FIELD_TYPE_SMALLINT:   "int16",
+	MYSQL_FIELD_TYPE_MEDIUMINT:  "int16",
+	MYSQL_FIELD_TYPE_INT:        "int32",
+	MYSQL_FIELD_TYPE_BIGINT:     "int64",
+	MYSQL_FIELD_TYPE_FLOAT:      "float32",
+	MYSQL_FIELD_TYPE_DOUBLE:     "float64",
+	MYSQL_FIELD_TYPE_DATE:       "",
+	MYSQL_FIELD_TYPE_DATETIME:   "",
+	MYSQL_FIELD_TYPE_TIMESTAMP:  "",
+	MYSQL_FIELD_TYPE_TIME:       "",
+	MYSQL_FIELD_TYPE_YEAR:       "",
+	MYSQL_FIELD_TYPE_CHAR:       "string",
+	MYSQL_FIELD_TYPE_VARCHAR:    "string",
+	MYSQL_FIELD_TYPE_TINYTEXT:   "string",
+	MYSQL_FIELD_TYPE_MEDIUMTEXT: "string",
+	MYSQL_FIELD_TYPE_TEXT:       "string",
+	MYSQL_FIELD_TYPE_LONGTEXT:   "string",
+	MYSQL_FIELD_TYPE_BINARY:     "[]byte",
+	MYSQL_FIELD_TYPE_VARBINARY:  "[]byte",
+	MYSQL_FIELD_TYPE_TINYBLOB:   "[]byte",
+	MYSQL_FIELD_TYPE_MEDIUMBLOB: "[]byte",
+	MYSQL_FIELD_TYPE_BLOB:       "[]byte",
+	MYSQL_FIELD_TYPE_LONGBLOB:   "[]byte",
+	MYSQL_FIELD_TYPE_ENUM:       "",
+	MYSQL_FIELD_TYPE_SET:        "",
+}
+
+func MysqlFieldType2GoTypeStr(field_type int) string {
+	go_type, o := mysql_field_type_string_maps[field_type]
+	if !o {
+		go_type = ""
+	}
+	return go_type
+}
+
+func MysqlFieldTypeStr2GoTypeStr(field_type_str string) string {
+	field_type, o := GetMysqlFieldTypeByString(field_type_str)
+	if !o {
+		return ""
+	}
+	return MysqlFieldType2GoTypeStr(field_type)
+}

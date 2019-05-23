@@ -8,51 +8,6 @@ import (
 	"github.com/huoshan017/mysql-go/base"
 )
 
-var field_type_string_maps = map[int]string{
-	mysql_base.MYSQL_FIELD_TYPE_TINYINT:    "int8",
-	mysql_base.MYSQL_FIELD_TYPE_SMALLINT:   "int16",
-	mysql_base.MYSQL_FIELD_TYPE_MEDIUMINT:  "int16",
-	mysql_base.MYSQL_FIELD_TYPE_INT:        "int32",
-	mysql_base.MYSQL_FIELD_TYPE_BIGINT:     "int64",
-	mysql_base.MYSQL_FIELD_TYPE_FLOAT:      "float32",
-	mysql_base.MYSQL_FIELD_TYPE_DOUBLE:     "float64",
-	mysql_base.MYSQL_FIELD_TYPE_DATE:       "",
-	mysql_base.MYSQL_FIELD_TYPE_DATETIME:   "",
-	mysql_base.MYSQL_FIELD_TYPE_TIMESTAMP:  "",
-	mysql_base.MYSQL_FIELD_TYPE_TIME:       "",
-	mysql_base.MYSQL_FIELD_TYPE_YEAR:       "",
-	mysql_base.MYSQL_FIELD_TYPE_CHAR:       "string",
-	mysql_base.MYSQL_FIELD_TYPE_VARCHAR:    "string",
-	mysql_base.MYSQL_FIELD_TYPE_TINYTEXT:   "string",
-	mysql_base.MYSQL_FIELD_TYPE_MEDIUMTEXT: "string",
-	mysql_base.MYSQL_FIELD_TYPE_TEXT:       "string",
-	mysql_base.MYSQL_FIELD_TYPE_LONGTEXT:   "string",
-	mysql_base.MYSQL_FIELD_TYPE_BINARY:     "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_VARBINARY:  "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_TINYBLOB:   "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_MEDIUMBLOB: "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_BLOB:       "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_LONGBLOB:   "[]byte",
-	mysql_base.MYSQL_FIELD_TYPE_ENUM:       "",
-	mysql_base.MYSQL_FIELD_TYPE_SET:        "",
-}
-
-func _field_type_to_go_type(field_type int) string {
-	go_type, o := field_type_string_maps[field_type]
-	if !o {
-		go_type = ""
-	}
-	return go_type
-}
-
-func _field_type_string_to_go_type(field_type_str string) string {
-	field_type, o := mysql_base.GetMysqlFieldTypeByString(field_type_str)
-	if !o {
-		return ""
-	}
-	return _field_type_to_go_type(field_type)
-}
-
 func _upper_first_char(str string) string {
 	if str == "" {
 		return str
@@ -147,7 +102,7 @@ func gen_row_format_all_fvp_func(struct_row_name string, table *mysql_base.Table
 	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
 	str += ("	var field_list []*mysql_base.FieldValuePair\n")
 	for _, field := range table.Fields {
-		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type)) == "" {
 			continue
 		}
 		if field.StructName != "" {
@@ -216,7 +171,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	field_func_map := table.Name + "_fields_map"
 	str += "var " + field_func_map + " = map[string]" + field_pair_func_define + "{\n"
 	for _, field := range table.Fields {
-		if _field_type_string_to_go_type(strings.ToUpper(field.Type)) == "" {
+		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type)) == "" {
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
@@ -234,7 +189,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			go_type = "*" + field.StructName
 			init_mem_list += "		" + field.Name + ": &" + field.StructName + "{},\n"
 		} else {
-			go_type = _field_type_string_to_go_type(strings.ToUpper(field.Type))
+			go_type = mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
 			if go_type == "" {
 				log.Printf("get go type failed by field type %v in table %v, to continue\n", field.Type, table.Name)
 				continue
@@ -272,7 +227,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	var field_list string
 	for i, field := range table.Fields {
-		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
+		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
 		if go_type == "" {
 			continue
 		}
@@ -286,7 +241,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	var bytes_define_list string
 	var dest_list string
 	for _, field := range table.Fields {
-		go_type := _field_type_string_to_go_type(strings.ToUpper(field.Type))
+		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
 		if go_type == "" {
 			continue
 		}
@@ -393,7 +348,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
 			return false
 		}
-		pt = _field_type_to_go_type(primary_type)
+		pt = mysql_base.MysqlFieldType2GoTypeStr(primary_type)
 		if pt == "" {
 			log.Printf("主键类型%v没有对应的数据类型\n")
 			return false

@@ -21,6 +21,10 @@ const (
 	PING_INTERVAL = 5
 )
 
+func RegisterUserType(rcvr interface{}) {
+	gob.Register(rcvr)
+}
+
 type ClientInter interface {
 	Call(string, interface{}, interface{}) error
 	Close() error
@@ -131,8 +135,4 @@ func (this *Client) Close() {
 
 func (this *Client) GetState() int32 {
 	return this.state
-}
-
-func RegisterUserType(rcvr interface{}) {
-	gob.Register(rcvr)
 }

@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-var db_list DbList
-
 func main() {
 	if len(os.Args) < 2 {
 		log.Printf("args not enough, must specify a config file for db define\n")
@@ -31,4 +29,6 @@ func main() {
 		log.Printf("%v", err.Error())
 		return
 	}
+
+	proc_service.Start("localhost:1999")
 }
