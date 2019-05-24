@@ -2,16 +2,10 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/huoshan017/mysql-go/proxy/client"
 )
-
-func output_selected() {
-	log.Printf("		account: %v\n		role_id: %v\n		nick_name: %v\n		sex: %v\n		level: %v\n		vip_level: %v\n		exp: %v\n		head: %v",
-		account, role_id, nick_name, sex, level, vip_level, exp, head)
-	log.Printf("		create_time: %v\n		token: %v\n			items: %v\n		skills: %v\n		tasks: %v\n		role_common: %v\n		roles: %v\n",
-		create_time, token, items, skills, tasks, role_common, roles)
-}
 
 func main() {
 	var proxy_addr string = "127.0.0.1:1999"
@@ -32,14 +26,33 @@ func main() {
 	var level, vip_level, exp, head, create_time int32
 	var items, skills, tasks, role_common, roles []byte
 	var dest_list = []interface{}{&account, &role_id, &nick_name, &sex, &level, &vip_level, &exp, &head, &create_time, &token, &items, &skills, &tasks, &role_common, &roles}
-	if !db_proxy.Select(table_name, "id", 1, select_names, dest_list) {
+	/*if !db_proxy.Select(table_name, "id", 1, select_names, dest_list) {
 		log.Printf("db proxy select table %v where id=1 failed\n", table_name)
 		return
-	}
-	log.Printf("db proxy selected:\n")
-	output_selected()
+	}*/
+	go func() {
+		for {
+			var result_list mysql_proxy.QueryResultList
+			if !db_proxy.SelectAllRecords(table_name, select_names, &result_list) {
+				log.Printf("db proxy select table %v with select_names %v failed\n", table_name, select_names)
+				return
+			}
 
-	if !db_proxy.SelectAllRecords(table_name, select_names) {
-		return
+			var idx int
+			log.Printf("db proxy selected all: \n")
+			for {
+				if !result_list.Get(dest_list...) {
+					break
+				}
+				log.Printf("  %v	account:%v  role_id:%v  nick_name:%v  sex:%v  level:%v  vip_level:%v  exp:%v  head:%v  create_time:%v  token:%v  items:%v  skills:%v  tasks:%v  role_common:%v  roles:%v\n",
+					idx+1, account, role_id, nick_name, sex, level, vip_level, exp, head, create_time, token, items, skills, tasks, role_common, roles)
+				idx += 1
+			}
+			time.Sleep(time.Millisecond * 50)
+		}
+	}()
+
+	for {
+		time.Sleep(time.Second)
 	}
 }

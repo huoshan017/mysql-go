@@ -20,6 +20,43 @@ const (
 	DB_STATE_TO_END  = 2
 )
 
+type QueryResultList struct {
+	rows        [][]interface{}
+	cur_row_idx int
+}
+
+func CreateQueryResultList(rows [][]interface{}) *QueryResultList {
+	return &QueryResultList{
+		rows: rows,
+	}
+}
+
+func (this *QueryResultList) Init(rows [][]interface{}) {
+	this.rows = rows
+}
+
+func (this *QueryResultList) Close() {
+	this.rows = nil
+}
+
+func (this *QueryResultList) Get(dest ...interface{}) bool {
+	if this.cur_row_idx >= len(this.rows) {
+		return false
+	}
+	row := this.rows[this.cur_row_idx]
+	if len(dest) != len(row) {
+		log.Printf("mysql-proxy-client: QueryResultList:Get arg dest length must equal to row length\n")
+		return false
+	}
+	for i := 0; i < len(row); i++ {
+		if !_copy_reply_value_2_dest(dest[i], row[i]) {
+			return false
+		}
+	}
+	this.cur_row_idx += 1
+	return true
+}
+
 type DB struct {
 	read_client   *Client
 	write_client  *Client
@@ -141,7 +178,7 @@ func (this *DB) Select(table_name string, field_name string, field_value interfa
 	return true
 }
 
-func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, dest_lists [][]interface{}) bool {
+func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) bool {
 	var args = &mysql_proxy_common.SelectRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -155,21 +192,11 @@ func (this *DB) SelectRecords(table_name string, field_name string, field_value 
 		log.Printf("mysql-proxy-client: call select records err: %v\n", err.Error())
 		return false
 	}
-	for i := 0; i < len(dest_lists); i++ {
-		if len(dest_lists[i]) != len(reply.ResultList[i]) {
-			log.Printf("mysql-proxy-client: SelectRecords arg dest_list length must equal to SelectReply ResultList length\n")
-			return false
-		}
-		for j := 0; j < len(dest_lists[i]); j++ {
-			if !_copy_reply_value_2_dest(dest_lists[i][j], reply.ResultList[i][j]) {
-				return false
-			}
-		}
-	}
+	result_list.Init(reply.ResultList)
 	return true
 }
 
-func (this *DB) SelectAllRecords(table_name string, field_list []string) (dest_lists [][]interface{}, selected bool) {
+func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *QueryResultList) bool {
 	var args = &mysql_proxy_common.SelectAllRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -181,21 +208,11 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string) (dest_l
 		log.Printf("mysql-proxy-client: call select all records err: %v\n", err.Error())
 		return false
 	}
-	for i := 0; i < len(dest_lists); i++ {
-		if len(dest_lists[i]) != len(reply.ResultList[i]) {
-			log.Printf("mysql-proxy-client: SelectRecords arg dest_list length must equal to SelectReply ResultList length\n")
-			return false
-		}
-		for j := 0; j < len(dest_lists[i]); j++ {
-			if !_copy_reply_value_2_dest(dest_lists[i][j], reply.ResultList[i][j]) {
-				return false
-			}
-		}
-	}
+	result_list.Init(reply.ResultList)
 	return true
 }
 
-func (this *DB) SelectFieldNoKey(table_name string, field_name string, dest_list []interface{}) bool {
+func (this *DB) SelectField(table_name string, field_name string, dest_list []interface{}) bool {
 	var args = &mysql_proxy_common.SelectFieldArgs{
 		Head:            this._gen_head(),
 		TableName:       table_name,
@@ -219,7 +236,7 @@ func (this *DB) SelectFieldNoKey(table_name string, field_name string, dest_list
 	return true
 }
 
-func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, dest_lists [][]interface{}) bool {
+func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *QueryResultList) bool {
 	var args = &mysql_proxy_common.SelectRecordsOrderbyArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -237,17 +254,7 @@ func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field
 		log.Printf("mysql-proxy-client: call select records order by err: %v\n", err.Error())
 		return false
 	}
-	for i := 0; i < len(dest_lists); i++ {
-		if len(dest_lists[i]) != len(reply.ResultList[i]) {
-			log.Printf("mysql-proxy-client: SelectRecordsOrderby arg dest_list length must equal to SelectReply ResultList length\n")
-			return false
-		}
-		for j := 0; j < len(dest_lists[i]); j++ {
-			if !_copy_reply_value_2_dest(dest_lists[i][j], reply.ResultList[i][j]) {
-				return false
-			}
-		}
-	}
+	result_list.Init(reply.ResultList)
 	return true
 }
 
