@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"log"
 	"net"
-	"net/rpc"
 
 	"github.com/huoshan017/mysql-go/proxy/common"
 )
@@ -18,15 +17,24 @@ func (this *PingProc) Ping(args *mysql_proxy_common.PingArgs, reply *mysql_proxy
 
 type Service struct {
 	listener *net.TCPListener
+	server   *mysql_proxy_common.Server
 }
 
 func (this *Service) Register(rcvr interface{}) bool {
-	err := rpc.Register(rcvr)
+	if this.server == nil {
+		log.Printf("rpc service not created\n")
+		return false
+	}
+	err := this.server.Register(rcvr)
 	if err != nil {
 		log.Printf("rpc service register error[%v]\n", err.Error())
 		return false
 	}
 	return true
+}
+
+func (this *Service) Init() {
+	this.server = mysql_proxy_common.NewServer()
 }
 
 func (this *Service) Listen(addr string) error {
@@ -45,8 +53,7 @@ func (this *Service) Listen(addr string) error {
 }
 
 func (this *Service) Serve() {
-	server := mysql_proxy_common.NewServer()
-	server.Accept(this.listener)
+	this.server.Accept(this.listener)
 }
 
 func (this *Service) Close() {

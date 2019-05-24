@@ -10,6 +10,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*int8)
 		r := reply.(*int8)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *int8 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -17,6 +18,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*int16)
 		r := reply.(*int16)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *int16 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -24,6 +26,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*int32)
 		r := reply.(*int32)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *int32 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -31,6 +34,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*int64)
 		r := reply.(*int64)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *int64 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -38,6 +42,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*int)
 		r := reply.(*int)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *int failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -45,6 +50,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*uint8)
 		r := reply.(*uint8)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *uint8 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -52,6 +58,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*uint16)
 		r := reply.(*uint16)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *uint16 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -59,6 +66,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*uint32)
 		r := reply.(*uint32)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *uint32 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -66,6 +74,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*uint64)
 		r := reply.(*uint64)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *uint64 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -73,6 +82,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*uint)
 		r := reply.(*uint)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *uint failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -80,6 +90,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*bool)
 		r := reply.(*bool)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *bool failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -87,6 +98,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*float32)
 		r := reply.(*float32)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *float32 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -94,6 +106,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*float64)
 		r := reply.(*float64)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *float64 failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -101,13 +114,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*string)
 		r := reply.(*string)
 		if r == nil {
-			return false
-		}
-		*d = *r
-	case *byte:
-		d := dest.(*byte)
-		r := reply.(*byte)
-		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to *string failed\n", dt)
 			return false
 		}
 		*d = *r
@@ -115,6 +122,7 @@ func _copy_reply_value_2_dest(dest, reply interface{}) bool {
 		d := dest.(*[]byte)
 		r := reply.([]byte)
 		if r == nil {
+			log.Printf("mysql-client: copy reply value transfer to []byte failed\n", dt)
 			return false
 		}
 		*d = r

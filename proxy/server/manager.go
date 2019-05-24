@@ -264,12 +264,22 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 	return nil
 }
 
+func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, reply *mysql_proxy_common.SaveImmidiateReply) error {
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+	db.Save()
+	return nil
+}
+
 type ProcService struct {
 	service *Service
 }
 
 func (this *ProcService) init() {
 	this.service = &Service{}
+	this.service.Init()
 	this.service.Register(&ProxyReadProc{})
 	this.service.Register(&ProxyWriteProc{})
 	RegisterUserType(&mysql_base.FieldValuePair{})

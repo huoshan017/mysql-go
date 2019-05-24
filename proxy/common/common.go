@@ -17,29 +17,33 @@ type PongReply struct {
 }
 
 type ArgsHead struct {
-	db_host_id    int32
-	db_host_alias string
-	db_name       string
+	DBHostId    int32
+	DBHostAlias string
+	DBName      string
 }
 
 func (this *ArgsHead) SetDBHostId(db_host_id int32) {
-	this.db_host_id = db_host_id
+	this.DBHostId = db_host_id
 }
 
 func (this *ArgsHead) SetDBHostAlias(db_host_alias string) {
-	this.db_host_alias = db_host_alias
+	this.DBHostAlias = db_host_alias
+}
+
+func (this *ArgsHead) SetDBName(db_name string) {
+	this.DBName = db_name
 }
 
 func (this *ArgsHead) GetDBHostId() int32 {
-	return this.db_host_id
+	return this.DBHostId
 }
 
 func (this *ArgsHead) GetDBHostAlias() string {
-	return this.db_host_alias
+	return this.DBHostAlias
 }
 
 func (this *ArgsHead) GetDBName() string {
-	return this.db_name
+	return this.DBName
 }
 
 // select
@@ -139,4 +143,12 @@ type DeleteRecordArgs struct {
 }
 
 type DeleteRecordReply struct {
+}
+
+// save immidiate
+type SaveImmidiateArgs struct {
+	Head *ArgsHead
+}
+
+type SaveImmidiateReply struct {
 }
