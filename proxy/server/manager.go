@@ -10,7 +10,9 @@ import (
 	"github.com/huoshan017/mysql-go/proxy/common"
 )
 
-var type2new_value = map[string]interface{}{
+type new_value_func func() interface{}
+
+var type2new_value = map[string]new_value_func{
 	"bool": func() interface{} {
 		return new(bool)
 	},
@@ -51,7 +53,7 @@ var type2new_value = map[string]interface{}{
 		return new(byte)
 	},
 	"[]byte": func() interface{} {
-		return []byte{}
+		return &[]byte{}
 	},
 }
 
@@ -102,12 +104,17 @@ func _get_new_value_with_field_name(table_config *mysql_base.TableConfig, field_
 		err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type))
 		return
 	}
-	new_value = type2new_value[go_type]
+	new_value_func := type2new_value[go_type]
+	if new_value_func == nil {
+		err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v type %v transfer to go type %v not get new value func", table_config.Name, field_name, fc.Type, go_type))
+	}
+	new_value = new_value_func()
 	return
 }
 
 func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, field_names []string) (dest_list []interface{}, err error) {
-	for _, fn := range field_names {
+	dest_list = make([]interface{}, len(field_names))
+	for i, fn := range field_names {
 		var new_value interface{}
 		new_value, err = _get_new_value_with_field_name(table_config, fn)
 		if err != nil {
@@ -117,8 +124,9 @@ func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, fiel
 			err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v cant get new value", table_config.Name, fn))
 			return
 		}
-		dest_list = append(dest_list, new_value)
+		dest_list[i] = new_value
 	}
+	log.Printf("_make_dest_list_with_field_names gen dest_list: %v\n", dest_list)
 	return
 }
 

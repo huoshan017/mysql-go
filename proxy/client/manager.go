@@ -169,7 +169,7 @@ func (this *DB) SelectRecords(table_name string, field_name string, field_value 
 	return true
 }
 
-func (this *DB) SelectAllRecords(table_name string, field_list []string, dest_lists [][]interface{}) bool {
+func (this *DB) SelectAllRecords(table_name string, field_list []string) (dest_lists [][]interface{}, selected bool) {
 	var args = &mysql_proxy_common.SelectAllRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,

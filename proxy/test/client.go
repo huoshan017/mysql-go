@@ -6,6 +6,13 @@ import (
 	"github.com/huoshan017/mysql-go/proxy/client"
 )
 
+func output_selected() {
+	log.Printf("		account: %v\n		role_id: %v\n		nick_name: %v\n		sex: %v\n		level: %v\n		vip_level: %v\n		exp: %v\n		head: %v",
+		account, role_id, nick_name, sex, level, vip_level, exp, head)
+	log.Printf("		create_time: %v\n		token: %v\n			items: %v\n		skills: %v\n		tasks: %v\n		role_common: %v\n		roles: %v\n",
+		create_time, token, items, skills, tasks, role_common, roles)
+}
+
 func main() {
 	var proxy_addr string = "127.0.0.1:1999"
 	var db_host_id int32 = 1
@@ -22,7 +29,7 @@ func main() {
 	var account, nick_name, token string
 	var role_id int64
 	var sex int8
-	var level, vip_level, exp, head, create_time int
+	var level, vip_level, exp, head, create_time int32
 	var items, skills, tasks, role_common, roles []byte
 	var dest_list = []interface{}{&account, &role_id, &nick_name, &sex, &level, &vip_level, &exp, &head, &create_time, &token, &items, &skills, &tasks, &role_common, &roles}
 	if !db_proxy.Select(table_name, "id", 1, select_names, dest_list) {
@@ -30,8 +37,9 @@ func main() {
 		return
 	}
 	log.Printf("db proxy selected:\n")
-	log.Printf("		account: %v\n		role_id: %v\n		nick_name: %v\n		sex: %v\n		level: %v\n		vip_level: %v\n		exp: %v\n		head: %v",
-		account, role_id, nick_name, sex, level, vip_level, exp, head)
-	log.Printf("		create_time: %v\n		token: %v\n			items: %v\n		skills: %v\n		tasks: %v\n		role_common: %v\n		roles: %v\n",
-		create_time, token, items, skills, tasks, role_common, roles)
+	output_selected()
+
+	if !db_proxy.SelectAllRecords(table_name, select_names) {
+		return
+	}
 }
