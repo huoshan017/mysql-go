@@ -152,3 +152,20 @@ type SaveImmidiateArgs struct {
 
 type SaveImmidiateReply struct {
 }
+
+type OpDetail struct {
+	TableName string
+	OpType    int32
+	Key       string
+	Value     interface{}
+	FieldList []*mysql_base.FieldValuePair
+}
+
+// transaction
+type CommitTransactionArgs struct {
+	Head    *ArgsHead
+	Details []*OpDetail
+}
+
+type CommitTransactionReply struct {
+}

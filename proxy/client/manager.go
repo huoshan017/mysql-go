@@ -2,7 +2,6 @@ package mysql_proxy
 
 import (
 	"log"
-	//"sync/atomic"
 	"time"
 
 	"github.com/huoshan017/mysql-go/base"
@@ -65,57 +64,59 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	return true
 }
 
-type OpDetail struct {
-	table_name string
-	op_type    int32
-	key        string
-	value      interface{}
-	field_list []*mysql_base.FieldValuePair
-}
-
 type Transaction struct {
-	detail_list []*OpDetail
+	db          *DB
+	detail_list []*mysql_proxy_common.OpDetail
 }
 
-func CreateTransaction() *Transaction {
-	return &Transaction{}
+func CreateTransaction(db *DB) *Transaction {
+	return &Transaction{db: db}
 }
 
 func (this *Transaction) Done() {
+	var args = &mysql_proxy_common.CommitTransactionArgs{
+		Head:    this.db._gen_head(),
+		Details: this.detail_list,
+	}
+	var reply mysql_proxy_common.CommitTransactionReply
+	err := this.db.write_client.Call("ProxyWriteProc.CommitTransaction", args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call CommitTransaction err %v\n", err.Error())
+	}
 }
 
 func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_INSERT,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_INSERT,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_INSERT_IGNORE,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_INSERT_IGNORE,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_UPDATE,
-		key:        key,
-		value:      value,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_UPDATE,
+		Key:       key,
+		Value:     value,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) Delete(table_name string, key string, value interface{}) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_DELETE,
-		key:        key,
-		value:      value,
+	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_DELETE,
+		Key:       key,
+		Value:     value,
 	})
 }
 
@@ -321,7 +322,7 @@ func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field
 }
 
 func (this *DB) NewTransaction() *Transaction {
-	return CreateTransaction()
+	return CreateTransaction(this)
 }
 
 func (this *DB) Close() {
