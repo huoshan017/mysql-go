@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/huoshan017/mysql-go/base"
 	"github.com/huoshan017/mysql-go/proxy/client"
 )
 
@@ -19,18 +20,15 @@ func main() {
 	}
 
 	var table_name string = "t_player"
-	var select_names = []string{"account", "role_id", "nick_name", "sex", "level", "vip_level", "exp", "head", "create_time", "token", "items", "skills", "tasks", "role_common", "roles"}
-	var account, nick_name, token string
-	var role_id int64
-	var sex int8
-	var level, vip_level, exp, head, create_time int32
-	var items, skills, tasks, role_common, roles []byte
-	var dest_list = []interface{}{&account, &role_id, &nick_name, &sex, &level, &vip_level, &exp, &head, &create_time, &token, &items, &skills, &tasks, &role_common, &roles}
-	/*if !db_proxy.Select(table_name, "id", 1, select_names, dest_list) {
-		log.Printf("db proxy select table %v where id=1 failed\n", table_name)
-		return
-	}*/
-	go func() {
+
+	/*go func() {
+		var select_names = []string{"account", "role_id", "nick_name", "sex", "level", "vip_level", "exp", "head", "create_time", "token", "items", "skills", "tasks", "role_common", "roles"}
+		var account, nick_name, token string
+		var role_id int64
+		var sex int8
+		var level, vip_level, exp, head, create_time int32
+		var items, skills, tasks, role_common, roles []byte
+		var dest_list = []interface{}{&account, &role_id, &nick_name, &sex, &level, &vip_level, &exp, &head, &create_time, &token, &items, &skills, &tasks, &role_common, &roles}
 		for {
 			var result_list mysql_proxy.QueryResultList
 			if !db_proxy.SelectAllRecords(table_name, select_names, &result_list) {
@@ -48,9 +46,37 @@ func main() {
 					idx+1, account, role_id, nick_name, sex, level, vip_level, exp, head, create_time, token, items, skills, tasks, role_common, roles)
 				idx += 1
 			}
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(time.Minute * 50)
 		}
-	}()
+	}()*/
+
+	for i := 0; i < 10000; i++ {
+		var field_pairs = []*mysql_base.FieldValuePair{
+			&mysql_base.FieldValuePair{
+				Name:  "id",
+				Value: 888 + i,
+			},
+			&mysql_base.FieldValuePair{
+				Name:  "account",
+				Value: "trtrtr",
+			},
+			&mysql_base.FieldValuePair{
+				Name:  "role_id",
+				Value: 676767 + i,
+			},
+		}
+		db_proxy.Insert(table_name, field_pairs)
+
+		field_pairs = []*mysql_base.FieldValuePair{
+			&mysql_base.FieldValuePair{
+				Name:  "vip_level",
+				Value: 200 + i,
+			},
+		}
+		db_proxy.Update(table_name, "id", 1, field_pairs)
+
+		time.Sleep(time.Second * 3)
+	}
 
 	for {
 		time.Sleep(time.Second)

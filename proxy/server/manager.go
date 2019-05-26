@@ -251,6 +251,7 @@ func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordAr
 	} else {
 		db.Insert(args.TableName, args.FieldValuePairs)
 	}
+	log.Printf("ProxyWriteProc.InsertRecord: table_name(%v) field_pairs(%v)\n", args.TableName, args.FieldValuePairs)
 	return nil
 }
 
@@ -260,6 +261,7 @@ func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordAr
 		return err
 	}
 	db.Update(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
+	log.Printf("ProxyWriteProc.UpdateRecord: table_name(%v) where_field_name(%v) where_field_value(%v) field_pairs(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
 	return nil
 }
 
@@ -269,6 +271,7 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 		return err
 	}
 	db.Delete(args.TableName, args.WhereFieldName, args.WhereFieldValue)
+	log.Printf("ProxyWriteProc.DeleteRecord: table_name(%v) where_field_name(%v) where_field_value(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue)
 	return nil
 }
 

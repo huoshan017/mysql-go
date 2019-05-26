@@ -5,8 +5,13 @@ import (
 	"encoding/gob"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"sync"
+)
+
+const (
+	ONLY_WRITE_CLIENT_CHANNEL_LENGTH = 1000
 )
 
 type ClientOnlyWrite struct {
@@ -18,6 +23,9 @@ type ClientOnlyWrite struct {
 	mutex    sync.Mutex // protects following
 	closing  bool       // user has called Close
 	shutdown bool       // server has told us to stop
+
+	call_chan chan *Call
+	err       error
 }
 
 type ClientCodecOnlyWrite interface {
@@ -53,23 +61,24 @@ func (client *ClientOnlyWrite) send(call *Call) error {
 // so no interlocking is required. However each half may be accessed
 // concurrently so the implementation of conn should protect against
 // concurrent reads or concurrent writes.
-func NewClientOnlyWrite(conn io.ReadWriteCloser) *Client {
+func NewClientOnlyWrite(conn io.ReadWriteCloser) *ClientOnlyWrite {
 	encBuf := bufio.NewWriter(conn)
 	client := &gobClientCodec{conn, gob.NewDecoder(conn), gob.NewEncoder(encBuf), encBuf}
-	return NewClientWithCodec(client)
+	return NewClientWithCodecOnlyWrite(client)
 }
 
 // NewClientWithCodec is like NewClient but uses the specified
 // codec to encode requests and decode responses.
 func NewClientWithCodecOnlyWrite(codec ClientCodecOnlyWrite) *ClientOnlyWrite {
 	client := &ClientOnlyWrite{
-		codec: codec,
+		codec:     codec,
+		call_chan: make(chan *Call, ONLY_WRITE_CLIENT_CHANNEL_LENGTH),
 	}
 	return client
 }
 
 // Dial connects to an RPC server at the specified network address.
-func DialOnlyWrite(network, address string) (*Client, error) {
+func DialOnlyWrite(network, address string) (*ClientOnlyWrite, error) {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return nil, err
@@ -79,7 +88,28 @@ func DialOnlyWrite(network, address string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewClientOnlyWrite(conn), nil
+
+	client := NewClientOnlyWrite(conn)
+	go client.send_loop()
+	return client, nil
+}
+
+func (client *ClientOnlyWrite) send_loop() {
+	var is_break bool
+	for !is_break {
+		select {
+		case d, o := <-client.call_chan:
+			{
+				if !o {
+					client.err = errors.New("mysql-proxy-client: read call chan error")
+					is_break = true
+					break
+				}
+				client.send(d)
+				log.Printf("mysql-proxy-client: send call %v\n", d)
+			}
+		}
+	}
 }
 
 // Close calls the underlying codec's Close method. If the connection is already
@@ -101,5 +131,7 @@ func (client *ClientOnlyWrite) Call(serviceMethod string, args interface{}, repl
 	call.ServiceMethod = serviceMethod
 	call.Args = args
 	call.Reply = reply
-	return client.send(call)
+	client.call_chan <- call
+	log.Printf("mysql-proxy-client: call %v\n", call)
+	return nil
 }
