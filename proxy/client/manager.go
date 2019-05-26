@@ -20,6 +20,14 @@ const (
 	DB_STATE_TO_END  = 2
 )
 
+const (
+	DB_OPERATE_TYPE_SELECT        = iota
+	DB_OPERATE_TYPE_INSERT        = 1
+	DB_OPERATE_TYPE_DELETE        = 2
+	DB_OPERATE_TYPE_UPDATE        = 3
+	DB_OPERATE_TYPE_INSERT_IGNORE = 4
+)
+
 type QueryResultList struct {
 	rows        [][]interface{}
 	cur_row_idx int
@@ -55,6 +63,60 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	}
 	this.cur_row_idx += 1
 	return true
+}
+
+type OpDetail struct {
+	table_name string
+	op_type    int32
+	key        string
+	value      interface{}
+	field_list []*mysql_base.FieldValuePair
+}
+
+type Transaction struct {
+	detail_list []*OpDetail
+}
+
+func CreateTransaction() *Transaction {
+	return &Transaction{}
+}
+
+func (this *Transaction) Done() {
+}
+
+func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_INSERT,
+		field_list: field_list,
+	})
+}
+
+func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_INSERT_IGNORE,
+		field_list: field_list,
+	})
+}
+
+func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_UPDATE,
+		key:        key,
+		value:      value,
+		field_list: field_list,
+	})
+}
+
+func (this *Transaction) Delete(table_name string, key string, value interface{}) {
+	this.detail_list = append(this.detail_list, &OpDetail{
+		table_name: table_name,
+		op_type:    DB_OPERATE_TYPE_DELETE,
+		key:        key,
+		value:      value,
+	})
 }
 
 type DB struct {
@@ -258,9 +320,9 @@ func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field
 	return true
 }
 
-/*func (this *DB) NewTransaction() *Transaction {
-	return this.op_mgr.NewTransaction()
-}*/
+func (this *DB) NewTransaction() *Transaction {
+	return CreateTransaction()
+}
 
 func (this *DB) Close() {
 	this.read_client.Close()
