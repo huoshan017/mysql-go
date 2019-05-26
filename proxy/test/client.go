@@ -57,10 +57,6 @@ func main() {
 				Value: 888 + i,
 			},
 			&mysql_base.FieldValuePair{
-				Name:  "account",
-				Value: "trtrtr",
-			},
-			&mysql_base.FieldValuePair{
 				Name:  "role_id",
 				Value: 676767 + i,
 			},
@@ -75,7 +71,7 @@ func main() {
 		}
 		db_proxy.Update(table_name, "id", 1, field_pairs)
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	for {
