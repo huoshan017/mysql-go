@@ -162,3 +162,5 @@ func (this *DbList) GetDB2(db_host_alias string, db_name string) *mysql_manager.
 	}
 	return db_list[db_name]
 }
+
+var db_list DbList

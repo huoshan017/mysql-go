@@ -57,9 +57,6 @@ var type2new_value = map[string]new_value_func{
 	},
 }
 
-var db_list DbList
-var proc_service ProcService
-
 type ProxyReadProc struct {
 }
 
@@ -72,7 +69,6 @@ func _get_db(head *mysql_proxy_common.ArgsHead) (db *mysql_manager.DB, err error
 		return
 	}
 	return
-
 }
 
 func _get_db_and_table_config(head *mysql_proxy_common.ArgsHead, table_name string) (db *mysql_manager.DB, table_config *mysql_base.TableConfig, err error) {

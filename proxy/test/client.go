@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	var proxy_addr string = "127.0.0.1:1999"
+	var proxy_addr string = "127.0.0.1:19999"
 	var db_host_id int32 = 1
 	var db_host_alias string = "main"
 	var db_name = "game_db"
