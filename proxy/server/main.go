@@ -43,7 +43,7 @@ func main() {
 
 	err := db_list.Load(config_path)
 	if err != nil {
-		log.Printf("%v", err.Error())
+		log.Printf("load db list config file failed: %v\n", err.Error())
 		return
 	}
 
