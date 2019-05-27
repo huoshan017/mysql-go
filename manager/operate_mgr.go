@@ -399,7 +399,7 @@ func (this *OperateManager) _get_tmp_op_list() *mysql_base.List {
 
 func (this *OperateManager) Save() {
 	if this._check_op_list_empty() {
-		log.Printf("DBOperateManager::Save @@@ no operation to execute\n")
+		//log.Printf("DBOperateManager::Save @@@ no operation to execute\n")
 		return
 	}
 
