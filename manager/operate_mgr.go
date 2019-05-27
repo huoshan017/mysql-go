@@ -32,13 +32,13 @@ type OpDetail struct {
 type OpData struct {
 	id          uint32
 	sql_type    int32
-	detail      *OpDetail
-	detail_list []*OpDetail
+	detail      *mysql_base.OpDetail
+	detail_list []*mysql_base.OpDetail
 }
 
 type Transaction struct {
 	op_mgr      *OperateManager
-	detail_list []*OpDetail
+	detail_list []*mysql_base.OpDetail
 }
 
 func CreateTransaction(op_mgr *OperateManager) *Transaction {
@@ -52,38 +52,42 @@ func (this *Transaction) Done() {
 }
 
 func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_INSERT,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_INSERT,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_INSERT_IGNORE,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_INSERT_IGNORE,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_UPDATE,
-		key:        key,
-		value:      value,
-		field_list: field_list,
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_UPDATE,
+		Key:       key,
+		Value:     value,
+		FieldList: field_list,
 	})
 }
 
 func (this *Transaction) Delete(table_name string, key string, value interface{}) {
-	this.detail_list = append(this.detail_list, &OpDetail{
-		table_name: table_name,
-		op_type:    DB_OPERATE_TYPE_DELETE,
-		key:        key,
-		value:      value,
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+		TableName: table_name,
+		OpType:    DB_OPERATE_TYPE_DELETE,
+		Key:       key,
+		Value:     value,
 	})
+}
+
+func (this *Transaction) SetDetailList(detail_list []*mysql_base.OpDetail) {
+	this.detail_list = detail_list
 }
 
 type table_info struct {
@@ -196,16 +200,16 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail: &OpDetail{
-			table_name: table_name,
-			op_type: func() int32 {
+		detail: &mysql_base.OpDetail{
+			TableName: table_name,
+			OpType: func() int32 {
 				if !ignore {
 					return DB_OPERATE_TYPE_INSERT
 				} else {
 					return DB_OPERATE_TYPE_INSERT_IGNORE
 				}
 			}(),
-			field_list: field_list,
+			FieldList: field_list,
 		},
 	}
 	this.op_list.Append(op_data)
@@ -225,12 +229,12 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
 		if op_data.detail != nil {
 			// 已经有删除的命令，直接跳过
-			if op_data.detail.op_type == DB_OPERATE_TYPE_DELETE {
+			if op_data.detail.OpType == DB_OPERATE_TYPE_DELETE {
 				return
 			}
-			op_data.detail.op_type = DB_OPERATE_TYPE_DELETE
-			if op_data.detail.field_list != nil {
-				op_data.detail.field_list = nil
+			op_data.detail.OpType = DB_OPERATE_TYPE_DELETE
+			if op_data.detail.FieldList != nil {
+				op_data.detail.FieldList = nil
 			}
 			this.op_list.MoveToLast(op_data)
 			this.curr_op_id += 1
@@ -241,11 +245,11 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail: &OpDetail{
-			table_name: table_name,
-			op_type:    DB_OPERATE_TYPE_DELETE,
-			key:        field_name,
-			value:      field_value,
+		detail: &mysql_base.OpDetail{
+			TableName: table_name,
+			OpType:    DB_OPERATE_TYPE_DELETE,
+			Key:       field_name,
+			Value:     field_value,
 		},
 	}
 	this.op_list.Append(op_data)
@@ -289,11 +293,11 @@ func (this *OperateManager) Update(table_name string, field_name string, field_v
 	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
 		if op_data.detail != nil {
 			// 已经删除
-			if op_data.detail.op_type == DB_OPERATE_TYPE_DELETE {
+			if op_data.detail.OpType == DB_OPERATE_TYPE_DELETE {
 				return
 			}
-			if op_data.detail.op_type == DB_OPERATE_TYPE_INSERT || op_data.detail.op_type == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.op_type == DB_OPERATE_TYPE_UPDATE {
-				op_data.detail.field_list = field_list_cover(field_list, op_data.detail.field_list)
+			if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT || op_data.detail.OpType == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.OpType == DB_OPERATE_TYPE_UPDATE {
+				op_data.detail.FieldList = field_list_cover(field_list, op_data.detail.FieldList)
 				this.op_list.MoveToLast(op_data)
 				this.curr_op_id += 1
 			}
@@ -304,12 +308,12 @@ func (this *OperateManager) Update(table_name string, field_name string, field_v
 	op_data = &OpData{
 		id:       this.curr_op_id,
 		sql_type: DB_SQL_TYPE_COMMAND,
-		detail: &OpDetail{
-			table_name: table_name,
-			op_type:    DB_OPERATE_TYPE_UPDATE,
-			key:        field_name,
-			value:      field_value,
-			field_list: field_list,
+		detail: &mysql_base.OpDetail{
+			TableName: table_name,
+			OpType:    DB_OPERATE_TYPE_UPDATE,
+			Key:       field_name,
+			Value:     field_value,
+			FieldList: field_list,
 		},
 	}
 	this.op_list.Append(op_data)
@@ -338,34 +342,34 @@ func (this *OperateManager) appendTransaction(transaction *Transaction) {
 	this.curr_op_id += 1
 }
 
-func (this *OperateManager) _op_cmd(d *OpDetail) {
-	switch d.op_type {
+func (this *OperateManager) _op_cmd(d *mysql_base.OpDetail) {
+	switch d.OpType {
 	case DB_OPERATE_TYPE_INSERT:
-		this.db.InsertRecord(d.table_name, d.field_list...)
+		this.db.InsertRecord(d.TableName, d.FieldList...)
 	case DB_OPERATE_TYPE_DELETE:
-		this.db.DeleteRecord(d.table_name, d.key, d.value)
+		this.db.DeleteRecord(d.TableName, d.Key, d.Value)
 	case DB_OPERATE_TYPE_UPDATE:
-		this.db.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
+		this.db.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
 	case DB_OPERATE_TYPE_INSERT_IGNORE:
-		this.db.InsertIgnoreRecord(d.table_name, d.field_list...)
+		this.db.InsertIgnoreRecord(d.TableName, d.FieldList...)
 	}
 }
 
-func (this *OperateManager) _op_transaction(dl []*OpDetail) {
+func (this *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) {
 	procedure := this.db.BeginProcedure()
 	if procedure == nil {
 		return
 	}
 	for _, d := range dl {
 		var o bool
-		if d.op_type == DB_OPERATE_TYPE_INSERT {
-			o, _ = procedure.InsertRecord(d.table_name, d.field_list...)
-		} else if d.op_type == DB_OPERATE_TYPE_UPDATE {
-			o = procedure.UpdateRecord(d.table_name, d.key, d.value, d.field_list...)
-		} else if d.op_type == DB_OPERATE_TYPE_DELETE {
-			o = procedure.DeleteRecord(d.table_name, d.key, d.value)
-		} else if d.op_type == DB_OPERATE_TYPE_INSERT_IGNORE {
-			o, _ = procedure.InsertIgnoreRecord(d.table_name, d.field_list...)
+		if d.OpType == DB_OPERATE_TYPE_INSERT {
+			o, _ = procedure.InsertRecord(d.TableName, d.FieldList...)
+		} else if d.OpType == DB_OPERATE_TYPE_UPDATE {
+			o = procedure.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
+		} else if d.OpType == DB_OPERATE_TYPE_DELETE {
+			o = procedure.DeleteRecord(d.TableName, d.Key, d.Value)
+		} else if d.OpType == DB_OPERATE_TYPE_INSERT_IGNORE {
+			o, _ = procedure.InsertIgnoreRecord(d.TableName, d.FieldList...)
 		}
 		if !o {
 			procedure.Rollback()

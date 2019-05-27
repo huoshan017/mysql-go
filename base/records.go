@@ -10,6 +10,14 @@ type FieldValuePair struct {
 	Value interface{}
 }
 
+type OpDetail struct {
+	TableName string
+	OpType    int32
+	Key       string
+	Value     interface{}
+	FieldList []*FieldValuePair
+}
+
 func _gen_insert_params(field_args ...*FieldValuePair) (field_list, placehold_list string, args []interface{}) {
 	for i, fa := range field_args {
 		if i == 0 {
@@ -210,24 +218,6 @@ func (this *Procedure) UpdateRecord(table_name string, key_name string, key_valu
 	query_str, args := _gen_update_params(table_name, key_name, key_value, field_args...)
 	return this.ExecWith(query_str, args, nil, nil)
 }
-
-/*func (this *Procedure) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
-	if dest_list == nil || len(dest_list) == 0 {
-		log.Printf("Procedure::SelectRecord result dest_list could not empty\n")
-		return false
-	}
-	query_str := _gen_select_query_str(table_name, field_list, key_name)
-	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
-}
-
-func (this *Procedure) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) bool {
-	if result_list == nil {
-		log.Printf("Procedure::SelectRecords result_list could not null\n")
-		return false
-	}
-	query_str := _gen_select_query_str(table_name, field_list, key_name)
-	return this.QueryWith(query_str, []interface{}{key_value}, result_list)
-}*/
 
 func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
 	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"

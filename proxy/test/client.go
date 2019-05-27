@@ -25,7 +25,7 @@ func main() {
 	field_name := "id"
 	go func() {
 		var id int = 1
-		for id < 10 {
+		for ; id < 10; id++ {
 			p, o := player_table_proxy.Select(field_name, id)
 			if !o {
 				log.Printf("select id %v failed\n", id)
@@ -33,7 +33,6 @@ func main() {
 			}
 
 			log.Printf("selected player: %v\n", p)
-			id += 1
 		}
 	}()
 

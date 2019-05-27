@@ -156,6 +156,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += "	\"sync\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
+	str += "	\"github.com/huoshan017/mysql-go/proxy/client\"\n"
 	if table.HasStructField() {
 		str += "	\"github.com/golang/protobuf/proto\"\n"
 	}
@@ -511,29 +512,5 @@ func gen_procedure_source(table *mysql_base.TableConfig, struct_table_name, stru
 	str += "	}\n"
 	str += "}\n\n"
 
-	//////////////////////////////////////////////////
-	/*if !table.SingleRow {
-		str += "func TransactionInsert_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
-		str += "	field_list := t._format_field_list()\n"
-		str += "	if field_list != nil {\n"
-		str += "		transaction.Insert(\"" + table.Name + "\", field_list)\n"
-		str += "	}\n"
-		str += "}\n\n"
-		str += "func TransactionDelete_" + struct_row_name + "(transaction *mysql_manager.Transaction, " + primary_field.Name + " " + primary_type + ") {\n"
-		str += "	transaction.Delete(\"" + table.Name + "\", \"" + primary_field.Name + "\", " + primary_field.Name + ")\n"
-		str += "}\n\n"
-		str += "func TransactionUpdateAll_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ") {\n"
-		str += "	field_list := t._format_field_list()\n"
-		str += "	if field_list != nil {\n"
-		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
-		str += "	}\n"
-		str += "}\n\n"
-		str += "func TransactionUpdate_" + struct_row_name + "(transaction *mysql_manager.Transaction, t *" + struct_row_name + ", fields_name []string) {\n"
-		str += "	field_list := t.GetFVPList(fields_name)\n"
-		str += "	if field_list != nil {\n"
-		str += "		transaction.Update(\"" + table.Name + "\", \"" + primary_field.Name + "\", t.Get_" + primary_field.Name + "(), field_list)\n"
-		str += "	}\n"
-		str += "}\n"
-	}*/
 	return str
 }

@@ -232,7 +232,12 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 		}
 
 		res := gen_source(f, this.DBPkg, table)
+		if !res {
+			log.Printf("写文件%v失败\n", f.Name)
+			return false
+		}
 
+		res = gen_proxy_source(f, this.DBPkg, table)
 		if !res {
 			log.Printf("写文件%v失败\n", f.Name)
 			return false
