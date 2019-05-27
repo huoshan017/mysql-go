@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"io"
-	"log"
 	"net"
 	"sync"
 )
@@ -106,7 +105,6 @@ func (client *ClientOnlyWrite) send_loop() {
 					break
 				}
 				client.send(d)
-				log.Printf("mysql-proxy-client: send call %v\n", d)
 			}
 		}
 	}
@@ -132,6 +130,5 @@ func (client *ClientOnlyWrite) Call(serviceMethod string, args interface{}, repl
 	call.Args = args
 	call.Reply = reply
 	client.call_chan <- call
-	log.Printf("mysql-proxy-client: call %v\n", call)
 	return nil
 }

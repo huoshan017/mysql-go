@@ -66,7 +66,7 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 
 type Transaction struct {
 	db          *DB
-	detail_list []*mysql_proxy_common.OpDetail
+	detail_list []*mysql_base.OpDetail
 }
 
 func CreateTransaction(db *DB) *Transaction {
@@ -86,7 +86,7 @@ func (this *Transaction) Done() {
 }
 
 func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_INSERT,
 		FieldList: field_list,
@@ -94,7 +94,7 @@ func (this *Transaction) Insert(table_name string, field_list []*mysql_base.Fiel
 }
 
 func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_INSERT_IGNORE,
 		FieldList: field_list,
@@ -102,7 +102,7 @@ func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_bas
 }
 
 func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_UPDATE,
 		Key:       key,
@@ -112,7 +112,7 @@ func (this *Transaction) Update(table_name string, key string, value interface{}
 }
 
 func (this *Transaction) Delete(table_name string, key string, value interface{}) {
-	this.detail_list = append(this.detail_list, &mysql_proxy_common.OpDetail{
+	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_DELETE,
 		Key:       key,
@@ -275,7 +275,7 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string, result_
 	return true
 }
 
-func (this *DB) SelectField(table_name string, field_name string, dest_list []interface{}) bool {
+func (this *DB) SelectField(table_name string, field_name string) ([]interface{}, bool) {
 	var args = &mysql_proxy_common.SelectFieldArgs{
 		Head:            this._gen_head(),
 		TableName:       table_name,
@@ -285,18 +285,9 @@ func (this *DB) SelectField(table_name string, field_name string, dest_list []in
 	err := this.read_client.Call("ProxyReadProc.SelectField", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select field err: %v\n", err.Error())
-		return false
+		return nil, false
 	}
-	if len(dest_list) != len(reply.ResultList) {
-		log.Printf("mysql-proxy-client: SelectFieldNokey arg dest_list length must equal to SelectReply ResultList length\n")
-		return false
-	}
-	for i := 0; i < len(dest_list); i++ {
-		if !_copy_reply_value_2_dest(dest_list[i], reply.ResultList[i]) {
-			return false
-		}
-	}
-	return true
+	return reply.ResultList, true
 }
 
 func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *QueryResultList) bool {

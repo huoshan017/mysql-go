@@ -275,6 +275,18 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 	return nil
 }
 
+func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTransactionArgs, reply *mysql_proxy_common.CommitTransactionReply) error {
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+	transaction := db.NewTransaction()
+	transaction.SetDetailList(args.Details)
+	transaction.Done()
+	log.Printf("ProxyWriteProc.CommitTransaction: %v\n", args.Details)
+	return nil
+}
+
 func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, reply *mysql_proxy_common.SaveImmidiateReply) error {
 	db, err := _get_db(args.Head)
 	if err != nil {
@@ -294,6 +306,7 @@ func (this *ProcService) init() {
 	this.service.Register(&ProxyReadProc{})
 	this.service.Register(&ProxyWriteProc{})
 	RegisterUserType(&mysql_base.FieldValuePair{})
+	RegisterUserType(&mysql_base.OpDetail{})
 }
 
 func (this *ProcService) Start(addr string) {
