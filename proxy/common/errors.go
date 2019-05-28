@@ -2,6 +2,7 @@ package mysql_proxy_common
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -43,11 +44,13 @@ func OutputCriticalStack(logger Logger, err interface{}) {
 	if logger == nil {
 		return
 	}
-	logger.Print("<critical> %v", err)
+	str := fmt.Sprintf("<critical> %v", err)
+	logger.Print(str)
 	for i := 0; i < DEFAULT_CRITICAL_LOG_CALL_FRAME_NUM; i++ {
 		funcName, file, line, ok := runtime.Caller(i)
 		if ok {
-			logger.Print("<stack>%v|%v|%v|%v}\n", i, runtime.FuncForPC(funcName).Name(), file, line)
+			str = fmt.Sprintf("<stack>%v|%v|%v|%v}\n", i, runtime.FuncForPC(funcName).Name(), file, line)
+			logger.Print(str)
 		}
 	}
 }
