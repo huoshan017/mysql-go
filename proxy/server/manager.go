@@ -141,7 +141,16 @@ func _gen_dest_lists(result_list *mysql_base.QueryResultList, table_config *mysq
 	return
 }
 
+func output_critical(err interface{}) {
+	mysql_proxy_common.OutputCriticalStack(mysql_proxy_common.ServerLogErr, err)
+}
+
 func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *mysql_proxy_common.SelectReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
 	if err != nil {
 		return err
@@ -159,6 +168,11 @@ func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *my
 }
 
 func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
 	if err != nil {
 		return err
@@ -177,6 +191,11 @@ func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsA
 }
 
 func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
 	if err != nil {
 		return err
@@ -195,6 +214,11 @@ func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRe
 }
 
 func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
 	if err != nil {
 		return err
@@ -217,6 +241,11 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 }
 
 func (this *ProxyReadProc) SelectRecordsOrderby(args *mysql_proxy_common.SelectRecordsOrderbyArgs, reply *mysql_proxy_common.SelectRecordsOrderbyReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
 	if err != nil {
 		return err
@@ -238,6 +267,11 @@ type ProxyWriteProc struct {
 }
 
 func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordArgs, reply *mysql_proxy_common.InsertRecordReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, err := _get_db(args.Head)
 	if err != nil {
 		return err
@@ -252,6 +286,11 @@ func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordAr
 }
 
 func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordArgs, reply *mysql_proxy_common.UpdateRecordReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, err := _get_db(args.Head)
 	if err != nil {
 		return err
@@ -262,6 +301,11 @@ func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordAr
 }
 
 func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordArgs, reply *mysql_proxy_common.DeleteRecordReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, err := _get_db(args.Head)
 	if err != nil {
 		return err
@@ -272,6 +316,11 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 }
 
 func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTransactionArgs, reply *mysql_proxy_common.CommitTransactionReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, err := _get_db(args.Head)
 	if err != nil {
 		return err
@@ -284,6 +333,11 @@ func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTra
 }
 
 func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, reply *mysql_proxy_common.SaveImmidiateReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
 	db, err := _get_db(args.Head)
 	if err != nil {
 		return err
