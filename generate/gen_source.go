@@ -148,6 +148,27 @@ func gen_row_lock_func(struct_row_name string) string {
 	return str
 }
 
+func gen_get_result_list(table *mysql_base.TableConfig, struct_row_name, bytes_define_list, dest_list string) (str string) {
+	str = ("	var r []*" + struct_row_name + "\n")
+	if bytes_define_list != "" {
+		str += ("	var " + bytes_define_list + " []byte\n")
+	}
+	str += ("	for {\n")
+	str += ("		var t = Create_" + struct_row_name + "()\n")
+	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
+	str += ("		if !result_list.Get(dest_list...) {\n")
+	str += ("			break\n")
+	str += ("		}\n")
+	for _, field := range table.Fields {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
+		}
+	}
+	str += ("		r = append(r, t)\n")
+	str += ("	}\n")
+	return
+}
+
 func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
 	str := "package " + pkg_name + "\n\nimport (\n"
 	if table.HasStructField() {
@@ -268,7 +289,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// select func
 	if !table.SingleRow {
-		str += ("func (this *" + struct_table_name + ") Select(key string, value interface{}) (*" + struct_row_name + ", bool) {\n")
+		str += ("func (this *" + struct_table_name + ") Select(field_name string, field_value interface{}) (*" + struct_row_name + ", bool) {\n")
 	} else {
 		str += "func (this *" + struct_table_name + ") Select() (*" + struct_row_name + ", bool) {\n"
 	}
@@ -279,7 +300,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
 	if !table.SingleRow {
-		str += ("	if !this.db.Select(\"" + table.Name + "\", key, value, field_list, dest_list) {\n")
+		str += ("	if !this.db.Select(\"" + table.Name + "\", field_name, field_value, field_list, dest_list) {\n")
 	} else {
 		str += ("	if !this.db.Select(\"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list) {\n")
 	}
@@ -294,40 +315,37 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("}\n\n")
 
 	if !table.SingleRow {
-		// select multi func
-		str += ("func (this *" + struct_table_name + ") SelectMulti(key string, value interface{}, order_by string, desc bool, offset, limit int) ([]*" + struct_row_name + ", bool) {\n")
-		str += ("	var field_list = []string{" + field_list + "}\n")
-		str += ("	var result_list mysql_base.QueryResultList\n")
-		str += ("	if !this.db.SelectRecordsOrderby(\"" + table.Name + "\", key, value, order_by, desc, offset, limit, field_list, &result_list) {\n")
-		str += ("		return nil, false\n")
-		str += ("	}\n")
-		str += ("	var r []*" + struct_row_name + "\n")
-		if bytes_define_list != "" {
-			str += ("	var " + bytes_define_list + " []byte\n")
-		}
-		str += ("	for {\n")
-		str += ("		var t = Create_" + struct_row_name + "()\n")
-		str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
-		str += ("		if !result_list.Get(dest_list...) {\n")
-		str += ("			break\n")
-		str += ("		}\n")
-		for _, field := range table.Fields {
-			if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
-				str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
-			}
-		}
-		str += ("		r = append(r, t)\n")
-		str += ("	}\n")
-		str += ("	return r, true\n")
-		str += ("}\n\n")
-
-		// select all
-		str += "func (this *" + struct_table_name + ") SelectAll() []*" + struct_row_name + " {\n"
-		str += "	all, o := this.SelectMulti(\"\", nil, \"\", false, -1, -1)\n"
-		str += "	if !o {\n"
-		str += "		return nil\n"
+		// select records condition
+		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", bool) {\n"
+		str += "	var field_list = []string{" + field_list + "}\n"
+		str += "	var result_list mysql_base.QueryResultList\n"
+		str += "	if !this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list) {\n"
+		str += "		return nil, false\n"
 		str += "	}\n"
-		str += "	return all\n"
+		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
+		str += "	return r, true\n"
+		str += "}\n\n"
+
+		// select all records
+		str += "func (this *" + struct_table_name + ") SelectAllRecords() ([]*" + struct_row_name + ", bool) {\n"
+		str += "	var field_list = []string{" + field_list + "}\n"
+		str += "	var result_list mysql_base.QueryResultList\n"
+		str += "	if !this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list) {\n"
+		str += "		return nil, false\n"
+		str += "	}\n"
+		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
+		str += "	return r, true\n"
+		str += "}\n\n"
+
+		// select records
+		str += "func (this *" + struct_table_name + ") SelectRecords(field_name string, field_value interface{}) ([]*" + struct_row_name + ", bool) {\n"
+		str += "	var field_list = []string{" + field_list + "}\n"
+		str += "	var result_list mysql_base.QueryResultList\n"
+		str += "	if !this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list) {\n"
+		str += "		return nil, false\n"
+		str += "	}\n"
+		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
+		str += "	return r, true\n"
 		str += "}\n\n"
 	}
 

@@ -240,7 +240,7 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 	return nil
 }
 
-func (this *ProxyReadProc) SelectRecordsOrderby(args *mysql_proxy_common.SelectRecordsOrderbyArgs, reply *mysql_proxy_common.SelectRecordsOrderbyReply) error {
+func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsConditionReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -251,8 +251,8 @@ func (this *ProxyReadProc) SelectRecordsOrderby(args *mysql_proxy_common.SelectR
 		return err
 	}
 	var result_list mysql_base.QueryResultList
-	if !db.SelectRecordsOrderby(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.Orderby, args.Desc, args.Offset, args.Limit, args.SelectFieldNames, &result_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select records order by with table_name(%v) where_field_name(%v) order_by(%v) desc(%v) offset(%v) limit(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.Orderby, args.Desc, args.Offset, args.Limit, args.SelectFieldNames))
+	if !db.SelectRecordsCondition(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelCond, args.SelectFieldNames, &result_list) {
+		return errors.New(fmt.Sprintf("mysql-proxy-server: select records order by with table_name(%v) where_field_name(%v) sel_cond(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelCond, args.SelectFieldNames))
 	}
 	var dest_lists [][]interface{}
 	dest_lists, err = _gen_dest_lists(&result_list, table_config, args.SelectFieldNames)
@@ -357,6 +357,7 @@ func (this *ProcService) init() {
 	this.service.Register(&ProxyWriteProc{})
 	RegisterUserType(&mysql_base.FieldValuePair{})
 	RegisterUserType(&mysql_base.OpDetail{})
+	RegisterUserType(&mysql_base.SelectCondition{})
 }
 
 func (this *ProcService) Start(addr string) {

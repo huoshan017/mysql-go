@@ -122,8 +122,8 @@ func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_li
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
 }
 
-func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *mysql_base.QueryResultList) bool {
-	return this.database.SelectRecordsOrderby(table_name, field_name, field_value, order_by, desc, offset, limit, field_list, result_list)
+func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *mysql_base.QueryResultList) bool {
+	return this.database.SelectRecordsCondition(table_name, field_name, field_value, sel_cond, field_list, result_list)
 }
 
 func (this *DB) NewTransaction() *Transaction {

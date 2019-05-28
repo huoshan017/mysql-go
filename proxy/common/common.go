@@ -95,19 +95,16 @@ type SelectFieldReply struct {
 }
 
 // select records order by
-type SelectRecordsOrderbyArgs struct {
+type SelectRecordsConditionArgs struct {
 	Head             *ArgsHead
 	TableName        string
 	WhereFieldName   string
 	WhereFieldValue  interface{}
 	SelectFieldNames []string
-	Orderby          string
-	Desc             bool
-	Offset           int
-	Limit            int
+	SelCond          *mysql_base.SelectCondition
 }
 
-type SelectRecordsOrderbyReply struct {
+type SelectRecordsConditionReply struct {
 	ResultList [][]interface{}
 }
 

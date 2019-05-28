@@ -290,22 +290,19 @@ func (this *DB) SelectField(table_name string, field_name string) ([]interface{}
 	return reply.ResultList, true
 }
 
-func (this *DB) SelectRecordsOrderby(table_name string, field_name string, field_value interface{}, order_by string, desc bool, offset, limit int, field_list []string, result_list *QueryResultList) bool {
-	var args = &mysql_proxy_common.SelectRecordsOrderbyArgs{
+func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) bool {
+	var args = &mysql_proxy_common.SelectRecordsConditionArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
 		SelectFieldNames: field_list,
-		Orderby:          order_by,
-		Desc:             desc,
-		Offset:           offset,
-		Limit:            limit,
+		SelCond:          sel_cond,
 	}
-	var reply mysql_proxy_common.SelectRecordsOrderbyReply
-	err := this.read_client.Call("ProxyReadProc.SelectRecordsOrderby", args, &reply)
+	var reply mysql_proxy_common.SelectRecordsConditionReply
+	err := this.read_client.Call("ProxyReadProc.SelectRecordsCondition", args, &reply)
 	if err != nil {
-		log.Printf("mysql-proxy-client: call select records order by err: %v\n", err.Error())
+		log.Printf("mysql-proxy-client: call select records condition err: %v\n", err.Error())
 		return false
 	}
 	result_list.Init(reply.ResultList)
