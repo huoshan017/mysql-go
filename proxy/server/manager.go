@@ -122,7 +122,6 @@ func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, fiel
 		}
 		dest_list[i] = new_value
 	}
-	log.Printf("_make_dest_list_with_field_names gen dest_list: %v\n", dest_list)
 	return
 }
 
@@ -281,7 +280,9 @@ func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordAr
 	} else {
 		db.Insert(args.TableName, args.FieldValuePairs)
 	}
-	log.Printf("ProxyWriteProc.InsertRecord: table_name(%v) field_pairs(%v)\n", args.TableName, args.FieldValuePairs)
+	if IsDebug {
+		log.Printf("ProxyWriteProc.InsertRecord: table_name(%v) field_pairs(%v)\n", args.TableName, args.FieldValuePairs)
+	}
 	return nil
 }
 
@@ -296,7 +297,9 @@ func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordAr
 		return err
 	}
 	db.Update(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
-	log.Printf("ProxyWriteProc.UpdateRecord: table_name(%v) where_field_name(%v) where_field_value(%v) field_pairs(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
+	if IsDebug {
+		log.Printf("ProxyWriteProc.UpdateRecord: table_name(%v) where_field_name(%v) where_field_value(%v) field_pairs(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue, args.FieldValuePairs)
+	}
 	return nil
 }
 
@@ -311,7 +314,9 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 		return err
 	}
 	db.Delete(args.TableName, args.WhereFieldName, args.WhereFieldValue)
-	log.Printf("ProxyWriteProc.DeleteRecord: table_name(%v) where_field_name(%v) where_field_value(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue)
+	if IsDebug {
+		log.Printf("ProxyWriteProc.DeleteRecord: table_name(%v) where_field_name(%v) where_field_value(%v)\n", args.TableName, args.WhereFieldName, args.WhereFieldValue)
+	}
 	return nil
 }
 
@@ -328,7 +333,9 @@ func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTra
 	transaction := db.NewTransaction()
 	transaction.SetDetailList(args.Details)
 	transaction.Done()
-	log.Printf("ProxyWriteProc.CommitTransaction: %v\n", args.Details)
+	if IsDebug {
+		log.Printf("ProxyWriteProc.CommitTransaction: %v\n", args.Details)
+	}
 	return nil
 }
 
@@ -360,12 +367,20 @@ func (this *ProcService) init() {
 	RegisterUserType(&mysql_base.SelectCondition{})
 }
 
-func (this *ProcService) Start(addr string) {
+func (this *ProcService) Start(addr string) error {
 	this.init()
 	err := this.service.Listen(addr)
 	if err != nil {
-		log.Printf("mysql-proxy-server: start with addr %v err: %v", addr, err.Error())
-		return
+		return errors.New(fmt.Sprintf("mysql-proxy-server: start with addr %v err: %v", addr, err.Error()))
 	}
 	this.service.Serve()
+	return nil
+}
+
+var (
+	IsDebug = false
+)
+
+func SetDebug(debug bool) {
+	IsDebug = debug
 }

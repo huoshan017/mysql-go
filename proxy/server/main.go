@@ -43,13 +43,18 @@ func main() {
 
 	err := db_list.Load(config_path)
 	if err != nil {
-		log.Printf("load db list config file failed: %v\n", err.Error())
+		log.Printf("%v\n", err.Error())
 		return
 	}
+
+	SetDebug(true)
 
 	var proc_service ProcService
 	if !strings.Contains(listen_address, ":") {
 		listen_address += (":" + strconv.Itoa(DEFAULT_LISTEN_PORT))
 	}
-	proc_service.Start(listen_address)
+	err = proc_service.Start(listen_address)
+	if err != nil {
+		log.Printf("%v\n", err.Error())
+	}
 }

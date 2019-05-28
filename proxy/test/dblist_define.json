@@ -35,7 +35,7 @@
 			"ip": "192.168.0.16",
 			"user": "root",
 			"password": "moyu@123",
-			"db_defines": [
+			"db_list": [
 				{
 					"disable": false,
 					"name_list": ["game4_db", "game5_db", "game6_db", "game7_db", "game8_db", "game9_db", "game10_db"],
