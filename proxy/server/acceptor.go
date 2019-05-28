@@ -38,9 +38,7 @@ func (this *Service) Init() {
 }
 
 func (this *Service) Listen(addr string) error {
-	ping_proc := &PingProc{}
-	this.Register(ping_proc)
-
+	this.Register(&PingProc{})
 	var address, _ = net.ResolveTCPAddr("tcp", addr)
 	l, e := net.ListenTCP("tcp", address)
 	if e != nil {

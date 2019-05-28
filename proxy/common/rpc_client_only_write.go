@@ -33,6 +33,10 @@ type ClientCodecOnlyWrite interface {
 	Close() error
 }
 
+func (client *ClientOnlyWrite) GetErr() error {
+	return client.err
+}
+
 func (client *ClientOnlyWrite) send(call *Call) error {
 	client.reqMutex.Lock()
 	defer client.reqMutex.Unlock()
@@ -104,7 +108,11 @@ func (client *ClientOnlyWrite) send_loop() {
 					is_break = true
 					break
 				}
-				client.send(d)
+				err := client.send(d)
+				if err != nil {
+					client.err = err
+					break
+				}
 			}
 		}
 	}
@@ -131,4 +139,12 @@ func (client *ClientOnlyWrite) Call(serviceMethod string, args interface{}, repl
 	call.Reply = reply
 	client.call_chan <- call
 	return nil
+}
+
+func (client *ClientOnlyWrite) CallImmidiate(serviceMethod string, args interface{}, reply interface{}) error {
+	call := new(Call)
+	call.ServiceMethod = serviceMethod
+	call.Args = args
+	call.Reply = reply
+	return client.send(call)
 }

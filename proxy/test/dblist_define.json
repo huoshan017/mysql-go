@@ -1,7 +1,7 @@
 {
 	"define_list": [
 		{ "id": 1, "name": "../../example/db_define/account_db.json" },
-		{ "id": 2, "name": "../../example/db_define/game_db.json" },
+		{ "id": 2, "name": "../test/db_define/game_db.json" },
 		{ "id": 3, "name": "../../example/db_define/login_db.json" }
 	],
 	
