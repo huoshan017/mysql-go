@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/huoshan017/mysql-go/proxy/client"
@@ -9,7 +11,24 @@ import (
 )
 
 func main() {
-	var proxy_addr string = "127.0.0.1:19999"
+	if len(os.Args) < 1 {
+		log.Printf("args not enough, must specify a config file for db define\n")
+		return
+	}
+
+	host_arg := flag.String("h", "", "config host server")
+	flag.Parse()
+
+	var host string
+	if nil != host_arg {
+		host = *host_arg
+		log.Printf("config file path %v\n", host)
+	} else {
+		log.Printf("not specified config file arg\n")
+		return
+	}
+
+	var proxy_addr string = host
 	var db_host_id int32 = 1
 	var db_host_alias string = "main"
 	var db_name = "game_db"
