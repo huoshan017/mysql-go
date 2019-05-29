@@ -101,12 +101,14 @@ func (this *table_info) init(primary_field string) {
 }
 
 type OperateManager struct {
-	op_list      *mysql_base.List
-	table_op_map map[string]*table_info
-	curr_op_id   uint32
-	locker       sync.RWMutex
-	db           *mysql_base.Database
-	enable       bool
+	op_list          *mysql_base.List
+	table_op_map     map[string]*table_info
+	curr_op_id       uint32
+	curr_cmd_op_id   uint32
+	curr_trans_op_id uint32
+	locker           sync.RWMutex
+	db               *mysql_base.Database
+	enable           bool
 }
 
 func (this *OperateManager) Init(db *mysql_base.Database, config_loader *mysql_generate.ConfigLoader) {
@@ -189,12 +191,10 @@ func (this *OperateManager) Insert(table_name string, field_list []*mysql_base.F
 	var op_data *OpData
 	var field_name string
 	var field_value interface{}
-	if !ignore {
-		op_data, field_name, field_value = this.get_table_op_data_with_field_list(table_name, field_list)
-		if op_data != nil {
-			log.Printf("mysql_manager: operate manager insert table %v new row with(field_name:%v, field_value:%v) already exist\n", table_name, field_name, field_value)
-			return
-		}
+	op_data, field_name, field_value = this.get_table_op_data_with_field_list(table_name, field_list)
+	if op_data != nil && op_data.detail.OpType != DB_OPERATE_TYPE_DELETE && op_data.id > this.curr_trans_op_id {
+		log.Printf("mysql_manager: operate manager insert table %v new row with(field_name:%v, field_value:%v) already exist\n", table_name, field_name, field_value)
+		return
 	}
 
 	op_data = &OpData{
@@ -226,19 +226,26 @@ func (this *OperateManager) Delete(table_name string, field_name string, field_v
 	}
 
 	op_data := this.get_table_op_data(table_name, field_name, field_value)
-	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
+	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND && op_data.id > this.curr_trans_op_id {
 		if op_data.detail != nil {
-			// 已经有删除的命令，直接跳过
+			// 已经有删除，直接跳过
 			if op_data.detail.OpType == DB_OPERATE_TYPE_DELETE {
 				return
 			}
-			op_data.detail.OpType = DB_OPERATE_TYPE_DELETE
-			if op_data.detail.FieldList != nil {
-				op_data.detail.FieldList = nil
+			// 如果是插入，则直接把命令删除
+			if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT {
+				this.op_list.Delete(op_data)
+				return
 			}
-			this.op_list.MoveToLast(op_data)
-			this.curr_op_id += 1
-			return
+			if op_data.detail.OpType == DB_OPERATE_TYPE_UPDATE {
+				op_data.detail.OpType = DB_OPERATE_TYPE_DELETE
+				if op_data.detail.FieldList != nil {
+					op_data.detail.FieldList = nil
+				}
+				this.op_list.MoveToLast(op_data)
+				this.curr_op_id += 1
+				return
+			}
 		}
 	}
 
@@ -290,7 +297,7 @@ func (this *OperateManager) Update(table_name string, field_name string, field_v
 	}
 
 	op_data := this.get_table_op_data(table_name, field_name, field_value)
-	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND {
+	if op_data != nil && op_data.sql_type == DB_SQL_TYPE_COMMAND && op_data.id > this.curr_trans_op_id {
 		if op_data.detail != nil {
 			// 已经删除
 			if op_data.detail.OpType == DB_OPERATE_TYPE_DELETE {
@@ -339,6 +346,7 @@ func (this *OperateManager) appendTransaction(transaction *Transaction) {
 		detail_list: transaction.detail_list,
 	})
 
+	this.curr_trans_op_id = this.curr_op_id
 	this.curr_op_id += 1
 }
 
@@ -394,6 +402,8 @@ func (this *OperateManager) _get_tmp_op_list() *mysql_base.List {
 	tmp_list := this.op_list
 	this.op_list = &mysql_base.List{}
 	this.curr_op_id = 0
+	this.curr_cmd_op_id = 0
+	this.curr_trans_op_id = 0
 	return tmp_list
 }
 

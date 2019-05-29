@@ -374,18 +374,29 @@ var mysql_field_type_string_maps = map[int]string{
 	MYSQL_FIELD_TYPE_SET:        "",
 }
 
-func MysqlFieldType2GoTypeStr(field_type int) string {
+func MysqlFieldType2GoTypeStr(field_type int, is_unsigned bool) string {
 	go_type, o := mysql_field_type_string_maps[field_type]
 	if !o {
 		go_type = ""
 	}
+	if is_unsigned {
+		if go_type == "int8" {
+			go_type = "uint8"
+		} else if go_type == "int16" {
+			go_type = "uint16"
+		} else if go_type == "int32" {
+			go_type = "uint32"
+		} else if go_type == "int64" {
+			go_type = "uint64"
+		}
+	}
 	return go_type
 }
 
-func MysqlFieldTypeStr2GoTypeStr(field_type_str string) string {
+func MysqlFieldTypeStr2GoTypeStr(field_type_str string, is_unsigned bool) string {
 	field_type, o := GetMysqlFieldTypeByString(field_type_str)
 	if !o {
 		return ""
 	}
-	return MysqlFieldType2GoTypeStr(field_type)
+	return MysqlFieldType2GoTypeStr(field_type, is_unsigned)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/huoshan017/mysql-go/base"
 	"github.com/huoshan017/mysql-go/manager"
@@ -95,7 +96,8 @@ func _get_new_value_with_field_name(table_config *mysql_base.TableConfig, field_
 		err = errors.New(fmt.Sprintf("mysql-proxy-server: get table %v field %v not found", table_config.Name, field_name))
 		return
 	}
-	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.RealType)
+	is_unsigned := strings.Contains(fc.CreateFlags, "UNSIGNED") || strings.Contains(fc.CreateFlags, "unsigned")
+	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.RealType, is_unsigned)
 	if go_type == "" {
 		err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type))
 		return

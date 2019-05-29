@@ -102,7 +102,8 @@ func gen_row_format_all_fvp_func(struct_row_name string, table *mysql_base.Table
 	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
 	str += ("	var field_list []*mysql_base.FieldValuePair\n")
 	for _, field := range table.Fields {
-		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type)) == "" {
+		is_unsigned := strings.Contains(field.CreateFlags, "unsigned") || strings.Contains(field.CreateFlags, "UNSIGNED")
+		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned) == "" {
 			continue
 		}
 		if field.StructName != "" {
@@ -193,7 +194,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	field_func_map := table.Name + "_fields_map"
 	str += "var " + field_func_map + " = map[string]" + field_pair_func_define + "{\n"
 	for _, field := range table.Fields {
-		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type)) == "" {
+		is_unsigned := strings.Contains(field.CreateFlags, "unsigned") || strings.Contains(field.CreateFlags, "UNSIGNED")
+		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned) == "" {
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
@@ -211,7 +213,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			go_type = "*" + field.StructName
 			init_mem_list += "		" + field.Name + ": &" + field.StructName + "{},\n"
 		} else {
-			go_type = mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
+			is_unsigned := strings.Contains(field.CreateFlags, "unsigned") || strings.Contains(field.CreateFlags, "UNSIGNED")
+			go_type = mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned)
 			if go_type == "" {
 				log.Printf("get go type failed by field type %v in table %v, to continue\n", field.Type, table.Name)
 				continue
@@ -249,7 +252,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	var field_list string
 	for i, field := range table.Fields {
-		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
+		is_unsigned := strings.Contains(field.CreateFlags, "unsigned") || strings.Contains(field.CreateFlags, "UNSIGNED")
+		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned)
 		if go_type == "" {
 			continue
 		}
@@ -263,7 +267,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	var bytes_define_list string
 	var dest_list string
 	for _, field := range table.Fields {
-		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type))
+		is_unsigned := strings.Contains(field.CreateFlags, "unsigned") || strings.Contains(field.CreateFlags, "UNSIGNED")
+		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned)
 		if go_type == "" {
 			continue
 		}
@@ -367,7 +372,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
 			return false
 		}
-		pt = mysql_base.MysqlFieldType2GoTypeStr(primary_type)
+		is_unsigned := strings.Contains(pf.CreateFlags, "unsigned") || strings.Contains(pf.CreateFlags, "UNSIGNED")
+		pt = mysql_base.MysqlFieldType2GoTypeStr(primary_type, is_unsigned)
 		if pt == "" {
 			log.Printf("主键类型%v没有对应的数据类型\n")
 			return false
