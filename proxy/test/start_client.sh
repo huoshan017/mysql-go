@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cd ../bin
-./start_client
+./test_client
 cd ../test
