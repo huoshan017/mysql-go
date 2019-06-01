@@ -157,11 +157,11 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 }
 
 const (
-	COMPARITION_EQUAL            = iota
-	COMPARITION_GREAT_THAN       = 1
-	COMPARITION_LESS_THAN        = 2
-	COMPARITION_GREAT_EQUAL_THAN = 3
-	COMPARITION_LESS_EQUAL_THAN  = 4
+	COMPARITION_EQUAL       = iota
+	COMPARITION_GREAT_THAN  = 1
+	COMPARITION_LESS_THAN   = 2
+	COMPARITION_GREAT_EQUAL = 3
+	COMPARITION_LESS_EQUAL  = 4
 )
 
 type SelectCondition struct {
