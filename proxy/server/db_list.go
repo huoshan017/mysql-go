@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path"
 
 	"github.com/huoshan017/mysql-go/generate"
 	"github.com/huoshan017/mysql-go/manager"
@@ -54,10 +55,12 @@ func (this *DbList) Load(config string) error {
 		return errors.New(s)
 	}
 
+	root_path, _ := path.Split(config)
+
 	for _, d := range this.DefineList {
 		var config_loader mysql_generate.ConfigLoader
-		if !config_loader.Load(d.Name) {
-			return errors.New(fmt.Sprintf("mysql-proxy-server: DbList failed to load db define %v", d.Name))
+		if !config_loader.Load(root_path + d.Name) {
+			return errors.New(fmt.Sprintf("mysql-proxy-server: DbList failed to load db define %v", root_path+d.Name))
 		}
 		if this.config_loaders == nil {
 			this.config_loaders = make(map[int32]*mysql_generate.ConfigLoader)
@@ -66,7 +69,7 @@ func (this *DbList) Load(config string) error {
 	}
 
 	if this.config_loaders == nil {
-		return errors.New("mysql-proxy-server: DbList not found any db deine")
+		return errors.New("mysql-proxy-server: DbList not found any db define")
 	}
 
 	for _, h := range this.MysqlHosts {
