@@ -121,8 +121,8 @@ func (this *Transaction) Delete(table_name string, key string, value interface{}
 }
 
 type DB struct {
-	read_client   *Client
-	write_client  *Client
+	read_client   *client
+	write_client  *client
 	db_host_id    int32
 	db_host_alias string
 	db_name       string
@@ -130,12 +130,12 @@ type DB struct {
 }
 
 func (this *DB) Connect(proxy_address string, db_host_id int32, db_host_alias, db_name string) bool {
-	client := NewClient()
+	client := new_client()
 	if !client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_ONLY_READ) {
 		return false
 	}
 	this.read_client = client
-	client = NewClient()
+	client = new_client()
 	if !client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_WRITE) {
 		return false
 	}
@@ -318,7 +318,7 @@ func (this *DB) Close() {
 	this.write_client.Close()
 }
 
-func (this *DB) Run() {
-	this.read_client.Run()
-	this.write_client.Run()
+func (this *DB) GoRun() {
+	this.read_client.GoRun()
+	this.write_client.GoRun()
 }

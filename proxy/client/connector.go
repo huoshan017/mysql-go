@@ -26,15 +26,15 @@ func RegisterUserType(rcvr interface{}) {
 	gob.Register(rcvr)
 }
 
-type ClientInter interface {
+type client_inter interface {
 	Call(string, interface{}, interface{}) error
 	Close() error
 }
 
 type OnConnectFunc func(arg interface{})
 
-type Client struct {
-	c          ClientInter
+type client struct {
+	c          client_inter
 	conn_type  int32
 	state      int32 // 只在Run协程中修改
 	addr       string
@@ -44,19 +44,18 @@ type Client struct {
 	ping_reply mysql_proxy_common.PongReply
 }
 
-func NewClient() *Client {
-	client := &Client{}
-	return client
+func new_client() *client {
+	return &client{}
 }
 
-func (this *Client) ping() error {
+func (this *client) ping() error {
 	var err error
 	if this.conn_type == mysql_proxy_common.CONNECTION_TYPE_ONLY_READ {
 		err = this.Call("PingProc.Ping", &this.ping_args, &this.ping_reply)
 	} else if this.conn_type == mysql_proxy_common.CONNECTION_TYPE_WRITE {
-		client := this.c.(*mysql_proxy_common.ClientOnlyWrite)
-		if client != nil {
-			err = client.CallImmidiate("PingProc.Ping", &this.ping_args, &this.ping_reply)
+		c := this.c.(*mysql_proxy_common.ClientOnlyWrite)
+		if c != nil {
+			err = c.CallImmidiate("PingProc.Ping", &this.ping_args, &this.ping_reply)
 		}
 	} else {
 		return errors.New(fmt.Sprintf("rpc unknown conn type %v", this.conn_type))
@@ -67,39 +66,43 @@ func (this *Client) ping() error {
 	return err
 }
 
-func (this *Client) SetOnConnect(on_connect OnConnectFunc) {
+func (this *client) SetOnConnect(on_connect OnConnectFunc) {
 	this.on_connect = on_connect
 }
 
-func (this *Client) Run() {
-	go func() {
-		for {
-			to_close := atomic.LoadInt32(&this.to_close)
-			if to_close > 0 {
-				break
-			}
-			if this.state == RPC_CLIENT_STATE_DISCONNECT {
-				if !this.Dial(this.addr, this.conn_type) {
-					log.Printf("rpc client type %v reconnect addr[%v] failed\n", this.conn_type, this.addr)
-				} else {
-					log.Printf("rpc client type %v reconnect addr[%v] succeed\n", this.conn_type, this.addr)
-				}
-			} else {
-				err := this.ping()
-				if err != nil {
-					atomic.CompareAndSwapInt32(&this.state, RPC_CLIENT_STATE_CONNECTED, RPC_CLIENT_STATE_DISCONNECT)
-					log.Printf("rpc client type %v disconnected, ready to reconnect...\n", this.conn_type)
-					time.Sleep(time.Second * PING_INTERVAL)
-					continue
-				}
-			}
-			time.Sleep(time.Second * PING_INTERVAL)
+func (this *client) Run() {
+	for {
+		to_close := atomic.LoadInt32(&this.to_close)
+		if to_close > 0 {
+			break
 		}
+		if this.state == RPC_CLIENT_STATE_DISCONNECT {
+			if !this.Dial(this.addr, this.conn_type) {
+				log.Printf("rpc client type %v reconnect addr[%v] failed\n", this.conn_type, this.addr)
+			} else {
+				log.Printf("rpc client type %v reconnect addr[%v] succeed\n", this.conn_type, this.addr)
+			}
+		} else {
+			err := this.ping()
+			if err != nil {
+				atomic.CompareAndSwapInt32(&this.state, RPC_CLIENT_STATE_CONNECTED, RPC_CLIENT_STATE_DISCONNECT)
+				log.Printf("rpc client type %v disconnected, ready to reconnect...\n", this.conn_type)
+				time.Sleep(time.Second * PING_INTERVAL)
+				continue
+			}
+		}
+		time.Sleep(time.Second * PING_INTERVAL)
+	}
+}
+
+func (this *client) GoRun() {
+	go func() {
+		this.Run()
 	}()
 }
 
-func (this *Client) Dial(addr string, conn_type int32) bool {
-	var c ClientInter
+func (this *client) Dial(addr string, conn_type int32) bool {
+	var c client_inter
 	var e error
 	if conn_type == mysql_proxy_common.CONNECTION_TYPE_ONLY_READ {
 		c, e = mysql_proxy_common.Dial("tcp", addr)
@@ -128,7 +131,7 @@ func (this *Client) Dial(addr string, conn_type int32) bool {
 	return true
 }
 
-func (this *Client) Call(method string, args interface{}, reply interface{}) error {
+func (this *client) Call(method string, args interface{}, reply interface{}) error {
 	if this.c == nil {
 		return errors.New("not create rpc client")
 	}
@@ -136,7 +139,7 @@ func (this *Client) Call(method string, args interface{}, reply interface{}) err
 	return err
 }
 
-func (this *Client) Close() {
+func (this *client) Close() {
 	if this.c != nil {
 		this.c.Close()
 		this.c = nil
@@ -144,6 +147,6 @@ func (this *Client) Close() {
 	}
 }
 
-func (this *Client) GetState() int32 {
+func (this *client) GetState() int32 {
 	return this.state
 }
