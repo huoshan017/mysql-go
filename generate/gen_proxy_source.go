@@ -180,6 +180,19 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += ("	return fields\n")
 		str += ("}\n\n")
 
+		// select all primary field map
+		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryFieldMap() map[" + pt + "]bool {\n")
+		str += ("	dest_list, o := this.db.SelectField(\"" + table.Name + "\", \"" + pf.Name + "\")\n")
+		str += ("	if !o {\n")
+		str += ("		return nil\n")
+		str += ("	}\n")
+		str += ("	var fields_map =  make(map[" + pt + "]bool, len(dest_list))\n")
+		str += ("	for i:=0; i<len(dest_list); i++ {\n")
+		str += ("		fields_map[dest_list[i].(" + pt + ")] = true\n")
+		str += ("	}\n")
+		str += ("	return fields_map\n")
+		str += ("}\n\n")
+
 		// insert
 		str += "func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n"
 		str += "	var field_list = t._format_field_list()\n"

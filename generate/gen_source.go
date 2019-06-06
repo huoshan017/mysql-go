@@ -407,6 +407,23 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("	return value_list\n")
 		str += ("}\n\n")
 
+		// select all primary field map
+		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryFieldMap() map[" + pt + "]bool {\n")
+		str += ("	var result_list mysql_base.QueryResultList\n")
+		str += ("	if !this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list) {\n")
+		str += ("		return nil\n")
+		str += ("	}\n")
+		str += ("	var value_map = make(map[" + pt + "]bool)\n")
+		str += ("	for {\n")
+		str += ("		var d " + pt + "\n")
+		str += ("		if !result_list.Get(&d) {\n")
+		str += ("			break\n")
+		str += ("		}\n")
+		str += ("		value_map[d] = true\n")
+		str += ("	}\n")
+		str += ("	return value_map\n")
+		str += ("}\n\n")
+
 		// insert
 		str += "func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n"
 		str += "	var field_list = t._format_field_list()\n"
