@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -66,7 +65,7 @@ func _get_db(head *mysql_proxy_common.ArgsHead) (db *mysql_manager.DB, err error
 	db_name := head.GetDBName()
 	db = db_list.GetDB(host_id, db_name)
 	if db == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: not found db with host_id(%v) and db_name(%v)", head.GetDBHostId(), head.GetDBName()))
+		err = fmt.Errorf("mysql-proxy-server: not found db with host_id(%v) and db_name(%v)", head.GetDBHostId(), head.GetDBName())
 		return
 	}
 	return
@@ -79,12 +78,12 @@ func _get_db_and_table_config(head *mysql_proxy_common.ArgsHead, table_name stri
 	}
 	config_loader := db.GetConfigLoader()
 	if config_loader == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not get config loader", head.GetDBHostId(), head.GetDBName()))
+		err = fmt.Errorf("mysql-proxy-server: db host_id(%v) db_name(%v) not get config loader", head.GetDBHostId(), head.GetDBName())
 		return
 	}
 	table_config = config_loader.GetTable(table_name)
 	if table_config == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: db host_id(%v) db_name(%v) not found table name %v", head.GetDBHostId(), head.GetDBName(), table_name))
+		err = fmt.Errorf("mysql-proxy-server: db host_id(%v) db_name(%v) not found table name %v", head.GetDBHostId(), head.GetDBName(), table_name)
 		return
 	}
 	return
@@ -93,24 +92,24 @@ func _get_db_and_table_config(head *mysql_proxy_common.ArgsHead, table_name stri
 func _get_new_value_with_field_name(table_config *mysql_base.TableConfig, field_name string) (new_value interface{}, err error) {
 	fc := table_config.GetField(field_name)
 	if fc == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: get table %v field %v not found", table_config.Name, field_name))
+		err = fmt.Errorf("mysql-proxy-server: get table %v field %v not found", table_config.Name, field_name)
 		return
 	}
 	is_unsigned := strings.Contains(fc.CreateFlags, "UNSIGNED") || strings.Contains(fc.CreateFlags, "unsigned")
 	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.RealType, is_unsigned)
 	if go_type == "" {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type))
+		err = fmt.Errorf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type)
 		return
 	}
 	new_value_func := type2new_value[go_type]
 	if new_value_func == nil {
-		err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v type %v transfer to go type %v not get new value func", table_config.Name, field_name, fc.Type, go_type))
+		err = fmt.Errorf("mysql-proxy-server: table %v field %v type %v transfer to go type %v not get new value func", table_config.Name, field_name, fc.Type, go_type)
 	}
 	new_value = new_value_func()
 	return
 }
 
-func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, field_names []string) (dest_list []interface{}, err error) {
+func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, field_names []string) (dest_list []interface{}, primary_value interface{}, err error) {
 	dest_list = make([]interface{}, len(field_names))
 	for i, fn := range field_names {
 		var new_value interface{}
@@ -119,10 +118,13 @@ func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, fiel
 			return
 		}
 		if new_value == nil {
-			err = errors.New(fmt.Sprintf("mysql-proxy-server: table %v field %v cant get new value", table_config.Name, fn))
+			err = fmt.Errorf("mysql-proxy-server: table %v field %v cant get new value", table_config.Name, fn)
 			return
 		}
 		dest_list[i] = new_value
+		if fn == table_config.PrimaryKey {
+			primary_value = new_value
+		}
 	}
 	return
 }
@@ -130,7 +132,7 @@ func _make_dest_list_with_field_names(table_config *mysql_base.TableConfig, fiel
 func _gen_dest_lists(result_list *mysql_base.QueryResultList, table_config *mysql_base.TableConfig, select_field_names []string) (dest_lists [][]interface{}, err error) {
 	for {
 		var dest_list []interface{}
-		dest_list, err = _make_dest_list_with_field_names(table_config, select_field_names)
+		dest_list, _, err = _make_dest_list_with_field_names(table_config, select_field_names)
 		if err != nil {
 			return
 		}
@@ -138,6 +140,25 @@ func _gen_dest_lists(result_list *mysql_base.QueryResultList, table_config *mysq
 			break
 		}
 		dest_lists = append(dest_lists, dest_list)
+	}
+	return
+}
+
+func _gen_dest_list_map(result_list *mysql_base.QueryResultList, table_config *mysql_base.TableConfig, select_field_names []string) (dest_list_map map[interface{}][]interface{}, err error) {
+	for {
+		var dest_list []interface{}
+		var primary_value interface{}
+		dest_list, primary_value, err = _make_dest_list_with_field_names(table_config, select_field_names)
+		if err != nil {
+			return
+		}
+		if !result_list.Get(dest_list...) {
+			break
+		}
+		if dest_list_map == nil {
+			dest_list_map = make(map[interface{}][]interface{})
+		}
+		dest_list_map[primary_value] = dest_list
 	}
 	return
 }
@@ -157,12 +178,12 @@ func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *my
 		return err
 	}
 	var dest_list []interface{}
-	dest_list, err = _make_dest_list_with_field_names(table_config, args.SelectFieldNames)
+	dest_list, _, err = _make_dest_list_with_field_names(table_config, args.SelectFieldNames)
 	if err != nil {
 		return err
 	}
 	if !db.Select(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelectFieldNames, dest_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select with table_name(%v) where_field_name(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelectFieldNames))
+		return fmt.Errorf("mysql-proxy-server: select with table_name(%v) where_field_name(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelectFieldNames)
 	}
 	reply.Result = dest_list
 	return nil
@@ -180,7 +201,7 @@ func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsA
 	}
 	var result_list mysql_base.QueryResultList
 	if !db.SelectRecords(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelectFieldNames, &result_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select records with table_name(%v) where_field_name(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelectFieldNames))
+		return fmt.Errorf("mysql-proxy-server: select records with table_name(%v) where_field_name(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelectFieldNames)
 	}
 	var dest_lists [][]interface{}
 	dest_lists, err = _gen_dest_lists(&result_list, table_config, args.SelectFieldNames)
@@ -188,6 +209,29 @@ func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsA
 		return err
 	}
 	reply.ResultList = dest_lists
+	return nil
+}
+
+func (this *ProxyReadProc) SelectRecordsMap(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsMapReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
+	if err != nil {
+		return err
+	}
+	var result_list mysql_base.QueryResultList
+	if !db.SelectRecords(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelectFieldNames, &result_list) {
+		return fmt.Errorf("mysql-proxy-server: select records map with table_name(%v) where_field_name(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelectFieldNames)
+	}
+	var dest_list_map map[interface{}][]interface{}
+	dest_list_map, err = _gen_dest_list_map(&result_list, table_config, args.SelectFieldNames)
+	if err != nil {
+		return err
+	}
+	reply.ResultMap = dest_list_map
 	return nil
 }
 
@@ -203,7 +247,7 @@ func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRe
 	}
 	var result_list mysql_base.QueryResultList
 	if !db.SelectAllRecords(args.TableName, args.SelectFieldNames, &result_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select all records with table_name(%v) select_field_names(%v) failed", args.TableName, args.SelectFieldNames))
+		return fmt.Errorf("mysql-proxy-server: select all records with table_name(%v) select_field_names(%v) failed", args.TableName, args.SelectFieldNames)
 	}
 	var dest_lists [][]interface{}
 	dest_lists, err = _gen_dest_lists(&result_list, table_config, args.SelectFieldNames)
@@ -211,6 +255,29 @@ func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRe
 		return err
 	}
 	reply.ResultList = dest_lists
+	return nil
+}
+
+func (this *ProxyReadProc) SelectAllRecordsMap(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsMapReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
+	if err != nil {
+		return err
+	}
+	var result_list mysql_base.QueryResultList
+	if !db.SelectAllRecords(args.TableName, args.SelectFieldNames, &result_list) {
+		return fmt.Errorf("mysql-proxy-server: select all records map with table_name(%v) select_field_names(%v) failed", args.TableName, args.SelectFieldNames)
+	}
+	var dest_list_map map[interface{}][]interface{}
+	dest_list_map, err = _gen_dest_list_map(&result_list, table_config, args.SelectFieldNames)
+	if err != nil {
+		return err
+	}
+	reply.ResultMap = dest_list_map
 	return nil
 }
 
@@ -226,7 +293,7 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 	}
 	var result_list mysql_base.QueryResultList
 	if !db.SelectFieldNoKey(args.TableName, args.SelectFieldName, &result_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select field with table_name(%v) select_field_name(%v) failed", args.TableName, args.SelectFieldName))
+		return fmt.Errorf("mysql-proxy-server: select field with table_name(%v) select_field_name(%v) failed", args.TableName, args.SelectFieldName)
 	}
 	var dest_list []interface{}
 	for {
@@ -241,7 +308,7 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 	return nil
 }
 
-func (this *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldMapArgs, reply *mysql_proxy_common.SelectFieldMapReply) error {
+func (this *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldMapReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -280,7 +347,7 @@ func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.Selec
 	}
 	var result_list mysql_base.QueryResultList
 	if !db.SelectRecordsCondition(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelCond, args.SelectFieldNames, &result_list) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: select records order by with table_name(%v) where_field_name(%v) sel_cond(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelCond, args.SelectFieldNames))
+		return fmt.Errorf("mysql-proxy-server: select records order by with table_name(%v) where_field_name(%v) sel_cond(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelCond, args.SelectFieldNames)
 	}
 	var dest_lists [][]interface{}
 	dest_lists, err = _gen_dest_lists(&result_list, table_config, args.SelectFieldNames)
@@ -288,6 +355,29 @@ func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.Selec
 		return err
 	}
 	reply.ResultList = dest_lists
+	return nil
+}
+
+func (this *ProxyReadProc) SelectRecordsMapCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsMapConditionReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
+	if err != nil {
+		return err
+	}
+	var result_list mysql_base.QueryResultList
+	if !db.SelectRecordsCondition(args.TableName, args.WhereFieldName, args.WhereFieldValue, args.SelCond, args.SelectFieldNames, &result_list) {
+		return fmt.Errorf("mysql-proxy-server: select records map order by with table_name(%v) where_field_name(%v) sel_cond(%v) select_field_names(%v) failed", args.TableName, args.WhereFieldName, args.SelCond, args.SelectFieldNames)
+	}
+	var dest_list_map map[interface{}][]interface{}
+	dest_list_map, err = _gen_dest_list_map(&result_list, table_config, args.SelectFieldNames)
+	if err != nil {
+		return err
+	}
+	reply.ResultMap = dest_list_map
 	return nil
 }
 
@@ -400,7 +490,7 @@ func (this *ProcService) Start(addr string) error {
 	this.init()
 	err := this.service.Listen(addr)
 	if err != nil {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: start with addr %v err: %v", addr, err.Error()))
+		return fmt.Errorf("mysql-proxy-server: start with addr %v err: %v", addr, err.Error())
 	}
 	this.service.Serve()
 	return nil

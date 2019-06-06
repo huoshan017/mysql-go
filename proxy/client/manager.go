@@ -56,7 +56,7 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 		return false
 	}
 	for i := 0; i < len(row); i++ {
-		if !_copy_reply_value_2_dest(dest[i], row[i]) {
+		if !mysql_base.CopySrcValue2Dest(dest[i], row[i]) {
 			return false
 		}
 	}
@@ -234,7 +234,7 @@ func (this *DB) Select(table_name string, field_name string, field_value interfa
 		return false
 	}
 	for i := 0; i < len(dest_list); i++ {
-		if !_copy_reply_value_2_dest(dest_list[i], reply.Result[i]) {
+		if !mysql_base.CopySrcValue2Dest(dest_list[i], reply.Result[i]) {
 			return false
 		}
 	}
@@ -259,6 +259,23 @@ func (this *DB) SelectRecords(table_name string, field_name string, field_value 
 	return true
 }
 
+func (this *DB) SelectRecordsMap(table_name string, field_name string, field_value interface{}, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+	var args = mysql_proxy_common.SelectRecordsArgs{
+		Head:             this._gen_head(),
+		TableName:        table_name,
+		WhereFieldName:   field_name,
+		WhereFieldValue:  field_value,
+		SelectFieldNames: field_list,
+	}
+	var reply mysql_proxy_common.SelectRecordsMapReply
+	err := this.read_client.Call("ProxyReadProc.SelectRecordsMap", &args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select records map err: %v\n", err.Error())
+		return nil, false
+	}
+	return reply.ResultMap, true
+}
+
 func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *QueryResultList) bool {
 	var args = &mysql_proxy_common.SelectAllRecordsArgs{
 		Head:             this._gen_head(),
@@ -273,6 +290,21 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string, result_
 	}
 	result_list.Init(reply.ResultList)
 	return true
+}
+
+func (this *DB) SelectAllRecordsMap(table_name string, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+	var args = mysql_proxy_common.SelectAllRecordsArgs{
+		Head:             this._gen_head(),
+		TableName:        table_name,
+		SelectFieldNames: field_list,
+	}
+	var reply mysql_proxy_common.SelectAllRecordsMapReply
+	err := this.read_client.Call("ProxyReadProc.SelectAllRecordsMap", &args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select all records map err: %v\n", err.Error())
+		return nil, false
+	}
+	return reply.ResultMap, true
 }
 
 func (this *DB) SelectField(table_name string, field_name string) ([]interface{}, bool) {
@@ -291,7 +323,7 @@ func (this *DB) SelectField(table_name string, field_name string) ([]interface{}
 }
 
 func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interface{}]bool, bool) {
-	var args = mysql_proxy_common.SelectFieldMapArgs{
+	var args = mysql_proxy_common.SelectFieldArgs{
 		Head:            this._gen_head(),
 		TableName:       table_name,
 		SelectFieldName: field_name,
@@ -322,6 +354,24 @@ func (this *DB) SelectRecordsCondition(table_name string, field_name string, fie
 	}
 	result_list.Init(reply.ResultList)
 	return true
+}
+
+func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+	var args = mysql_proxy_common.SelectRecordsConditionArgs{
+		Head:             this._gen_head(),
+		TableName:        table_name,
+		WhereFieldName:   field_name,
+		WhereFieldValue:  field_value,
+		SelectFieldNames: field_list,
+		SelCond:          sel_cond,
+	}
+	var reply mysql_proxy_common.SelectRecordsMapConditionReply
+	err := this.read_client.Call("ProxyReadProc.SelectRecordsMapCondition", &args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select records map condition err: %v\n", err.Error())
+		return nil, false
+	}
+	return reply.ResultMap, true
 }
 
 func (this *DB) NewTransaction() *Transaction {

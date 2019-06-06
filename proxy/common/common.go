@@ -72,6 +72,10 @@ type SelectRecordsReply struct {
 	ResultList [][]interface{}
 }
 
+type SelectRecordsMapReply struct {
+	ResultMap map[interface{}][]interface{}
+}
+
 // select all records
 type SelectAllRecordsArgs struct {
 	Head             *ArgsHead
@@ -83,6 +87,10 @@ type SelectAllRecordsReply struct {
 	ResultList [][]interface{}
 }
 
+type SelectAllRecordsMapReply struct {
+	ResultMap map[interface{}][]interface{}
+}
+
 // select field
 type SelectFieldArgs struct {
 	Head            *ArgsHead
@@ -92,13 +100,6 @@ type SelectFieldArgs struct {
 
 type SelectFieldReply struct {
 	ResultList []interface{}
-}
-
-// select field map
-type SelectFieldMapArgs struct {
-	Head            *ArgsHead
-	TableName       string
-	SelectFieldName string
 }
 
 type SelectFieldMapReply struct {
@@ -117,6 +118,10 @@ type SelectRecordsConditionArgs struct {
 
 type SelectRecordsConditionReply struct {
 	ResultList [][]interface{}
+}
+
+type SelectRecordsMapConditionReply struct {
+	ResultMap map[interface{}][]interface{}
 }
 
 // insert record
