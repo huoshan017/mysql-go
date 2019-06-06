@@ -53,17 +53,6 @@ func main() {
 		return
 	}
 
-	/*var listen_address string
-	arg_listen_address := flag.String("l", "", "config listen address")
-	if len(os.Args) >= 3 {
-		if nil != arg_listen_address {
-			listen_address = *arg_listen_address
-		} else {
-			log.Printf("not specified listen address arg\n")
-			return
-		}
-	}*/
-
 	var config Config
 	if !config.Init(config_path) {
 		return

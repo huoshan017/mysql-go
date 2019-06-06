@@ -60,7 +60,7 @@ func (this *DbList) Load(config string) error {
 	for _, d := range this.DefineList {
 		var config_loader mysql_generate.ConfigLoader
 		if !config_loader.Load(root_path + d.Name) {
-			return errors.New(fmt.Sprintf("mysql-proxy-server: DbList failed to load db define %v", root_path+d.Name))
+			return fmt.Errorf("mysql-proxy-server: DbList failed to load db define %v", root_path+d.Name)
 		}
 		if this.config_loaders == nil {
 			this.config_loaders = make(map[int32]*mysql_generate.ConfigLoader)
@@ -82,7 +82,7 @@ func (this *DbList) Load(config string) error {
 			}
 			var c *mysql_generate.ConfigLoader
 			if c = this.config_loaders[d.Define]; c == nil {
-				return errors.New(fmt.Sprintf("mysql-proxy-server: DbList not found db define by id %v ", d.Define))
+				return fmt.Errorf("mysql-proxy-server: DbList not found db define by id %v ", d.Define)
 			}
 			if d.Name != "" {
 				var db_mgr mysql_manager.DB
@@ -103,7 +103,7 @@ func (this *DbList) Load(config string) error {
 					this.insert_db_mgr_list_by_alias(&db_mgr, h.Alias, name)
 				}
 			} else {
-				return errors.New(fmt.Sprintf("mysql-proxy-server: DbList not found db host %v name or name list", h.Id))
+				return fmt.Errorf("mysql-proxy-server: DbList not found db host %v name or name list", h.Id)
 			}
 		}
 	}
@@ -114,7 +114,7 @@ func (this *DbList) Load(config string) error {
 func (this *DbList) connect_db(db_mgr *mysql_manager.DB, attach_define *mysql_generate.ConfigLoader, host *DbHost, db_name string) error {
 	db_mgr.AttachConfig(attach_define)
 	if !db_mgr.Connect(host.Ip, host.User, host.Password, db_name) {
-		return errors.New(fmt.Sprintf("mysql-proxy-server: DbList connect db: host(%v) user(%v) db_name(%v) failed", host.Ip, host.User, db_name))
+		return fmt.Errorf("mysql-proxy-server: DbList connect db: host(%v) user(%v) db_name(%v) failed", host.Ip, host.User, db_name)
 	}
 	db_mgr.Run()
 	return nil
