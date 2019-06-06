@@ -290,6 +290,21 @@ func (this *DB) SelectField(table_name string, field_name string) ([]interface{}
 	return reply.ResultList, true
 }
 
+func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interface{}]bool, bool) {
+	var args = mysql_proxy_common.SelectFieldMapArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		SelectFieldName: field_name,
+	}
+	var reply mysql_proxy_common.SelectFieldMapReply
+	err := this.read_client.Call("ProxyReadProc.SelectFieldMap", &args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call select field map err: %v\n", err.Error())
+		return nil, false
+	}
+	return reply.ResultMap, true
+}
+
 func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) bool {
 	var args = &mysql_proxy_common.SelectRecordsConditionArgs{
 		Head:             this._gen_head(),

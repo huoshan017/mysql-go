@@ -94,6 +94,17 @@ type SelectFieldReply struct {
 	ResultList []interface{}
 }
 
+// select field map
+type SelectFieldMapArgs struct {
+	Head            *ArgsHead
+	TableName       string
+	SelectFieldName string
+}
+
+type SelectFieldMapReply struct {
+	ResultMap map[interface{}]bool
+}
+
 // select records order by
 type SelectRecordsConditionArgs struct {
 	Head             *ArgsHead

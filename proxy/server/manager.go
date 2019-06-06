@@ -241,6 +241,33 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 	return nil
 }
 
+func (this *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldMapArgs, reply *mysql_proxy_common.SelectFieldMapReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+	db, table_config, err := _get_db_and_table_config(args.Head, args.TableName)
+	if err != nil {
+		return err
+	}
+	var result_list mysql_base.QueryResultList
+	if !db.SelectFieldNoKey(args.TableName, args.SelectFieldName, &result_list) {
+		return fmt.Errorf("mysql-proxy-server: select field map with table_name(%v) select_field_name(%v) failed", args.TableName, args.SelectFieldName)
+	}
+	var dest_map = make(map[interface{}]bool)
+	for {
+		var new_value interface{}
+		new_value, err = _get_new_value_with_field_name(table_config, args.SelectFieldName)
+		if !result_list.Get(new_value) {
+			break
+		}
+		dest_map[new_value] = true
+	}
+	reply.ResultMap = dest_map
+	return nil
+}
+
 func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsConditionReply) error {
 	defer func() {
 		if err := recover(); err != nil {
