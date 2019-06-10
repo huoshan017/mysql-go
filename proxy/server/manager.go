@@ -57,9 +57,6 @@ var type2new_value = map[string]new_value_func{
 	},
 }
 
-type ProxyReadProc struct {
-}
-
 func _get_db(head *mysql_proxy_common.ArgsHead) (db *mysql_manager.DB, err error) {
 	host_id := head.GetDBHostId()
 	db_name := head.GetDBName()
@@ -165,6 +162,9 @@ func _gen_dest_list_map(result_list *mysql_base.QueryResultList, table_config *m
 
 func output_critical(err interface{}) {
 	mysql_proxy_common.OutputCriticalStack(mysql_proxy_common.ServerLogErr, err)
+}
+
+type ProxyReadProc struct {
 }
 
 func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *mysql_proxy_common.SelectReply) error {
