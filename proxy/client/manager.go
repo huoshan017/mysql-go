@@ -215,6 +215,15 @@ func (this *DB) Save() {
 	}
 }
 
+func (this *DB) End() {
+	var args mysql_proxy_common.EndArgs
+	var reply mysql_proxy_common.EndReply
+	err := this.write_client.Call("ProxyWriteProc.End", &args, &reply)
+	if err != nil {
+		log.Printf("mysql-proxy-client: call End err %v\n", err.Error())
+	}
+}
+
 func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) bool {
 	var args = &mysql_proxy_common.SelectArgs{
 		Head:             this._gen_head(),

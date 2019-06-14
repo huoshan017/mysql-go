@@ -174,3 +174,10 @@ type CommitTransactionArgs struct {
 
 type CommitTransactionReply struct {
 }
+
+// end
+type EndArgs struct {
+}
+
+type EndReply struct {
+}

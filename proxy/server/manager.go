@@ -472,6 +472,15 @@ func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, rep
 	return nil
 }
 
+func (this *ProxyWriteProc) End(args *mysql_proxy_common.EndArgs, reply *mysql_proxy_common.EndReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+	return nil
+}
+
 type ProcService struct {
 	service *Service
 }
