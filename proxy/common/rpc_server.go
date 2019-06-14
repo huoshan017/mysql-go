@@ -344,6 +344,9 @@ func (c *gobServerCodec) Close() error {
 }
 
 func (c *gobServerCodec) insert_receive_data(srv *service, mtype *methodType, req *Request, argv, replyv reflect.Value) {
+	if c.onlyReceiveChan == nil {
+		return
+	}
 	c.onlyReceiveChan <- &receive_data{
 		srv:    srv,
 		mtype:  mtype,
