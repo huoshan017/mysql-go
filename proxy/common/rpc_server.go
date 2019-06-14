@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"unicode"
@@ -357,17 +358,25 @@ func (c *gobServerCodec) insert_receive_data(srv *service, mtype *methodType, re
 }
 
 func (c *gobServerCodec) check_run_receive_loop(server *Server) {
-	if c.onlyReceiveChan != nil {
-		for {
-			select {
-			case d, ok := <-c.onlyReceiveChan:
-				if !ok {
-					//err := errors.New("rpc: server cannot decode request: " + err.Error())
-					return
-				}
-				if d != nil {
-					d.srv.call_only_recv(server, d.mtype, d.req, d.argv, d.replyv, c)
-				}
+	if c.onlyReceiveChan == nil {
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			OutputCriticalStack(ServerLogErr, err)
+			debug.PrintStack()
+		}
+	}()
+
+	for {
+		select {
+		case d, ok := <-c.onlyReceiveChan:
+			if !ok {
+				return
+			}
+			if d != nil {
+				d.srv.call_only_recv(server, d.mtype, d.req, d.argv, d.replyv, c)
 			}
 		}
 	}
