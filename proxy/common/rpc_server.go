@@ -33,6 +33,10 @@ type methodType struct {
 	numCalls   uint
 }
 
+const (
+	RECEIVE_LIST_DEFAULT_LENGTH = 1000
+)
+
 type service struct {
 	name   string                 // name of service
 	rcvr   reflect.Value          // receiver of methods for the service
@@ -283,12 +287,21 @@ func (s *service) call_only_recv(server *Server, mtype *methodType, req *Request
 	server.freeRequest(req)
 }
 
+type receive_data struct {
+	srv    *service
+	mtype  *methodType
+	req    *Request
+	argv   reflect.Value
+	replyv reflect.Value
+}
+
 type gobServerCodec struct {
-	rwc    io.ReadWriteCloser
-	dec    *gob.Decoder
-	enc    *gob.Encoder
-	encBuf *bufio.Writer
-	closed bool
+	rwc             io.ReadWriteCloser
+	dec             *gob.Decoder
+	enc             *gob.Encoder
+	encBuf          *bufio.Writer
+	closed          bool
+	onlyReceiveChan chan *receive_data // 只接收缓冲区
 }
 
 func (c *gobServerCodec) ReadRequestHeader(r *Request) error {
@@ -330,6 +343,33 @@ func (c *gobServerCodec) Close() error {
 	return c.rwc.Close()
 }
 
+func (c *gobServerCodec) insert_receive_data(srv *service, mtype *methodType, req *Request, argv, replyv reflect.Value) {
+	c.onlyReceiveChan <- &receive_data{
+		srv:    srv,
+		mtype:  mtype,
+		req:    req,
+		argv:   argv,
+		replyv: replyv,
+	}
+}
+
+func (c *gobServerCodec) check_run_receive_loop(server *Server) {
+	if c.onlyReceiveChan != nil {
+		for {
+			select {
+			case d, ok := <-c.onlyReceiveChan:
+				if !ok {
+					//err := errors.New("rpc: server cannot decode request: " + err.Error())
+					return
+				}
+				if d != nil {
+					d.srv.call_only_recv(server, d.mtype, d.req, d.argv, d.replyv, c)
+				}
+			}
+		}
+	}
+}
+
 // ServeConn runs the server on a single connection.
 // ServeConn blocks, serving the connection until the client hangs up.
 // The caller typically invokes ServeConn in a go statement.
@@ -349,8 +389,9 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 
 func (server *Server) ServeConnOnlyRecv(conn io.ReadWriteCloser) {
 	srv := &gobServerCodec{
-		rwc: conn,
-		dec: gob.NewDecoder(conn),
+		rwc:             conn,
+		dec:             gob.NewDecoder(conn),
+		onlyReceiveChan: make(chan *receive_data, RECEIVE_LIST_DEFAULT_LENGTH),
 	}
 	server.ServeCodecOnlyRecv(srv)
 }
@@ -386,6 +427,11 @@ func (server *Server) ServeCodec(codec ServerCodec) {
 }
 
 func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
+	gob_codec := codec.(*gobServerCodec)
+	if gob_codec != nil {
+		go gob_codec.check_run_receive_loop(server)
+	}
+
 	for {
 		service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
 		if err != nil {
@@ -401,7 +447,11 @@ func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
 			}
 			continue
 		}
-		service.call_only_recv(server, mtype, req, argv, replyv, codec)
+		if gob_codec != nil {
+			gob_codec.insert_receive_data(service, mtype, req, argv, replyv)
+		} else {
+			service.call_only_recv(server, mtype, req, argv, replyv, codec)
+		}
 	}
 	// We've seen that there are no more requests.
 	// Wait for responses to be sent before closing codec.

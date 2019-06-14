@@ -38,7 +38,7 @@ func main() {
 		return
 	}
 
-	db_proxy.Run()
+	db_proxy.GoRun()
 
 	tb_mgr := game_db.NewTableProxysManager(&db_proxy)
 	player_table_proxy := tb_mgr.Get_T_Player_Table_Proxy()
