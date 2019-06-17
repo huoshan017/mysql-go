@@ -82,7 +82,7 @@ func main() {
 				log.Printf("selected records condition players: %v\n", ps)
 			}
 
-			time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Millisecond * 50)
 		}
 	}()
 

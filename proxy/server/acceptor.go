@@ -34,7 +34,7 @@ func (this *Service) Register(rcvr interface{}) bool {
 }
 
 func (this *Service) Init() {
-	this.server = mysql_proxy_common.NewServer()
+	this.server = mysql_proxy_common.NewServer(true)
 }
 
 func (this *Service) Listen(addr string) error {

@@ -66,20 +66,23 @@ type Response struct {
 
 // Server represents an RPC Server.
 type Server struct {
-	serviceMap sync.Map   // map[string]*service
-	reqLock    sync.Mutex // protects freeReq
-	freeReq    *Request
-	respLock   sync.Mutex // protects freeResp
-	freeResp   *Response
+	serviceMap      sync.Map   // map[string]*service
+	reqLock         sync.Mutex // protects freeReq
+	freeReq         *Request
+	respLock        sync.Mutex // protects freeResp
+	freeResp        *Response
+	isOnlyRecvCache bool // 是否缓存只读goroutine的接收数据
 }
 
 // NewServer returns a new Server.
-func NewServer() *Server {
-	return &Server{}
+func NewServer(only_recv_cache bool) *Server {
+	return &Server{
+		isOnlyRecvCache: only_recv_cache,
+	}
 }
 
 // DefaultServer is the default instance of *Server.
-var DefaultServer = NewServer()
+var DefaultServer = NewServer(false)
 
 // Is this an exported - upper case - name?
 func isExported(name string) bool {
@@ -344,44 +347,6 @@ func (c *gobServerCodec) Close() error {
 	return c.rwc.Close()
 }
 
-func (c *gobServerCodec) insert_receive_data(srv *service, mtype *methodType, req *Request, argv, replyv reflect.Value) {
-	if c.onlyReceiveChan == nil {
-		return
-	}
-	c.onlyReceiveChan <- &receive_data{
-		srv:    srv,
-		mtype:  mtype,
-		req:    req,
-		argv:   argv,
-		replyv: replyv,
-	}
-}
-
-func (c *gobServerCodec) check_run_receive_loop(server *Server) {
-	if c.onlyReceiveChan == nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			OutputCriticalStack(ServerLogErr, err)
-			debug.PrintStack()
-		}
-	}()
-
-	for {
-		select {
-		case d, ok := <-c.onlyReceiveChan:
-			if !ok {
-				return
-			}
-			if d != nil {
-				d.srv.call_only_recv(server, d.mtype, d.req, d.argv, d.replyv, c)
-			}
-		}
-	}
-}
-
 // ServeConn runs the server on a single connection.
 // ServeConn blocks, serving the connection until the client hangs up.
 // The caller typically invokes ServeConn in a go statement.
@@ -401,11 +366,16 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 
 func (server *Server) ServeConnOnlyRecv(conn io.ReadWriteCloser) {
 	srv := &gobServerCodec{
-		rwc:             conn,
-		dec:             gob.NewDecoder(conn),
-		onlyReceiveChan: make(chan *receive_data, RECEIVE_LIST_DEFAULT_LENGTH),
+		rwc: conn,
+		dec: gob.NewDecoder(conn),
 	}
-	server.ServeCodecOnlyRecv(srv)
+	if server.isOnlyRecvCache {
+		srv.onlyReceiveChan = make(chan *receive_data, RECEIVE_LIST_DEFAULT_LENGTH)
+		go server.ServeCodecOnlyRecvLoop(srv)
+		server.ServeCodecOnlyRecvHandleData(srv)
+	} else {
+		server.ServeCodecOnlyRecv(srv)
+	}
 }
 
 // ServeCodec is like ServeConn but uses the specified codec to
@@ -438,11 +408,13 @@ func (server *Server) ServeCodec(codec ServerCodec) {
 	codec.Close()
 }
 
-func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
-	gob_codec := codec.(*gobServerCodec)
-	if gob_codec != nil {
-		go gob_codec.check_run_receive_loop(server)
-	}
+func (server *Server) ServeCodecOnlyRecvLoop(codec *gobServerCodec) {
+	defer func() {
+		if err := recover(); err != nil {
+			OutputCriticalStack(ServerLogErr, err)
+			debug.PrintStack()
+		}
+	}()
 
 	for {
 		service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
@@ -459,11 +431,47 @@ func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
 			}
 			continue
 		}
-		if gob_codec != nil {
-			gob_codec.insert_receive_data(service, mtype, req, argv, replyv)
-		} else {
-			service.call_only_recv(server, mtype, req, argv, replyv, codec)
+		codec.onlyReceiveChan <- &receive_data{
+			srv:    service,
+			mtype:  mtype,
+			req:    req,
+			argv:   argv,
+			replyv: replyv,
 		}
+	}
+}
+
+func (server *Server) ServeCodecOnlyRecvHandleData(codec *gobServerCodec) {
+	for {
+		select {
+		case d, ok := <-codec.onlyReceiveChan:
+			if !ok {
+				return
+			}
+			if d != nil {
+				d.srv.call_only_recv(server, d.mtype, d.req, d.argv, d.replyv, codec)
+			}
+		}
+	}
+}
+
+func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
+	for {
+		service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
+		if err != nil {
+			if debugLog && err != io.EOF {
+				log.Println("rpc:", err)
+			}
+			if !keepReading {
+				break
+			}
+			// send a response if we actually managed to read a header.
+			if req != nil {
+				server.freeRequest(req)
+			}
+			continue
+		}
+		service.call_only_recv(server, mtype, req, argv, replyv, codec)
 	}
 	// We've seen that there are no more requests.
 	// Wait for responses to be sent before closing codec.
