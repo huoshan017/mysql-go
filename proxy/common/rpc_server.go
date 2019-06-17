@@ -453,6 +453,7 @@ func (server *Server) ServeCodecOnlyRecvHandleData(codec *gobServerCodec) {
 			}
 		}
 	}
+	codec.Close()
 }
 
 func (server *Server) ServeCodecOnlyRecv(codec ServerCodec) {
