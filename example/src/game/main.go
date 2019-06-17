@@ -32,7 +32,11 @@ func main() {
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
-	if !db_mgr.Connect("localhost", "root", "", "game_db") {
+
+	var err error
+	err = db_mgr.Connect("localhost", "root", "", "game_db")
+	if err != nil {
+		log.Printf("connect db err: %v\n", err.Error())
 		return
 	}
 
@@ -43,9 +47,9 @@ func main() {
 	db_global_table := tb_mgr.Get_T_Global_Table()
 
 	var gd *game_db.T_Global
-	gd = db_global_table.GetRow()
-	if gd == nil {
-		log.Printf("cant get global table data\n")
+	gd, err = db_global_table.GetRow()
+	if err != nil {
+		log.Printf("cant get global table data: %v\n", err.Error())
 		return
 	}
 
@@ -54,31 +58,33 @@ func main() {
 
 	db_global_table.UpdateWithFVPList(gd.GetFVPList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
 
-	var o bool
 	var p, p2 *game_db.T_Player
 	id := 5
-	p, o = db_player_table.Select("id", id)
-	if !o {
-		log.Printf("cant get result by id %v\n", id)
+	p, err = db_player_table.Select("id", id)
+	if err != nil {
+		log.Printf("cant get result by id %v err: %v\n", id, err.Error())
 		return
 	}
 
 	id = 6
-	p2, o = db_player_table.Select("id", id)
-	if !o {
-		log.Printf("cant get result by id %v\n", id)
+	p2, err = db_player_table.Select("id", id)
+	if err != nil {
+		log.Printf("cant get result by id %v err: %v\n", id, err.Error())
 		return
 	}
 
 	log.Printf("get the result %v by id %v\n", p, id)
 
-	var ids []int32
-	ids = db_player_table.SelectAllPrimaryField()
-	if ids != nil {
-		log.Printf("get primary field list:\n")
-		for i, id := range ids {
-			log.Printf("	%v: %v\n", i, id)
-		}
+	var ids []uint32
+	ids, err = db_player_table.SelectAllPrimaryField()
+	if err != nil {
+		log.Printf("get primary field list err: %v\n", err.Error())
+		return
+	}
+
+	log.Printf("get primary field list:\n", err.Error())
+	for i, id := range ids {
+		log.Printf("	%v: %v\n", i, id)
 	}
 
 	var transaction *mysql_manager.Transaction = db_mgr.NewTransaction()
@@ -99,7 +105,7 @@ func main() {
 
 	transaction.Done()
 
-	for level := int32(1); level <= 999; level++ {
+	for level := uint32(1); level <= 999; level++ {
 		p.Set_level(level)
 		p.Set_vip_level(level)
 		db_player_table.UpdateWithFieldName(p, []string{"level", "vip_level"})

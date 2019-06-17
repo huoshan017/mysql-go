@@ -369,17 +369,17 @@ func (this *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) {
 		return
 	}
 	for _, d := range dl {
-		var o bool
+		var err error
 		if d.OpType == DB_OPERATE_TYPE_INSERT {
-			o, _ = procedure.InsertRecord(d.TableName, d.FieldList...)
+			err, _ = procedure.InsertRecord(d.TableName, d.FieldList...)
 		} else if d.OpType == DB_OPERATE_TYPE_UPDATE {
-			o = procedure.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
+			err = procedure.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
 		} else if d.OpType == DB_OPERATE_TYPE_DELETE {
-			o = procedure.DeleteRecord(d.TableName, d.Key, d.Value)
+			err = procedure.DeleteRecord(d.TableName, d.Key, d.Value)
 		} else if d.OpType == DB_OPERATE_TYPE_INSERT_IGNORE {
-			o, _ = procedure.InsertIgnoreRecord(d.TableName, d.FieldList...)
+			err, _ = procedure.InsertIgnoreRecord(d.TableName, d.FieldList...)
 		}
-		if !o {
+		if err != nil {
 			procedure.Rollback()
 			break
 		}

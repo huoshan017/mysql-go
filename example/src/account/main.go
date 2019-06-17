@@ -34,7 +34,9 @@ func main() {
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
-	if !db_mgr.Connect("localhost", "root", "", "account_db") {
+	err := db_mgr.Connect("localhost", "root", "", "account_db")
+	if err != nil {
+		log.Printf("connect db err: ", err.Error())
 		return
 	}
 

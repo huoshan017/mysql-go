@@ -13,7 +13,7 @@ import (
 )
 
 var db_mgr mysql_manager.DB
-var transaction *mysql_base.Transaction
+var transaction *mysql_manager.Transaction
 
 func main() {
 	config_path := "../src/github.com/huoshan017/mysql-go/generate/config.json"

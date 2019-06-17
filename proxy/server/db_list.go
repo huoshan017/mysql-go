@@ -113,8 +113,9 @@ func (this *DbList) Load(config string) error {
 
 func (this *DbList) connect_db(db_mgr *mysql_manager.DB, attach_define *mysql_generate.ConfigLoader, host *DbHost, db_name string) error {
 	db_mgr.AttachConfig(attach_define)
-	if !db_mgr.Connect(host.Ip, host.User, host.Password, db_name) {
-		return fmt.Errorf("mysql-proxy-server: DbList connect db: host(%v) user(%v) db_name(%v) failed", host.Ip, host.User, db_name)
+	err := db_mgr.Connect(host.Ip, host.User, host.Password, db_name)
+	if err != nil {
+		return err
 	}
 	db_mgr.Run()
 	return nil

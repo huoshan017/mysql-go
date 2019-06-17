@@ -129,22 +129,24 @@ type DB struct {
 	inited        bool
 }
 
-func (this *DB) Connect(proxy_address string, db_host_id int32, db_host_alias, db_name string) bool {
+func (this *DB) Connect(proxy_address string, db_host_id int32, db_host_alias, db_name string) error {
 	client := new_client()
-	if !client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_ONLY_READ) {
-		return false
+	err := client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_ONLY_READ)
+	if err != nil {
+		return err
 	}
 	this.read_client = client
 	client = new_client()
-	if !client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_WRITE) {
-		return false
+	err = client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_WRITE)
+	if err != nil {
+		return err
 	}
 	this.write_client = client
 	this.db_host_id = db_host_id
 	this.db_host_alias = db_host_alias
 	this.db_name = db_name
 	this.inited = true
-	return true
+	return nil
 }
 
 func (this *DB) _gen_head() *mysql_proxy_common.ArgsHead {
@@ -224,7 +226,7 @@ func (this *DB) End() {
 	}
 }
 
-func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) bool {
+func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) error {
 	var args = &mysql_proxy_common.SelectArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -236,21 +238,21 @@ func (this *DB) Select(table_name string, field_name string, field_value interfa
 	err := this.read_client.Call("ProxyReadProc.Select", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call Select err %v\n", err.Error())
-		return false
+		return err
 	}
 	if len(dest_list) != len(reply.Result) {
 		log.Printf("mysql-proxy-client: Select arg dest_list length must equal to SelectReply ResultList length\n")
-		return false
+		return mysql_base.ErrArgumentInvalid
 	}
 	for i := 0; i < len(dest_list); i++ {
 		if !mysql_base.CopySrcValue2Dest(dest_list[i], reply.Result[i]) {
-			return false
+			return mysql_base.ErrInternal
 		}
 	}
-	return true
+	return nil
 }
 
-func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) bool {
+func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -262,13 +264,13 @@ func (this *DB) SelectRecords(table_name string, field_name string, field_value 
 	err := this.read_client.Call("ProxyReadProc.SelectRecords", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records err: %v\n", err.Error())
-		return false
+		return err
 	}
 	result_list.Init(reply.ResultList)
-	return true
+	return nil
 }
 
-func (this *DB) SelectRecordsMap(table_name string, field_name string, field_value interface{}, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+func (this *DB) SelectRecordsMap(table_name string, field_name string, field_value interface{}, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -277,15 +279,15 @@ func (this *DB) SelectRecordsMap(table_name string, field_name string, field_val
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectRecordsMapReply
-	err := this.read_client.Call("ProxyReadProc.SelectRecordsMap", &args, &reply)
+	err = this.read_client.Call("ProxyReadProc.SelectRecordsMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records map err: %v\n", err.Error())
-		return nil, false
+		return nil, err
 	}
-	return reply.ResultMap, true
+	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *QueryResultList) bool {
+func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectAllRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -295,28 +297,28 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string, result_
 	err := this.read_client.Call("ProxyReadProc.SelectAllRecords", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select all records err: %v\n", err.Error())
-		return false
+		return err
 	}
 	result_list.Init(reply.ResultList)
-	return true
+	return nil
 }
 
-func (this *DB) SelectAllRecordsMap(table_name string, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+func (this *DB) SelectAllRecordsMap(table_name string, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectAllRecordsArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectAllRecordsMapReply
-	err := this.read_client.Call("ProxyReadProc.SelectAllRecordsMap", &args, &reply)
+	err = this.read_client.Call("ProxyReadProc.SelectAllRecordsMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select all records map err: %v\n", err.Error())
-		return nil, false
+		return nil, err
 	}
-	return reply.ResultMap, true
+	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectField(table_name string, field_name string) ([]interface{}, bool) {
+func (this *DB) SelectField(table_name string, field_name string) ([]interface{}, error) {
 	var args = &mysql_proxy_common.SelectFieldArgs{
 		Head:            this._gen_head(),
 		TableName:       table_name,
@@ -326,12 +328,12 @@ func (this *DB) SelectField(table_name string, field_name string) ([]interface{}
 	err := this.read_client.Call("ProxyReadProc.SelectField", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select field err: %v\n", err.Error())
-		return nil, false
+		return nil, err
 	}
-	return reply.ResultList, true
+	return reply.ResultList, nil
 }
 
-func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interface{}]bool, bool) {
+func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interface{}]bool, error) {
 	var args = mysql_proxy_common.SelectFieldArgs{
 		Head:            this._gen_head(),
 		TableName:       table_name,
@@ -341,12 +343,12 @@ func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interf
 	err := this.read_client.Call("ProxyReadProc.SelectFieldMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select field map err: %v\n", err.Error())
-		return nil, false
+		return nil, err
 	}
-	return reply.ResultMap, true
+	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) bool {
+func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectRecordsConditionArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -359,13 +361,13 @@ func (this *DB) SelectRecordsCondition(table_name string, field_name string, fie
 	err := this.read_client.Call("ProxyReadProc.SelectRecordsCondition", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records condition err: %v\n", err.Error())
-		return false
+		return err
 	}
 	result_list.Init(reply.ResultList)
-	return true
+	return nil
 }
 
-func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string) (records_map map[interface{}][]interface{}, ok bool) {
+func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectRecordsConditionArgs{
 		Head:             this._gen_head(),
 		TableName:        table_name,
@@ -375,12 +377,12 @@ func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_v
 		SelCond:          sel_cond,
 	}
 	var reply mysql_proxy_common.SelectRecordsMapConditionReply
-	err := this.read_client.Call("ProxyReadProc.SelectRecordsMapCondition", &args, &reply)
+	err = this.read_client.Call("ProxyReadProc.SelectRecordsMapCondition", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records map condition err: %v\n", err.Error())
-		return nil, false
+		return nil, err
 	}
-	return reply.ResultMap, true
+	return reply.ResultMap, nil
 }
 
 func (this *DB) NewTransaction() *Transaction {

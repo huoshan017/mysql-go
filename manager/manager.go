@@ -46,24 +46,25 @@ func (this *DB) GetConfigLoader() *mysql_generate.ConfigLoader {
 	return this.config_loader
 }
 
-func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) bool {
+func (this *DB) Connect(dbhost, dbuser, dbpassword, dbname string) error {
 	err := this.database.Open(dbhost, dbuser, dbpassword, dbname)
 	if err != nil {
 		log.Printf("open database err %v\n", err.Error())
-		return false
+		return err
 	}
 	this.database.SetMaxLifeTime(DEFAULT_CONN_MAX_LIFE_SECONDS)
 	if this.config_loader.Tables != nil {
 		for _, t := range this.config_loader.Tables {
-			if !this.database.LoadTable(t) {
+			err = this.database.LoadTable(t)
+			if err != nil {
 				log.Printf("load table %v config failed\n", t.Name)
-				return false
+				return err
 			}
 		}
 	}
 	this.op_mgr.Init(&this.database, this.config_loader)
 	this.save_interval = DEFAULT_SAVE_INTERVAL_TIME
-	return true
+	return nil
 }
 
 func (this *DB) SetConnectLifeTime(d time.Duration) {
@@ -90,39 +91,39 @@ func (this *DB) Delete(table_name string, field_name string, field_value interfa
 	this.op_mgr.Delete(table_name, field_name, field_value)
 }
 
-func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResultList) error {
 	return this.database.Query(query_sql, result_list)
 }
 
-func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) bool {
+func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) error {
 	return this.database.SelectRecord(table_name, field_name, field_value, field_list, dest_list)
 }
 
-func (this *DB) SelectStar(table_name string, field_name string, field_value interface{}, dest_list []interface{}) bool {
+func (this *DB) SelectStar(table_name string, field_name string, field_value interface{}, dest_list []interface{}) error {
 	return this.database.SelectRecord(table_name, field_name, field_value, nil, dest_list)
 }
 
-func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecords(table_name, field_name, field_value, field_list, result_list)
 }
 
-func (this *DB) SelectStarRecords(table_name string, field_name string, field_value interface{}, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectStarRecords(table_name string, field_name string, field_value interface{}, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecords(table_name, field_name, field_value, nil, result_list)
 }
 
-func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecords(table_name, "", nil, field_list, result_list)
 }
 
-func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectStarAllRecords(table_name string, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecords(table_name, "", nil, nil, result_list)
 }
 
-func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectFieldNoKey(table_name string, field_name string, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecords(table_name, "", nil, []string{field_name}, result_list)
 }
 
-func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *mysql_base.QueryResultList) bool {
+func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *mysql_base.QueryResultList) error {
 	return this.database.SelectRecordsCondition(table_name, field_name, field_value, sel_cond, field_list, result_list)
 }
 

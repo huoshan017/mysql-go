@@ -2,6 +2,7 @@ package mysql_base
 
 import (
 	"database/sql"
+	//"errors"
 	"fmt"
 	"log"
 	"time"
@@ -58,11 +59,9 @@ func (this *Database) Open(dbhost, dbuser, dbpassword, dbname string) error {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v", dbuser, dbpassword, dbhost, dbname)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Printf("Database connect err %v\n", err.Error())
 		return err
 	}
 	this.db = db
-	log.Printf("Database connected db %v/%v with user %v\n", dbhost, dbname, dbuser)
 	return nil
 }
 
@@ -91,44 +90,42 @@ func (this *Database) SetMaxOpenConns(conns int) {
 	this.db.SetMaxOpenConns(conns)
 }
 
-func (this *Database) Query(query_str string, result *QueryResultList) bool {
+func (this *Database) Query(query_str string, result *QueryResultList) error {
 	rows, err := this.db.Query(query_str)
 	//defer rows.Close()
 	if err != nil {
-		log.Printf("Database query string(%v) err %v\n", query_str, err.Error())
-		return false
+		return err
 	}
 	result.Init(rows)
-	return true
+	return nil
 }
 
-func (this *Database) QueryWith(query_str string, args []interface{}, result *QueryResultList) bool {
+func (this *Database) QueryWith(query_str string, args []interface{}, result *QueryResultList) error {
 	rows, err := this.db.Query(query_str, args...)
 	//defer rows.Close()
 	if err != nil {
-		log.Printf("Database query string(%v) with args(%v) err %v\n", query_str, args, err.Error())
-		return false
+		return err
 	}
 	result.Init(rows)
-	return true
+	return nil
 }
 
-func (this *Database) QueryOne(query_str string, dest []interface{}) bool {
+func (this *Database) QueryOne(query_str string, dest []interface{}) error {
 	err := this.db.QueryRow(query_str).Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one row and scan query string(%v) get dest(%v) err: %v\n", query_str, dest, err.Error())
-		return false
+		//log.Printf("Database query one row and scan query string(%v) get dest(%v) err: %v\n", query_str, dest, err.Error())
+		return err
 	}
-	return true
+	return nil
 }
 
-func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []interface{}) bool {
+func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []interface{}) error {
 	err := this.db.QueryRow(query_str, args...).Scan(dest...)
 	if err != nil {
-		log.Printf("Database query one with and scan query string(%v) with args(%v) get dest(%v) err: %v\n", query_str, args, dest, err.Error())
-		return false
+		//log.Printf("Database query one with and scan query string(%v) with args(%v) get dest(%v) err: %v\n", query_str, args, dest, err.Error())
+		return err
 	}
-	return true
+	return nil
 }
 
 func (this *Database) HasRow(query_str string) bool {
@@ -160,24 +157,24 @@ func _exec_result(res sql.Result, last_insert_id, rows_affected *int64) {
 	}
 }
 
-func (this *Database) Exec(query_str string, last_insert_id, rows_affected *int64) bool {
+func (this *Database) Exec(query_str string, last_insert_id, rows_affected *int64) error {
 	res, err := this.db.Exec(query_str)
 	if err != nil {
 		log.Printf("Database exec query string(%v) err %v\n", query_str, err.Error())
-		return false
+		return err
 	}
 	_exec_result(res, last_insert_id, rows_affected)
-	return true
+	return nil
 }
 
-func (this *Database) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
+func (this *Database) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) error {
 	res, err := this.db.Exec(query_str, args...)
 	if err != nil {
 		log.Printf("Database exec query string(%v) with args(%v) err %v\n", query_str, args, err.Error())
-		return false
+		return err
 	}
 	_exec_result(res, last_insert_id, rows_affected)
-	return true
+	return nil
 }
 
 func (this *Database) Prepare(query_str string) *Stmt {
@@ -210,39 +207,39 @@ func CreateStmt(stmt *sql.Stmt) *Stmt {
 	}
 }
 
-func (this *Stmt) Query(args []interface{}, result *QueryResultList) bool {
+func (this *Stmt) Query(args []interface{}, result *QueryResultList) error {
 	rows, err := this.stmt.Query(args...)
 	defer rows.Close()
 	if err != nil {
 		log.Printf("Stmt query err %v\n", err.Error())
-		return false
+		return err
 	}
 	result.Init(rows)
-	return true
+	return nil
 }
 
-func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) bool {
+func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
 	row := this.stmt.QueryRow(args...)
 	if row == nil {
-		log.Printf("Stmt query one row get result empty\n")
-		return false
+		//log.Printf("Stmt query one row get result empty\n")
+		return ErrQueryResultEmpty
 	}
 	err := row.Scan(dest...)
 	if err != nil {
 		log.Printf("Stmt query one row and scan err %v\n", err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
-func (this *Stmt) Exec(args []interface{}, last_insert_id, rows_affected *int64) bool {
+func (this *Stmt) Exec(args []interface{}, last_insert_id, rows_affected *int64) error {
 	res, err := this.stmt.Exec(args...)
 	if err != nil {
 		log.Printf("Stmt exec with args err %v\n", err.Error())
-		return false
+		return err
 	}
 	_exec_result(res, last_insert_id, rows_affected)
-	return true
+	return nil
 }
 
 // -------------------------------- Procedure ---------------------------------
@@ -256,78 +253,78 @@ func CreateProcedure(tx *sql.Tx) *Procedure {
 	}
 }
 
-func (this *Procedure) Query(query_str string, result *QueryResultList) bool {
+func (this *Procedure) Query(query_str string, result *QueryResultList) error {
 	rows, err := this.tx.Query(query_str)
 	if err != nil {
 		log.Printf("Procedure query(%v) err %v\n", query_str, err.Error())
-		return false
+		return err
 	}
 	result.Init(rows)
-	return true
+	return nil
 }
 
-func (this *Procedure) QueryWith(query_str string, args []interface{}, result *QueryResultList) bool {
+func (this *Procedure) QueryWith(query_str string, args []interface{}, result *QueryResultList) error {
 	rows, err := this.tx.Query(query_str, args...)
 	if err != nil {
 		log.Printf("Procedure query(%v) with args(%v) err %v\n", query_str, args, err.Error())
-		return false
+		return err
 	}
 	result.Init(rows)
-	return true
+	return nil
 }
 
-func (this *Procedure) QueryOne(query_str string, dest []interface{}) bool {
+func (this *Procedure) QueryOne(query_str string, dest []interface{}) error {
 	err := this.tx.QueryRow(query_str).Scan(dest...)
 	if err != nil {
 		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
-func (this *Procedure) QueryOneWith(query_str string, args []interface{}, dest []interface{}) bool {
+func (this *Procedure) QueryOneWith(query_str string, args []interface{}, dest []interface{}) error {
 	err := this.tx.QueryRow(query_str, args...).Scan(dest...)
 	if err != nil {
 		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, args, err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
-func (this *Procedure) Exec(query_str string, last_insert_id, rows_affected *int64) bool {
+func (this *Procedure) Exec(query_str string, last_insert_id, rows_affected *int64) error {
 	res, err := this.tx.Exec(query_str)
 	if err != nil {
 		log.Printf("Procedure exec(%v) with err %v\n", query_str, err.Error())
-		return false
+		return err
 	}
 	_exec_result(res, last_insert_id, rows_affected)
-	return true
+	return nil
 }
 
-func (this *Procedure) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) bool {
+func (this *Procedure) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) error {
 	res, err := this.tx.Exec(query_str, args...)
 	if err != nil {
 		log.Printf("Procedure exec(%v) with args(%v) err %v\n", query_str, args, err.Error())
-		return false
+		return err
 	}
 	_exec_result(res, last_insert_id, rows_affected)
-	return true
+	return nil
 }
 
-func (this *Procedure) Commit() bool {
+func (this *Procedure) Commit() error {
 	err := this.tx.Commit()
 	if err != nil {
 		log.Printf("Procedure commit err %v\n", err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
-func (this *Procedure) Rollback() bool {
+func (this *Procedure) Rollback() error {
 	err := this.tx.Rollback()
 	if err != nil {
 		log.Printf("Procedure rollback err %v\n", err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }

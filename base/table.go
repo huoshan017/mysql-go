@@ -6,21 +6,23 @@ import (
 	"strings"
 )
 
-func (this *Database) LoadTable(tab *TableConfig) bool {
+func (this *Database) LoadTable(tab *TableConfig) error {
 	// create table
 	var sql_str string
 	if !tab.SingleRow {
 		primary_field := tab.GetPrimaryKeyFieldConfig()
 		if primary_field == nil {
 			log.Printf("Database::LoadTable %v cant get primary key field config\n", tab.Name)
-			return false
+			return ErrPrimaryFieldNotDefine
 		}
 		sql_str = fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s(%v) %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.Type, primary_field.Length /*primary_field.CreateFlags*/, strings.Replace(primary_field.CreateFlags, ",", " ", -1), tab.PrimaryKey, tab.Engine)
 	} else {
 		sql_str = fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`place_hold` int(11), PRIMARY KEY(`place_hold`)) ENGINE=%s", tab.Name, tab.Engine)
 	}
-	if !this.Exec(sql_str, nil, nil) {
-		return false
+
+	err := this.Exec(sql_str, nil, nil)
+	if err != nil {
+		return err
 	}
 
 	// add fields
@@ -28,27 +30,26 @@ func (this *Database) LoadTable(tab *TableConfig) bool {
 		if tab.PrimaryKey == f.Name {
 			continue
 		}
-		if !this.add_field(tab.Name, f) {
-			return false
+		err = this.add_field(tab.Name, f)
+		if err != nil {
+			return err
 		}
 	}
 
 	if tab.SingleRow {
 		sql_str = fmt.Sprintf("INSERT IGNORE INTO `%s` (`place_hold`) VALUES (1)", tab.Name)
-		if !this.Exec(sql_str, nil, nil) {
-			return false
+		err = this.Exec(sql_str, nil, nil)
+		if err != nil {
+			return err
 		}
 	}
 
-	return true
+	return nil
 }
 
-func (this *Database) DropTable(table_name string) bool {
+func (this *Database) DropTable(table_name string) error {
 	args := []interface{}{table_name}
-	if !this.ExecWith("DROP TABLE ?", args, nil, nil) {
-		return false
-	}
-	return true
+	return this.ExecWith("DROP TABLE ?", args, nil, nil)
 }
 
 func _get_field_type_str(field *FieldConfig) (field_type_str string) {
@@ -112,31 +113,30 @@ func _get_field_create_flags_str(field *FieldConfig) (create_flags_str string) {
 	return
 }
 
-func (this *Database) add_field(table_name string, field *FieldConfig) bool {
+func (this *Database) add_field(table_name string, field *FieldConfig) error {
 	sql_str := fmt.Sprintf("DESCRIBE %s %s", table_name, field.Name)
 	if this.HasRow(sql_str) {
-		//log.Printf("describe get rows not empty, no need to add field %v\n", field.Name)
-		return true
+		return nil
 	}
 
 	field_type_str := _get_field_type_str(field)
 	if field_type_str == "" {
-		return false
+		return fmt.Errorf("get table %v field %v type error", table_name, field.Name)
 	}
 
 	create_flags_str := _get_field_create_flags_str(field)
-
 	sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s %s", table_name, field.Name, field_type_str, create_flags_str)
-	if !this.Exec(sql_str, nil, nil) {
+	err := this.Exec(sql_str, nil, nil)
+	if err != nil {
 		log.Printf("create table %v field %v failed\n", table_name, field.Name)
-		return false
+		return err
 	}
 
 	// create index
 	index_type, o := GetMysqlIndexTypeByString(strings.ToUpper(field.IndexType))
 	if !o {
 		log.Printf("No supported index type %v\n", field.IndexType)
-		return false
+		return fmt.Errorf("table %v has not supported index type %v", table_name, field.IndexType)
 	}
 
 	if index_type != MYSQL_INDEX_TYPE_NONE {
@@ -150,43 +150,39 @@ func (this *Database) add_field(table_name string, field *FieldConfig) bool {
 			log.Printf("table %v field %v index type FULLTEXT not supported\n", table_name, field.Name)
 		}
 
-		if !this.Exec(sql_str, nil, nil) {
+		err = this.Exec(sql_str, nil, nil)
+		if err != nil {
 			log.Printf("create table %v field %v index failed\n", table_name, field.Name)
-			return false
+			return err
 		}
 	}
 
-	return true
+	return nil
 }
 
-func (this *Database) remove_field(table_name, field_name string) bool {
+func (this *Database) remove_field(table_name, field_name string) error {
 	sql_str := "ALTER TABLE " + table_name + " DROP COLUMN " + field_name
-	if !this.Exec(sql_str, nil, nil) {
-		return false
-	}
-	return true
+	return this.Exec(sql_str, nil, nil)
 }
 
-func (this *Database) rename_field(table_name, old_field_name, new_field_name string) bool {
+func (this *Database) rename_field(table_name, old_field_name, new_field_name string) error {
 	sql_str := "ALTER TABLE " + table_name + " CHANGE " + old_field_name + " " + new_field_name
-	if !this.Exec(sql_str, nil, nil) {
-		return false
-	}
-	return true
+	return this.Exec(sql_str, nil, nil)
 }
 
-func (this *Database) modify_field_attr(table_name string, field *FieldConfig) bool {
+func (this *Database) modify_field_attr(table_name string, field *FieldConfig) error {
 	field_type_str := _get_field_type_str(field)
 	if field_type_str == "" {
 		log.Printf("get table %v field %v type string failed\n", table_name, field.Name)
-		return false
+		return fmt.Errorf("get table %v field %v type error", table_name, field.Name)
 	}
 
 	field_create_str := _get_field_create_flags_str(field)
 	sql_str := "ALTER TABLE " + table_name + " MODIFY " + field.Name + " " + field_type_str + " " + field_create_str
-	if !this.Exec(sql_str, nil, nil) {
+	err := this.Exec(sql_str, nil, nil)
+	if err != nil {
 		log.Printf("modify table %v field %v attr failed\n", table_name, field.Name)
-		return false
+		return err
 	}
-	return true
+	return nil
 }

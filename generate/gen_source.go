@@ -315,29 +315,31 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	// select func
 	if !table.SingleRow {
-		str += ("func (this *" + struct_table_name + ") Select(field_name string, field_value interface{}) (*" + struct_row_name + ", bool) {\n")
+		str += ("func (this *" + struct_table_name + ") Select(field_name string, field_value interface{}) (*" + struct_row_name + ", error) {\n")
 	} else {
-		str += "func (this *" + struct_table_name + ") Select() (*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") Select() (*" + struct_row_name + ", error) {\n"
 	}
 	str += ("	var field_list = []string{" + field_list + "}\n")
 	str += ("	var t = Create_" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
+	str += ("	var err error\n")
 	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
 	if !table.SingleRow {
-		str += ("	if !this.db.Select(\"" + table.Name + "\", field_name, field_value, field_list, dest_list) {\n")
+		str += ("	err = this.db.Select(\"" + table.Name + "\", field_name, field_value, field_list, dest_list)\n")
 	} else {
-		str += ("	if !this.db.Select(\"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list) {\n")
+		str += ("	err = this.db.Select(\"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list)\n")
 	}
-	str += ("		return nil, false\n")
+	str += ("	if err != nil {\n")
+	str += ("		return nil, err\n")
 	str += ("	}\n")
 	for _, field := range table.Fields {
 		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
 			str += "	t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}
-	str += ("	return t, true\n")
+	str += ("	return t, nil\n")
 	str += ("}\n\n")
 
 	// primary field
@@ -368,85 +370,92 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	if !table.SingleRow {
 		// select records condition
-		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select records map condition
-		str += "func (this *" + struct_table_name + ") SelectRecordsMapCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) (map[" + pt + "]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectRecordsMapCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_map(table, struct_row_name, bytes_define_list, dest_list, pt)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select all records
-		str += "func (this *" + struct_table_name + ") SelectAllRecords() ([]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectAllRecords() ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select all map records
-		str += "func (this *" + struct_table_name + ") SelectAllMapRecords() (map[" + pt + "]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectAllMapRecords() (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_map(table, struct_row_name, bytes_define_list, dest_list, pt)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select records
-		str += "func (this *" + struct_table_name + ") SelectRecords(field_name string, field_value interface{}) ([]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectRecords(field_name string, field_value interface{}) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_list(table, struct_row_name, bytes_define_list, dest_list)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select records map
-		str += "func (this *" + struct_table_name + ") SelectRecordsMap(field_name string, field_value interface{}) (map[" + pt + "]*" + struct_row_name + ", bool) {\n"
+		str += "func (this *" + struct_table_name + ") SelectRecordsMap(field_name string, field_value interface{}) (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_base.QueryResultList\n"
-		str += "	if !this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list) {\n"
-		str += "		return nil, false\n"
+		str += "	err := this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list)\n"
+		str += "	if err != nil {\n"
+		str += "		return nil, err\n"
 		str += "	}\n"
 		str += gen_get_result_map(table, struct_row_name, bytes_define_list, dest_list, pt)
-		str += "	return r, true\n"
+		str += "	return r, nil\n"
 		str += "}\n\n"
 
 		// select primary field
-		str += ("func (this *" + struct_table_name + ") SelectByPrimaryField(key " + pt + ") *" + struct_row_name + " {\n")
-		str += ("	v, o := this.Select(\"" + pf.Name + "\", key)\n")
-		str += ("	if !o {\n")
-		str += ("		return nil\n")
+		str += ("func (this *" + struct_table_name + ") SelectByPrimaryField(key " + pt + ") (*" + struct_row_name + ", error) {\n")
+		str += ("	v, err := this.Select(\"" + pf.Name + "\", key)\n")
+		str += ("	if err != nil {\n")
+		str += ("		return nil, err\n")
 		str += ("	}\n")
-		str += ("	return v\n")
+		str += ("	return v, nil\n")
 		str += ("}\n\n")
 
 		// select all primary field
-		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryField() ([]" + pt + ") {\n")
+		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryField() ([]" + pt + ", error) {\n")
 		str += ("	var result_list mysql_base.QueryResultList\n")
-		str += ("	if !this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list) {\n")
-		str += ("		return nil\n")
+		str += ("	err := this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list)\n")
+		str += ("	if err != nil {\n")
+		str += ("		return nil, err\n")
 		str += ("	}\n")
 		str += ("	var value_list []" + pt + "\n")
 		str += ("	for {\n")
@@ -456,14 +465,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("		}\n")
 		str += ("		value_list = append(value_list, d)\n")
 		str += ("	}\n")
-		str += ("	return value_list\n")
+		str += ("	return value_list, nil\n")
 		str += ("}\n\n")
 
 		// select all primary field map
-		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryFieldMap() map[" + pt + "]bool {\n")
+		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryFieldMap() (map[" + pt + "]bool, error) {\n")
 		str += ("	var result_list mysql_base.QueryResultList\n")
-		str += ("	if !this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list) {\n")
-		str += ("		return nil\n")
+		str += ("	err := this.db.SelectFieldNoKey(\"" + table.Name + "\", \"" + pf.Name + "\", &result_list)\n")
+		str += ("	if err != nil {\n")
+		str += ("		return nil, err\n")
 		str += ("	}\n")
 		str += ("	var value_map = make(map[" + pt + "]bool)\n")
 		str += ("	for {\n")
@@ -473,7 +483,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += ("		}\n")
 		str += ("		value_map[d] = true\n")
 		str += ("	}\n")
-		str += ("	return value_map\n")
+		str += ("	return value_map, nil\n")
 		str += ("}\n\n")
 
 		// insert
@@ -502,15 +512,15 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += "	return &" + struct_row_name + "{ " + pf.Name + ": " + pf.Name + ", }\n"
 		str += "}\n\n"
 	} else {
-		str += "func (this *" + struct_table_name + ") GetRow() *" + struct_row_name + " {\n"
+		str += "func (this *" + struct_table_name + ") GetRow() (*" + struct_row_name + ", error) {\n"
 		str += "	if this.row == nil {\n"
-		str += "		row, o := this.Select()\n"
-		str += "		if !o {\n"
-		str += "			return nil\n"
+		str += "		row, err := this.Select()\n"
+		str += "		if err != nil {\n"
+		str += "			return nil, err\n"
 		str += "		}\n"
 		str += "		this.row = row\n"
 		str += "	}\n"
-		str += "	return this.row\n"
+		str += "	return this.row, nil\n"
 		str += "}\n\n"
 	}
 

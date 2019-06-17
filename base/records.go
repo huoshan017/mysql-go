@@ -32,24 +32,24 @@ func _gen_insert_params(field_args ...*FieldValuePair) (field_list, placehold_li
 	return
 }
 
-func (this *Database) InsertRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
+func (this *Database) InsertRecord(table_name string, field_args ...*FieldValuePair) (err error, last_insert_id int64) {
 	fl := len(field_args)
 	if fl > 0 {
 		field_list, placehold_list, args := _gen_insert_params(field_args...)
-		res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+		err = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	} else {
-		res = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
+		err = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
 	}
 	return
 }
 
-func (this *Database) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
+func (this *Database) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (err error, last_insert_id int64) {
 	var fl = len(field_args)
 	if fl > 0 {
 		field_list, placehold_list, args := _gen_insert_params(field_args...)
-		res = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+		err = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	} else {
-		res = this.Exec("INSERT IGNORE INTO "+table_name+";", &last_insert_id, nil)
+		err = this.Exec("INSERT IGNORE INTO "+table_name+";", &last_insert_id, nil)
 	}
 	return
 }
@@ -67,7 +67,7 @@ func _gen_insert_params_2(fields []string, values []interface{}) (field_list, pl
 	return
 }
 
-func (this *Database) InsertRecord2(table_name string, fields []string, values []interface{}) (res bool, last_insert_id int64) {
+/*func (this *Database) InsertRecord2(table_name string, fields []string, values []interface{}) (res bool, last_insert_id int64) {
 	var fl int
 	if fields != nil {
 		fl := len(fields)
@@ -84,7 +84,7 @@ func (this *Database) InsertRecord2(table_name string, fields []string, values [
 		res = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
 	}
 	return
-}
+}*/
 
 func _gen_select_query_str(table_name string, field_list []string, field_name string, sel_cond *SelectCondition) string {
 	var query_str string
@@ -126,10 +126,10 @@ func _gen_select_query_str(table_name string, field_list []string, field_name st
 	return query_str
 }
 
-func (this *Database) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) bool {
+func (this *Database) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) error {
 	if dest_list == nil || len(dest_list) == 0 {
 		log.Printf("Database::SelectRecord result dest_list cant not empty\n")
-		return false
+		return ErrArgumentInvalid
 	}
 	var sel_cond = SelectCondition{
 		Offset: -1,
@@ -139,10 +139,10 @@ func (this *Database) SelectRecord(table_name, key_name string, key_value interf
 	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
 }
 
-func (this *Database) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) bool {
+func (this *Database) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) error {
 	if result_list == nil {
-		log.Printf("Database::SelectRecords result_list cant not null\n")
-		return false
+		//log.Printf("Database::SelectRecords result_list cant not null\n")
+		return ErrArgumentInvalid
 	}
 	var sel_cond = SelectCondition{
 		Offset: -1,
@@ -172,10 +172,10 @@ type SelectCondition struct {
 	Limit    int
 }
 
-func (this *Database) SelectRecordsCondition(table_name, field_name string, field_value interface{}, sel_cond *SelectCondition, field_list []string, result_list *QueryResultList) bool {
+func (this *Database) SelectRecordsCondition(table_name, field_name string, field_value interface{}, sel_cond *SelectCondition, field_list []string, result_list *QueryResultList) error {
 	if result_list == nil {
-		log.Printf("Database::SelectRecords result_list cant not null\n")
-		return false
+		//log.Printf("Database::SelectRecords result_list cant not null\n")
+		return ErrArgumentInvalid
 	}
 	query_str := _gen_select_query_str(table_name, field_list, field_name, sel_cond)
 	if field_name != "" {
@@ -200,50 +200,34 @@ func _gen_update_params(table_name string, key_name string, key_value interface{
 	return
 }
 
-func (this *Database) UpdateRecord(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) bool {
-	fl := len(field_args)
-	if fl <= 0 {
-		return false
-	}
+func (this *Database) UpdateRecord(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) error {
 	query_str, args := _gen_update_params(table_name, key_name, key_value, field_args...)
 	return this.ExecWith(query_str, args, nil, nil)
 }
 
-func (this *Database) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
+func (this *Database) DeleteRecord(table_name string, key_name string, key_value interface{}) error {
 	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
 	return this.ExecWith(sql_str, []interface{}{key_value}, nil, nil)
 }
 
-func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
-	fl := len(field_args)
-	if fl == 0 {
-		return
-	}
+func (this *Procedure) InsertRecord(table_name string, field_args ...*FieldValuePair) (err error, last_insert_id int64) {
 	field_list, placehold_list, args := _gen_insert_params(field_args...)
-	res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+	err = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	return
 }
 
-func (this *Procedure) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (res bool, last_insert_id int64) {
-	fl := len(field_args)
-	if fl == 0 {
-		return
-	}
+func (this *Procedure) InsertIgnoreRecord(table_name string, field_args ...*FieldValuePair) (err error, last_insert_id int64) {
 	field_list, placehold_list, args := _gen_insert_params(field_args...)
-	res = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
+	err = this.ExecWith("INSERT IGNORE INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", args, &last_insert_id, nil)
 	return
 }
 
-func (this *Procedure) UpdateRecord(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) bool {
-	fl := len(field_args)
-	if fl <= 0 {
-		return false
-	}
+func (this *Procedure) UpdateRecord(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) error {
 	query_str, args := _gen_update_params(table_name, key_name, key_value, field_args...)
 	return this.ExecWith(query_str, args, nil, nil)
 }
 
-func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) bool {
+func (this *Procedure) DeleteRecord(table_name string, key_name string, key_value interface{}) error {
 	sql_str := "DELETE FROM " + table_name + " WHERE " + key_name + "=?;"
 	return this.ExecWith(sql_str, []interface{}{key_value}, nil, nil)
 }
