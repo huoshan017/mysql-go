@@ -3,10 +3,7 @@ package mysql_generate
 import (
 	"log"
 	"os"
-
-	//"path/filepath"
 	"strconv"
-	//"strings"
 )
 
 func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) bool {
@@ -33,6 +30,5 @@ func _gen_struct(field_struct *FieldStruct) string {
 		str += ("	" + m.Type + " " + m.Name + " = " + strconv.Itoa(int(m.Index)) + ";\n")
 	}
 	str += "}\n"
-	//log.Printf("gen struct:\n%v", str)
 	return str
 }

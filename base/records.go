@@ -18,6 +18,30 @@ type OpDetail struct {
 	FieldList []*FieldValuePair
 }
 
+const (
+	COMPARITION_EQUAL       = iota
+	COMPARITION_GREAT_THAN  = 1
+	COMPARITION_LESS_THAN   = 2
+	COMPARITION_GREAT_EQUAL = 3
+	COMPARITION_LESS_EQUAL  = 4
+)
+
+var comp_type = []string{
+	"=",
+	">",
+	"<",
+	">=",
+	"<=",
+}
+
+type SelectCondition struct {
+	CompType int
+	OrderBy  string
+	Desc     bool
+	Offset   int
+	Limit    int
+}
+
 func _gen_insert_params(field_args ...*FieldValuePair) (field_list, placehold_list string, args []interface{}) {
 	for i, fa := range field_args {
 		if i == 0 {
@@ -67,25 +91,6 @@ func _gen_insert_params_2(fields []string, values []interface{}) (field_list, pl
 	return
 }
 
-/*func (this *Database) InsertRecord2(table_name string, fields []string, values []interface{}) (res bool, last_insert_id int64) {
-	var fl int
-	if fields != nil {
-		fl := len(fields)
-		if values == nil || fl != len(values) {
-			log.Printf("Database:InsertRecord2 fields length must equal to values length\n")
-			return false, 0
-		}
-	}
-
-	if fl > 0 {
-		field_list, placehold_list := _gen_insert_params_2(fields, values)
-		res = this.ExecWith("INSERT INTO "+table_name+"("+field_list+") VALUES ("+placehold_list+");", values, &last_insert_id, nil)
-	} else {
-		res = this.Exec("INSERT INTO "+table_name+";", &last_insert_id, nil)
-	}
-	return
-}*/
-
 func _gen_select_query_str(table_name string, field_list []string, field_name string, sel_cond *SelectCondition) string {
 	var query_str string
 	if field_list == nil || len(field_list) == 0 {
@@ -115,9 +120,9 @@ func _gen_select_query_str(table_name string, field_list []string, field_name st
 
 	if field_name != "" {
 		if limit_str != "" {
-			query_str += (" WHERE " + field_name + "=? " + limit_str + ";")
+			query_str += (" WHERE " + field_name + comp_type[sel_cond.CompType] + "? " + limit_str + ";")
 		} else {
-			query_str += (" WHERE " + field_name + "=?;")
+			query_str += (" WHERE " + field_name + comp_type[sel_cond.CompType] + "?;")
 		}
 	} else {
 		query_str += (" " + limit_str + ";")
@@ -154,22 +159,6 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 	} else {
 		return this.Query(query_str, result_list)
 	}
-}
-
-const (
-	COMPARITION_EQUAL       = iota
-	COMPARITION_GREAT_THAN  = 1
-	COMPARITION_LESS_THAN   = 2
-	COMPARITION_GREAT_EQUAL = 3
-	COMPARITION_LESS_EQUAL  = 4
-)
-
-type SelectCondition struct {
-	CompType int
-	OrderBy  string
-	Desc     bool
-	Offset   int
-	Limit    int
 }
 
 func (this *Database) SelectRecordsCondition(table_name, field_name string, field_value interface{}, sel_cond *SelectCondition, field_list []string, result_list *QueryResultList) error {
