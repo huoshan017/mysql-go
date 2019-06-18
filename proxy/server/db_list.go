@@ -117,7 +117,7 @@ func (this *DbList) connect_db(db_mgr *mysql_manager.DB, attach_define *mysql_ge
 	if err != nil {
 		return err
 	}
-	db_mgr.Run()
+	db_mgr.GoRun()
 	return nil
 }
 
