@@ -148,22 +148,25 @@ func (this *DB) Save() {
 }
 
 func (this *DB) Run() {
-	go func() {
-		this.state = DB_STATE_RUNNING
-		var last_save_time int32
-		for {
-			if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
-				break
-			}
-
-			now_time := int32(time.Now().Unix())
-			if last_save_time == 0 {
-				last_save_time = now_time
-			} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval.Seconds()) {
-				this.op_mgr.Save()
-				last_save_time = now_time
-			}
-			time.Sleep(time.Second)
+	this.state = DB_STATE_RUNNING
+	var last_save_time int32
+	for {
+		if atomic.CompareAndSwapInt32(&this.state, DB_STATE_TO_END, DB_STATE_NO_RUN) {
+			break
 		}
-	}()
+
+		now_time := int32(time.Now().Unix())
+		if last_save_time == 0 {
+			last_save_time = now_time
+		} else if last_save_time > 0 && now_time-last_save_time >= int32(this.save_interval.Seconds()) {
+			this.op_mgr.Save()
+			last_save_time = now_time
+		}
+		time.Sleep(time.Second)
+	}
+	this.database.Close()
+}
+
+func (this *DB) GoRun() {
+	go this.Run()
 }
