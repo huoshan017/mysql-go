@@ -166,6 +166,16 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	}
 
 	if !table.SingleRow {
+		// select records count
+		str += "func (this *" + struct_table_name + ") SelectRecordsCount() (count int32, err error) {\n"
+		str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", \"\", nil)\n"
+		str += "}\n\n"
+
+		// select records count by field
+		str += "func (this *" + struct_table_name + ") SelectRecordsCountByField(field_name string, field_value interface{}) (count int32, err error) {\n"
+		str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", field_name, field_value)\n"
+		str += "}\n\n"
+
 		// select records condition
 		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"

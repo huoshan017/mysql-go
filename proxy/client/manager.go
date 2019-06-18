@@ -252,6 +252,22 @@ func (this *DB) Select(table_name string, field_name string, field_value interfa
 	return nil
 }
 
+func (this *DB) SelectRecordsCount(table_name, field_name string, field_value interface{}) (count int32, err error) {
+	var args = mysql_proxy_common.SelectRecordsCountArgs{
+		Head:            this._gen_head(),
+		TableName:       table_name,
+		WhereFieldName:  field_name,
+		WhereFieldValue: field_value,
+	}
+	var reply mysql_proxy_common.SelectRecordsCountReply
+	err = this.read_client.Call("ProxyReadProc.SelectRecordsCount", &args, &reply)
+	if err != nil {
+		return
+	}
+	count = reply.Count
+	return
+}
+
 func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectRecordsArgs{
 		Head:             this._gen_head(),

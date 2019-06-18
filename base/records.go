@@ -144,7 +144,7 @@ func (this *Database) SelectRecord(table_name, key_name string, key_value interf
 	return this.QueryOneWith(query_str, []interface{}{key_value}, dest_list)
 }
 
-func (this *Database) SelectRecords(table_name, key_name string, key_value interface{}, field_list []string, result_list *QueryResultList) error {
+func (this *Database) SelectRecords(table_name, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) error {
 	if result_list == nil {
 		//log.Printf("Database::SelectRecords result_list cant not null\n")
 		return ErrArgumentInvalid
@@ -153,9 +153,9 @@ func (this *Database) SelectRecords(table_name, key_name string, key_value inter
 		Offset: -1,
 		Limit:  -1,
 	}
-	query_str := _gen_select_query_str(table_name, field_list, key_name, &sel_cond)
-	if key_name != "" {
-		return this.QueryWith(query_str, []interface{}{key_value}, result_list)
+	query_str := _gen_select_query_str(table_name, field_list, field_name, &sel_cond)
+	if field_name != "" {
+		return this.QueryWith(query_str, []interface{}{field_value}, result_list)
 	} else {
 		return this.Query(query_str, result_list)
 	}
@@ -172,6 +172,17 @@ func (this *Database) SelectRecordsCondition(table_name, field_name string, fiel
 	} else {
 		return this.Query(query_str, result_list)
 	}
+}
+
+func (this *Database) SelectRecordsCount(table_name, field_name string, field_value interface{}) (count int32, err error) {
+	query_str := "SELECT COUNT(*) FROM " + table_name
+	if field_name != "" {
+		query_str += " WHERE " + field_name + "=?;"
+		count, err = this.QueryCountWith(query_str, field_value)
+	} else {
+		count, err = this.QueryCount(query_str)
+	}
+	return
 }
 
 func _gen_update_params(table_name string, key_name string, key_value interface{}, field_args ...*FieldValuePair) (query_str string, args []interface{}) {

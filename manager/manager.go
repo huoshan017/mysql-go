@@ -95,6 +95,14 @@ func (this *DB) SelectUseSql(query_sql string, result_list *mysql_base.QueryResu
 	return this.database.Query(query_sql, result_list)
 }
 
+func (this *DB) SelectRecordsCount(table_name string) (count int32, err error) {
+	return this.database.SelectRecordsCount(table_name, "", nil)
+}
+
+func (this *DB) SelectRecordsCountByField(table_name, field_name string, field_value interface{}) (count int32, err error) {
+	return this.database.SelectRecordsCount(table_name, field_name, field_value)
+}
+
 func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) error {
 	return this.database.SelectRecord(table_name, field_name, field_value, field_list, dest_list)
 }

@@ -128,6 +128,16 @@ func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []
 	return nil
 }
 
+func (this *Database) QueryCount(query_str string) (count int32, err error) {
+	err = this.db.QueryRow(query_str).Scan(&count)
+	return
+}
+
+func (this *Database) QueryCountWith(query_str string, arg interface{}) (count int32, err error) {
+	err = this.db.QueryRow(query_str, arg).Scan(&count)
+	return
+}
+
 func (this *Database) HasRow(query_str string) bool {
 	row := this.db.QueryRow(query_str)
 	if row == nil {

@@ -190,6 +190,32 @@ func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *my
 	return nil
 }
 
+func (this *ProxyReadProc) SelectRecordsCount(args *mysql_proxy_common.SelectRecordsCountArgs, reply *mysql_proxy_common.SelectRecordsCountReply) error {
+	defer func() {
+		if err := recover(); err != nil {
+			output_critical(err)
+		}
+	}()
+
+	db, err := _get_db(args.Head)
+	if err != nil {
+		return err
+	}
+
+	var count int32
+	if args.WhereFieldName == "" {
+		count, err = db.SelectRecordsCount(args.TableName)
+	} else {
+		count, err = db.SelectRecordsCountByField(args.TableName, args.WhereFieldName, args.WhereFieldValue)
+	}
+
+	if err != nil {
+		reply.Count = count
+	}
+
+	return err
+}
+
 func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsReply) error {
 	defer func() {
 		if err := recover(); err != nil {

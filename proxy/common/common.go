@@ -59,6 +59,18 @@ type SelectReply struct {
 	Result []interface{}
 }
 
+// select records count
+type SelectRecordsCountArgs struct {
+	Head            *ArgsHead
+	TableName       string
+	WhereFieldName  string
+	WhereFieldValue interface{}
+}
+
+type SelectRecordsCountReply struct {
+	Count int32
+}
+
 // select records
 type SelectRecordsArgs struct {
 	Head             *ArgsHead

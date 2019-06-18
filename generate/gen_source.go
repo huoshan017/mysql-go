@@ -36,12 +36,12 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 	str += "func (this *" + struct_row_name + ") Set_" + field.Name + "(v " + go_type + ") {\n"
 	str += "	this." + field.Name + " = v\n"
 	str += "}\n\n"
-	str += "func (this *" + struct_row_name + ") GetWithLock_" + field.Name + "() " + go_type + " {\n"
+	str += "func (this *" + struct_row_name + ") Get_" + field.Name + "_WithLock() " + go_type + " {\n"
 	str += "	this.locker.RLock()\n"
 	str += "	defer this.locker.RUnlock()\n"
 	str += "	return this." + field.Name + "\n"
 	str += "}\n\n"
-	str += "func (this *" + struct_row_name + ") SetWithLock_" + field.Name + "(v " + go_type + ") {\n"
+	str += "func (this *" + struct_row_name + ") Set_" + field.Name + "_WithLock(v " + go_type + ") {\n"
 	str += "	this.locker.Lock()\n"
 	str += "	defer this.locker.Unlock()\n"
 	str += "	this." + field.Name + " = v\n"
@@ -63,7 +63,7 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 		str += "	}\n"
 		str += "	return true\n"
 		str += "}\n\n"
-		str += "func (this *" + struct_row_name + ") GetFVP_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "func (this *" + struct_row_name + ") Get_" + field.Name + "_FVP() *mysql_base.FieldValuePair {\n"
 		str += "	data := this.Marshal_" + field.Name + "()\n"
 		str += "	if data == nil {\n"
 		str += "		return nil\n"
@@ -71,7 +71,7 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: data }\n"
 		str += "}\n\n"
 	} else {
-		str += "func (this *" + struct_row_name + ") GetFVP_" + field.Name + "() *mysql_base.FieldValuePair {\n"
+		str += "func (this *" + struct_row_name + ") Get_" + field.Name + "_FVP() *mysql_base.FieldValuePair {\n"
 		str += "	return &mysql_base.FieldValuePair{ Name: \"" + field.Name + "\", Value: this.Get_" + field.Name + "() }\n"
 		str += "}\n\n"
 	}
@@ -220,7 +220,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
-		str += "		return t.GetFVP_" + field.Name + "()\n"
+		str += "		return t.Get_" + field.Name + "_FVP()\n"
 		str += "	},\n"
 	}
 	str += "}\n\n"
@@ -369,6 +369,16 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 
 	if !table.SingleRow {
+		// select records count
+		str += "func (this *" + struct_table_name + ") SelectRecordsCount() (count int32, err error) {\n"
+		str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\")\n"
+		str += "}\n\n"
+
+		// select records count by field
+		str += "func (this *" + struct_table_name + ") SelectRecordsCountByField(field_name string, field_value interface{}) (count int32, err error) {\n"
+		str += "	return this.db.SelectRecordsCountByField(\"" + table.Name + "\", field_name, field_value)\n"
+		str += "}\n\n"
+
 		// select records condition
 		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
