@@ -2,12 +2,16 @@ package mysql_base
 
 import (
 	"database/sql"
-	//"errors"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+)
+
+var (
+	ErrNoRows = errors.New("no rows select")
 )
 
 type QueryResultList struct {
@@ -112,20 +116,18 @@ func (this *Database) QueryWith(query_str string, args []interface{}, result *Qu
 
 func (this *Database) QueryOne(query_str string, dest []interface{}) error {
 	err := this.db.QueryRow(query_str).Scan(dest...)
-	if err != nil {
-		//log.Printf("Database query one row and scan query string(%v) get dest(%v) err: %v\n", query_str, dest, err.Error())
-		return err
+	if err == sql.ErrNoRows {
+		err = ErrNoRows
 	}
-	return nil
+	return err
 }
 
 func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []interface{}) error {
 	err := this.db.QueryRow(query_str, args...).Scan(dest...)
-	if err != nil {
-		//log.Printf("Database query one with and scan query string(%v) with args(%v) get dest(%v) err: %v\n", query_str, args, dest, err.Error())
-		return err
+	if err == sql.ErrNoRows {
+		err = ErrNoRows
 	}
-	return nil
+	return err
 }
 
 func (this *Database) QueryCount(query_str string) (count int32, err error) {
