@@ -45,14 +45,14 @@ func main() {
 	log.Printf("db running...\n")
 
 	tables := account_db.NewTablesManager(&db_mgr)
-	account_table := tables.Get_T_Account_Table()
+	account_table := tables.GetT_AccountTable()
 
 	var account_list = []string{
 		"aaa", "bbb", "ccc", "ddd",
 	}
 
 	for _, a := range account_list {
-		account := account_db.Create_T_Account()
+		account := account_db.CreateT_Account()
 		account.Set_account(a)
 		account_table.InsertIgnore(account)
 	}

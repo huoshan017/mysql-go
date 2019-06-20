@@ -43,8 +43,8 @@ func main() {
 	db_mgr.Run()
 
 	tb_mgr := game_db.NewTablesManager(&db_mgr)
-	db_player_table := tb_mgr.Get_T_Player_Table()
-	db_global_table := tb_mgr.Get_T_Global_Table()
+	db_player_table := tb_mgr.GetT_PlayerTable()
+	db_global_table := tb_mgr.GetT_GlobalTable()
 
 	var gd *game_db.T_Global
 	gd, err = db_global_table.GetRow()

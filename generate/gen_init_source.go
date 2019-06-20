@@ -18,8 +18,8 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 	str += "type TablesManager struct {\n"
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "Table"
+		var table_instance = "db" + struct_table_name
 
 		str += "	" + table_instance + " *" + struct_table_name + "\n"
 	}
@@ -28,8 +28,8 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 	str += "func (this *TablesManager) Init(db *mysql_manager.DB) {\n"
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "Table"
+		var table_instance = "db" + struct_table_name
 
 		str += "	this." + table_instance + " = &" + struct_table_name + "{}\n"
 		str += "	this." + table_instance + ".Init(db)\n"
@@ -38,10 +38,10 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "Table"
+		var table_instance = "db" + struct_table_name
 
-		str += "func (this *TablesManager) Get_" + struct_table_name + "() *" + struct_table_name + "{\n"
+		str += "func (this *TablesManager) Get" + struct_table_name + "() *" + struct_table_name + "{\n"
 		str += "	return this." + table_instance + "\n"
 		str += "}\n\n"
 	}
@@ -56,8 +56,8 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 	str += "type TablesProxyManager struct {\n"
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table_Proxy"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "TableProxy"
+		var table_instance = "db" + struct_table_name
 
 		str += "	" + table_instance + " *" + struct_table_name + "\n"
 	}
@@ -66,8 +66,8 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 	str += "func (this *TablesProxyManager) Init(db *mysql_proxy.DB) {\n"
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table_Proxy"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "TableProxy"
+		var table_instance = "db" + struct_table_name
 
 		str += "	this." + table_instance + " = &" + struct_table_name + "{}\n"
 		str += "	this." + table_instance + ".Init(db)\n"
@@ -76,10 +76,10 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
-		var struct_table_name = struct_row_name + "_Table_Proxy"
-		var table_instance = "db_" + struct_table_name
+		var struct_table_name = struct_row_name + "TableProxy"
+		var table_instance = "db" + struct_table_name
 
-		str += "func (this *TablesProxyManager) Get_" + struct_table_name + "() *" + struct_table_name + "{\n"
+		str += "func (this *TablesProxyManager) Get" + struct_table_name + "() *" + struct_table_name + "{\n"
 		str += "	return this." + table_instance + "\n"
 		str += "}\n\n"
 	}

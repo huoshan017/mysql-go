@@ -22,7 +22,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	}
 
 	struct_row_name := _upper_first_char(table.Name)
-	record_mgr_name := struct_row_name + "_RecordMgr"
+	record_mgr_name := struct_row_name + "RecordMgr"
 	select_record_func_name := struct_row_name + "SelectRecordFunc"
 	select_records_func_name := struct_row_name + "SelectRecordsFunc"
 
@@ -37,7 +37,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "type " + select_record_func_name + " func() (*" + struct_row_name + ", error)\n"
 	str += "type " + select_records_func_name + " func() (map[" + pt + "]*" + struct_row_name + ", error)\n\n"
 
-	str += "func New_" + struct_row_name + "_RecordMgr(record_count int) *" + record_mgr_name + "{\n"
+	str += "func New" + struct_row_name + "RecordMgr(record_count int) *" + record_mgr_name + "{\n"
 	str += "	lists, err := simplelru.NewLRU(record_count, nil)\n"
 	str += "	if err != nil {\n"
 	str += "		return nil\n"

@@ -155,7 +155,7 @@ func gen_get_result_list(table *mysql_base.TableConfig, struct_row_name, bytes_d
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for {\n")
-	str += ("		var t = Create_" + struct_row_name + "()\n")
+	str += ("		var t = Create" + struct_row_name + "()\n")
 	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("		if !result_list.Get(dest_list...) {\n")
 	str += ("			break\n")
@@ -176,7 +176,7 @@ func gen_get_result_map(table *mysql_base.TableConfig, struct_row_name, bytes_de
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for {\n")
-	str += ("		var t = Create_" + struct_row_name + "()\n")
+	str += ("		var t = Create" + struct_row_name + "()\n")
 	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("		if !result_list.Get(dest_list...) {\n")
 	str += ("			break\n")
@@ -209,7 +209,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ")\n\n"
 
 	struct_row_name := _upper_first_char(table.Name)
-	struct_table_name := struct_row_name + "_Table"
+	struct_table_name := struct_row_name + "Table"
 
 	field_pair_func_define := table.Name + "_field_pair_func"
 	field_pair_func_type := "func (t *" + struct_row_name + ") *mysql_base.FieldValuePair"
@@ -249,7 +249,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	}
 	str += "	locker sync.RWMutex\n"
 	str += "}\n\n"
-	str += "func Create_" + struct_row_name + "() *" + struct_row_name + " {\n"
+	str += "func Create" + struct_row_name + "() *" + struct_row_name + " {\n"
 	str += "	return &" + struct_row_name + "{\n"
 	if init_mem_list != "" {
 		str += init_mem_list
@@ -323,7 +323,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += "func (this *" + struct_table_name + ") Select() (*" + struct_row_name + ", error) {\n"
 	}
 	str += ("	var field_list = []string{" + field_list + "}\n")
-	str += ("	var t = Create_" + struct_row_name + "()\n")
+	str += ("	var t = Create" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}

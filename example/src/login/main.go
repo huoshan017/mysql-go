@@ -46,8 +46,8 @@ func main() {
 	db_mgr.Run()
 
 	tables := login_db.NewTablesManager(&db_mgr)
-	ban_player_table := tables.Get_T_Ban_Player_Table()
-	ban_player := ban_player_table.NewRow("bbb")
+	ban_player_table := tables.GetT_Ban_PlayerTable()
+	ban_player := ban_player_table.NewRecord("bbb")
 	ban_player_table.Insert(ban_player)
 
 	db_mgr.Save()

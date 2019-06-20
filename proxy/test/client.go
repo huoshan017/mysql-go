@@ -42,7 +42,7 @@ func main() {
 	db_proxy.GoRun()
 
 	tb_mgr := game_db.NewTablesProxyManager(&db_proxy)
-	player_table_proxy := tb_mgr.Get_T_Player_Table_Proxy()
+	player_table_proxy := tb_mgr.GetT_PlayerTableProxy()
 
 	field_name := "id"
 	go func() {

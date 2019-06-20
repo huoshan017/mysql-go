@@ -15,7 +15,7 @@ func gen_get_proxy_result_list(table *mysql_base.TableConfig, struct_row_name, b
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for {\n")
-	str += ("		var t = Create_" + struct_row_name + "()\n")
+	str += ("		var t = Create" + struct_row_name + "()\n")
 	str += ("		var dest_list = []interface{}{" + dest_list + "}\n")
 	str += ("		if !result_list.Get(dest_list...) {\n")
 	str += ("			break\n")
@@ -36,7 +36,7 @@ func gen_get_proxy_result_map(table *mysql_base.TableConfig, struct_row_name, by
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
 	str += ("	for k, v := range records_map {\n")
-	str += ("		var t = Create_" + struct_row_name + "()\n")
+	str += ("		var t = Create" + struct_row_name + "()\n")
 	for i, field := range table.Fields {
 		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
 			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
@@ -77,7 +77,7 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	var str string
 
 	struct_row_name := _upper_first_char(table.Name)
-	struct_table_name := struct_row_name + "_Table_Proxy"
+	struct_table_name := struct_row_name + "TableProxy"
 
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
@@ -141,7 +141,7 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += "func (this *" + struct_table_name + ") Select() (*" + struct_row_name + ", error) {\n"
 	}
 	str += ("	var field_list = []string{" + field_list + "}\n")
-	str += ("	var t = Create_" + struct_row_name + "()\n")
+	str += ("	var t = Create" + struct_row_name + "()\n")
 	if bytes_define_list != "" {
 		str += ("	var " + bytes_define_list + " []byte\n")
 	}
