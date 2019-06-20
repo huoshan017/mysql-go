@@ -146,6 +146,7 @@ func (this *OperateManager) get_table_op_data(table_name string, field_name stri
 
 func (this *OperateManager) get_table_op_data_with_field_list(table_name string, field_list []*mysql_base.FieldValuePair) (*OpData, string, interface{}) {
 	var value interface{}
+	var primary_field string
 	table_op := this.table_op_map[table_name]
 	if table_op != nil {
 		for _, f := range field_list {
@@ -154,12 +155,13 @@ func (this *OperateManager) get_table_op_data_with_field_list(table_name string,
 				break
 			}
 		}
+		primary_field = table_op.table_primary_field
 	}
 	var op_data *OpData
 	if value != nil && table_op.row_op_map != nil {
 		op_data = table_op.row_op_map[value]
 	}
-	return op_data, table_op.table_primary_field, value
+	return op_data, primary_field, value
 }
 
 func (this *OperateManager) insert_table_op_data(table_name string, field_value interface{}, op_data *OpData) {
