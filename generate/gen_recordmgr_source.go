@@ -11,29 +11,31 @@ import (
 )
 
 func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
+	if table.SingleRow {
+		return true
+	}
+
 	// primary field
-	var pf *mysql_base.FieldConfig
-	var pt string
-	if !table.SingleRow {
-		var o bool
-		pf, pt, o = get_primary_field_and_type(table)
-		if !o {
-			return false
-		}
+	pf, pt, o := get_primary_field_and_type(table)
+	if !o {
+		return false
 	}
 
 	struct_row_name := _upper_first_char(table.Name)
 	record_mgr_name := struct_row_name + "_RecordMgr"
-	select_func_name := struct_row_name + "SelectFunc"
+	select_record_func_name := struct_row_name + "SelectRecordFunc"
+	select_records_func_name := struct_row_name + "SelectRecordsFunc"
 
 	str := "type " + record_mgr_name + " struct {\n"
 	str += "	load_list *simplelru.LRU\n"
 	str += "	have_map map[" + pt + "]bool\n"
 	str += "	locker sync.RWMutex\n"
-	str += "	select_func " + select_func_name + "\n"
+	str += "	select_record_func " + select_record_func_name + "\n"
+	str += "	select_records_func " + select_records_func_name + "\n"
 	str += "}\n\n"
 
-	str += "type " + select_func_name + " func() (*" + struct_row_name + ", error)\n\n"
+	str += "type " + select_record_func_name + " func() (*" + struct_row_name + ", error)\n"
+	str += "type " + select_records_func_name + " func() (map[" + pt + "]*" + struct_row_name + ", error)\n\n"
 
 	str += "func New_" + struct_row_name + "_RecordMgr(record_count int) *" + record_mgr_name + "{\n"
 	str += "	lists, err := simplelru.NewLRU(record_count, nil)\n"
@@ -46,11 +48,21 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "	}\n"
 	str += "}\n\n"
 
-	str += "func (this *" + record_mgr_name + ") SetSelectFunc(sel_func " + select_func_name + ") {\n"
-	str += "	this.select_func = sel_func\n"
+	str += "func (this *" + record_mgr_name + ") SetSelectRecordFunc(sel_func " + select_record_func_name + ") {\n"
+	str += "	this.select_record_func = sel_func\n"
 	str += "}\n\n"
 
-	str += "func (this *" + record_mgr_name + ") LoadRecordsWith() {\n"
+	str += "func (this *" + record_mgr_name + ") Init(sel_func " + select_records_func_name + ") {\n"
+	str += "	if sel_func == nil {\n"
+	str += "		return\n"
+	str += "	}\n"
+	str += "	records, err := sel_func()\n"
+	str += "	if err != nil {\n"
+	str += "		return\n"
+	str += "	}\n"
+	str += "	for k, v := range records {\n"
+	str += "		this.load_list.Add(k, v)\n"
+	str += "	}\n"
 	str += "}\n\n"
 
 	str += "func (this *" + record_mgr_name + ") New(key " + pt + ") *" + struct_row_name + " {\n"
@@ -80,10 +92,10 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "		if !is_sel {\n"
 	str += "			return nil\n"
 	str += "		}\n"
-	str += "		if this.select_func == nil {\n"
+	str += "		if this.select_record_func == nil {\n"
 	str += "			return nil\n"
 	str += "		}\n"
-	str += "		sel_row, err := this.select_func()\n"
+	str += "		sel_row, err := this.select_record_func()\n"
 	str += "		if err != nil {\n"
 	str += "			return nil\n"
 	str += "		}\n"
