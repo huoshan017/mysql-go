@@ -72,7 +72,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "	return this.load_list.Contains(key)\n"
 	str += "}\n\n"
 
-	str += "func (this *" + record_mgr_name + ") Get(key " + pt + ", is_sel bool) *" + struct_row_name + " {\n"
+	str += "func (this *" + record_mgr_name + ") get(key " + pt + ", is_sel bool) *" + struct_row_name + " {\n"
 	str += "	this.locker.RLock()\n"
 	str += "	defer this.locker.RUnlock()\n"
 	str += "	d, o := this.load_list.Get(key)\n"
@@ -91,6 +91,14 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "		return sel_row\n"
 	str += "	}\n"
 	str += "	return d.(*" + struct_row_name + ")\n"
+	str += "}\n\n"
+
+	str += "func (this *" + record_mgr_name + ") Get(key " + pt + ") *" + struct_row_name + " {\n"
+	str += "	return this.get(key, false)\n"
+	str += "}\n\n"
+
+	str += "func (this *" + record_mgr_name + ") GetAndSelect(key " + pt + ") *" + struct_row_name + " {\n"
+	str += "	return this.get(key, true)\n"
 	str += "}\n\n"
 
 	str += "func (this *" + record_mgr_name + ") Remove(key " + pt + ") bool {\n"
