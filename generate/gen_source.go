@@ -197,6 +197,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		str += "	\"log\"\n"
 	}
 	str += "	\"sync\"\n"
+	str += "	\"github.com/hashicorp/golang-lru/simplelru\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/base\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/proxy/client\"\n"

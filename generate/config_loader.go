@@ -233,13 +233,19 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 
 		res := gen_source(f, this.DBPkg, table)
 		if !res {
-			log.Printf("写文件%v失败\n", f.Name)
+			log.Printf("write source to %v failed\n", f.Name)
 			return false
 		}
 
 		res = gen_proxy_source(f, this.DBPkg, table)
 		if !res {
-			log.Printf("写文件%v失败\n", f.Name)
+			log.Printf("write proxy source to %v failed\n", f.Name)
+			return false
+		}
+
+		res = gen_record_mgr_source(f, this.DBPkg, table)
+		if !res {
+			log.Printf("write record mgr source to %v failed\n", f.Name)
 			return false
 		}
 

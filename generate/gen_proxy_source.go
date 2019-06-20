@@ -49,11 +49,35 @@ func gen_get_proxy_result_map(table *mysql_base.TableConfig, struct_row_name, by
 	return
 }
 
+func get_primary_field_and_type(table *mysql_base.TableConfig) (*mysql_base.FieldConfig, string, bool) {
+	pf := table.GetPrimaryKeyFieldConfig()
+	if pf == nil {
+		log.Printf("cant get table %v primary key\n", table.Name)
+		return nil, "", false
+	}
+	primary_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(pf.Type))
+	if !o {
+		log.Printf("table %v primary type %v invalid", table.Name, pf.Type)
+		return nil, "", false
+	}
+	if !(mysql_base.IsMysqlFieldIntType(primary_type) || mysql_base.IsMysqlFieldTextType(primary_type)) {
+		log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
+		return nil, "", false
+	}
+	is_unsigned := strings.Contains(pf.CreateFlags, "unsigned") || strings.Contains(pf.CreateFlags, "UNSIGNED")
+	pt := mysql_base.MysqlFieldType2GoTypeStr(primary_type, is_unsigned)
+	if pt == "" {
+		log.Printf("主键类型%v没有对应的数据类型\n")
+		return nil, "", false
+	}
+	return pf, pt, true
+}
+
 func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
+	var str string
+
 	struct_row_name := _upper_first_char(table.Name)
 	struct_table_name := struct_row_name + "_Table_Proxy"
-
-	var str string
 
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
@@ -143,24 +167,9 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	var pf *mysql_base.FieldConfig
 	var pt string
 	if !table.SingleRow {
-		pf = table.GetPrimaryKeyFieldConfig()
-		if pf == nil {
-			log.Printf("cant get table %v primary key\n", table.Name)
-			return false
-		}
-		primary_type, o := mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(pf.Type))
+		var o bool
+		pf, pt, o = get_primary_field_and_type(table)
 		if !o {
-			log.Printf("table %v primary type %v invalid", table.Name, pf.Type)
-			return false
-		}
-		if !(mysql_base.IsMysqlFieldIntType(primary_type) || mysql_base.IsMysqlFieldTextType(primary_type)) {
-			log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
-			return false
-		}
-		is_unsigned := strings.Contains(pf.CreateFlags, "unsigned") || strings.Contains(pf.CreateFlags, "UNSIGNED")
-		pt = mysql_base.MysqlFieldType2GoTypeStr(primary_type, is_unsigned)
-		if pt == "" {
-			log.Printf("主键类型%v没有对应的数据类型\n")
 			return false
 		}
 	}
