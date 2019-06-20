@@ -9,4 +9,5 @@ var (
 	ErrQueryResultEmpty      = errors.New("query row result is empty")
 	ErrPrimaryFieldNotDefine = errors.New("primary field not defined")
 	ErrInternal              = errors.New("internal error")
+	ErrNoRows                = errors.New("no rows select")
 )

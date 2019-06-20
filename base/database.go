@@ -2,16 +2,11 @@ package mysql_base
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-)
-
-var (
-	ErrNoRows = errors.New("no rows select")
 )
 
 type QueryResultList struct {
