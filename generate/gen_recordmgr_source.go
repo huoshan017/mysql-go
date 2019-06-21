@@ -34,7 +34,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "	select_records_func " + select_records_func_name + "\n"
 	str += "}\n\n"
 
-	str += "type " + select_record_func_name + " func() (*" + struct_row_name + ", error)\n"
+	str += "type " + select_record_func_name + " func(key " + pt + ") (*" + struct_row_name + ", error)\n"
 	str += "type " + select_records_func_name + " func() (map[" + pt + "]*" + struct_row_name + ", error)\n\n"
 
 	str += "func New" + struct_row_name + "RecordMgr(record_count int) *" + record_mgr_name + "{\n"
@@ -95,7 +95,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "		if this.select_record_func == nil {\n"
 	str += "			return nil\n"
 	str += "		}\n"
-	str += "		sel_row, err := this.select_record_func()\n"
+	str += "		sel_row, err := this.select_record_func(key)\n"
 	str += "		if err != nil {\n"
 	str += "			return nil\n"
 	str += "		}\n"
