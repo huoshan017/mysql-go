@@ -48,11 +48,11 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 	str += "	}\n"
 	str += "}\n\n"
 
-	str += "func (this *" + record_mgr_name + ") SetSelectRecordFunc(sel_func " + select_record_func_name + ") {\n"
+	str += "func (this *" + record_mgr_name + ") RegisterSelectRecordFunc(sel_func " + select_record_func_name + ") {\n"
 	str += "	this.select_record_func = sel_func\n"
 	str += "}\n\n"
 
-	str += "func (this *" + record_mgr_name + ") Init(sel_func " + select_records_func_name + ") {\n"
+	str += "func (this *" + record_mgr_name + ") OnInitSelectRecords(sel_func " + select_records_func_name + ") {\n"
 	str += "	if sel_func == nil {\n"
 	str += "		return\n"
 	str += "	}\n"
