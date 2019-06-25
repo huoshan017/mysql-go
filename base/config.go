@@ -7,9 +7,7 @@ import (
 type FieldConfig struct {
 	Name          string `json:"name"`
 	Type          string `json:"type"`
-	Length        int    `json:"length"`
 	IndexType     string `json:"index_type"`
-	CreateFlags   string `json:"create_flags"`
 	RealType      int
 	RealIndexType int
 	StructName    string
@@ -60,15 +58,12 @@ func (this *TableConfig) IsPrimaryAutoIncrement() bool {
 	if f == nil {
 		return false
 	}
-	strs := strings.Split(f.CreateFlags, ",")
-	for _, s := range strs {
-		if c, o := GetMysqlTableCreateFlagTypeByString(strings.ToUpper(s)); o {
-			if c == MYSQL_TABLE_CREATE_AUTOINCREMENT {
-				return true
-			}
-		}
+
+	if !strings.Contains(f.Type, "AUTO_INCREMENT") {
+		return false
 	}
-	return false
+
+	return true
 }
 
 func (this *TableConfig) HasBytesField() bool {

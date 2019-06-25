@@ -119,8 +119,8 @@
 			"single_row": true,
 			"engine":"myisam",
 			"fields":[
-				{ "name":"curr_player_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" },
-				{ "name":"curr_guild_id", 	"type":"int",				"length":0,     "index_type":"none",    "create_flags":"unsigned,not null,default" }
+				{ "name":"curr_player_id", 	"type":"int unsigned not null default",	"index_type":"none" },
+				{ "name":"curr_guild_id", 	"type":"int unsigned not null default",	"index_type":"none" }
 			]
 		},
 		
@@ -129,25 +129,25 @@
 			"primary_key": "id",
 			"engine": "innodb",
 			"fields": [
-				{ "name":"id",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null" },
-				{ "name":"account",			"type":"varchar",			"length":32,	"index_type":"unique",	"create_flags":"not null,default" },
-				{ "name":"role_id",			"type":"bigint",			"length":0,		"index_type":"normal",	"create_flags":"unsigned,not null,default" },
-				{ "name":"nick_name",		"type":"varchar",			"length":32,	"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"sex",				"type":"tinyint",			"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
-				{ "name":"level",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
-				{ "name":"vip_level",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
-				{ "name":"exp",				"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default" },
-				{ "name":"head",			"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
-				{ "name":"create_time",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
-				{ "name":"token",			"type":"char",				"length":64,	"index_type":"none",	"create_flags":"not null,default" },
-				{ "name":"last_login",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
-				{ "name":"last_logout",		"type":"int",				"length":0,		"index_type":"none",	"create_flags":"unsigned,not null,default"},
-				{ "name":"items",			"type":"blob:DBItems",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"skills",			"type":"blob:DBSkills",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"tasks",			"type":"blob:DBTasks",		"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"activities",		"type":"blob:DBActivitys",	"length":0,		"index_type":"none",	"create_flags":"" },
-				{ "name":"role_common",		"type":"blob:DBRoleCommon",	"length":0, 	"index_type":"none",	"create_flags":"" },
-				{ "name":"roles",			"type":"mediumblob:DBRoles","length":0,		"index_type":"none",	"create_flags":"" }
+				{ "name":"id",				"type":"int unsigned not null",				"index_type":"none" },
+				{ "name":"account",			"type":"varchar not null default",			"index_type":"unique" },
+				{ "name":"role_id",			"type":"bigint unsigned not null default",	"index_type":"normal" },
+				{ "name":"nick_name",		"type":"varchar not null default",			"index_type":"none" },
+				{ "name":"sex",				"type":"tinyint unsigned not null default",	"index_type":"none" },
+				{ "name":"level",			"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"vip_level",		"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"exp",				"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"head",			"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"create_time",		"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"token",			"type":"char(128) not null default",		"index_type":"none"  },
+				{ "name":"last_login",		"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"last_logout",		"type":"int unsigned not null default",		"index_type":"none" },
+				{ "name":"items",			"type":"blob:DBItems",						"index_type":"none" },
+				{ "name":"skills",			"type":"blob:DBSkills",						"index_type":"none" },
+				{ "name":"tasks",			"type":"blob:DBTasks",						"index_type":"none" },
+				{ "name":"activities",		"type":"blob:DBActivitys",					"index_type":"none" },
+				{ "name":"role_common",		"type":"blob:DBRoleCommon",					"index_type":"none" },
+				{ "name":"roles",			"type":"mediumblob:DBRoles",				"index_type":"none" }
 			]
 		},
 		
@@ -156,8 +156,8 @@
 			"primary_key": "id",
 			"engine": "innodb",
 			"fields": [
-				{ "name":"id", 				"type":"int", 				"length":0, 	"index_type":"none", 	"create_flags":"unsigned,not null" },
-				{ "name":"friends", 		"type":"blob:DBFriends",  	"length":0, 	"index_type":"none",  	"create_flags":"" }
+				{ "name":"id", 				"type":"int unsigned not null",  			"index_type":"none" },
+				{ "name":"friends", 		"type":"blob:DBFriends",					"index_type":"none" }
 			]
 		},
 		
@@ -166,13 +166,13 @@
 			"primary_key":"id",
 			"engine":"innodb",
 			"fields": [
-				{ "name":"id",				"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"mail_id",			"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"unsigned,not null,default" },
-				{ "name":"title",			"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"content",			"type":"varchar",		"length":512,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"sender",			"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
-				{ "name":"receiver",		"type":"bigint",		"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null,default" },
-				{ "name":"send_time",		"type":"int",			"length":0,		"index_type":"none",		"create_flags":"not null,default" }
+				{ "name":"id",				"type":"int unsigned not null",				"index_type":"none" },
+				{ "name":"mail_id",			"type":"int unsigned not null default",		"index_type":"unique" },
+				{ "name":"title",			"type":"varchar not null default",      	"index_type":"none" },
+				{ "name":"content",			"type":"varchar not null default",			"index_type":"none" },
+				{ "name":"sender",			"type":"bigint unsigned not null default",	"index_type":"normal" },
+				{ "name":"receiver",		"type":"bigint unsigned not null default",	"index_type":"normal" },
+				{ "name":"send_time",		"type":"int not null default",				"index_type":"none" }
 			]
 		},
 		
@@ -181,14 +181,14 @@
 			"primary_key":"id",
 			"engine":"innodb",
 			"fields": [
-				{ "name":"id",				"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"guild_id",		"type":"int",			"length":0,		"index_type":"unique",		"create_flags":"not null,default" },
-				{ "name":"name",			"type":"varchar",		"length":32,	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"creater", 		"type":"bigint",		"length":0,		"index_type":"none",		"create_flags":"unsigned,not null,default" },
-				{ "name":"create_time",		"type":"timestamp",		"length":0,		"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"logo",			"type":"int",			"length":0, 	"index_type":"none",		"create_flags":"not null,default" },
-				{ "name":"level",			"type":"int",			"length":0,		"index_type":"",			"create_flags":"not null,default" },
-				{ "name":"exp",				"type":"int",			"length":0,		"index_type":"",			"create_flags":"not null,default" }
+				{ "name":"id",				"type":"int unsigned not null",				"index_type":"none" },
+				{ "name":"guild_id",		"type":"int not null default",				"index_type":"unique" },
+				{ "name":"name",			"type":"varchar not null default",			"index_type":"none" },
+				{ "name":"creater", 		"type":"bigint unsigned not null default",	"index_type":"none" },
+				{ "name":"create_time",		"type":"timestamp not null default",		"index_type":"none" },
+				{ "name":"logo",			"type":"int not null default",				"index_type":"none" },
+				{ "name":"level",			"type":"int not null default",				"index_type":"" },
+				{ "name":"exp",				"type":"int not null default",				"index_type":"" }
 			]
 		},
 		
@@ -197,9 +197,9 @@
 			"primary_key":"role_id",
 			"engine":"innodb",
 			"fields":[
-				{ "name":"role_id",     	"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null" },
-				{ "name":"update_time",		"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" },
-				{ "name":"score",			"type":"int",			"length":0,		"index_type":"none",		"create_flags":"unsigned,not null" }
+				{ "name":"role_id",     	"type":"int unsigned not null",			"index_type":"normal" },
+				{ "name":"update_time",		"type":"int unsigned not null",			"index_type":"none" },
+				{ "name":"score",			"type":"int unsigned not null",			"index_type":"none" }
 			]
 		},
 		
@@ -208,11 +208,11 @@
 			"primary_key":"record_id",
 			"engine":"innodb",
 			"fields":[
-				{"name":"record_id",		"type":"int",			"length":0, 	"index_type":"",			"create_flags":"unsigned,not null"},
-				{"name":"save_time",		"type":"int",			"length":0,		"index_type":"",			"create_flags":"unsigned,not null"},
-				{"name":"save_data",		"type":"blob",			"length":0,		"index_type":"",			"create_flags":"not null"},
-				{"name":"attacker",			"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null"},
-				{"name":"defenser",			"type":"int",			"length":0,		"index_type":"normal",		"create_flags":"unsigned,not null"}
+				{"name":"record_id",		"type":"int unsigned not null",			"index_type":"" },
+				{"name":"save_time",		"type":"int unsigned not null",			"index_type":"" },
+				{"name":"save_data",		"type":"blob not null",					"index_type":"" },
+				{"name":"attacker",			"type":"int unsigned not null",			"index_type":"normal" },
+				{"name":"defenser",			"type":"int unsigned not null",			"index_type":"normal" }
 			]
 		}
 	]

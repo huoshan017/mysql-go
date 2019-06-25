@@ -70,6 +70,16 @@ func (this *ConfigLoader) Load(config string) bool {
 	return true
 }
 
+func _get_field_simple_type(field *mysql_base.FieldConfig) (int, bool) {
+	ft := field.Type
+	n := strings.IndexAny(field.Type, ": (")
+	if n >= 0 {
+		t := []byte(field.Type)
+		ft = string(t[:n])
+	}
+	return mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(ft))
+}
+
 func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	engine := strings.ToUpper(tab.Engine)
 	var ok bool
@@ -108,8 +118,7 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			str = strings.ToUpper(f.Type)
 		}
 
-		var real_type int
-		real_type, ok = mysql_base.GetMysqlFieldTypeByString(str)
+		real_type, ok := _get_field_simple_type(f)
 		if !ok {
 			log.Printf("ConfigLoader::load_table %v field type %v not found\n", tab.Name, str)
 			return false
@@ -126,20 +135,6 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 		}
 
 		f.RealIndexType = real_index_type
-
-		strs = strings.Split(f.CreateFlags, ",")
-		for _, s := range strs {
-			str = strings.ToUpper(s)
-			str = strings.Trim(str, " ")
-			if str == "" {
-				continue
-			}
-			_, ok = mysql_base.GetMysqlTableCreateFlagTypeByString(str)
-			if !ok {
-				log.Printf("ConfigLoader::load_table %v create flag %v not found\n", tab.Name, str)
-				return false
-			}
-		}
 	}
 	return true
 }

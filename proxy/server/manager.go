@@ -92,7 +92,7 @@ func _get_new_value_with_field_name(table_config *mysql_base.TableConfig, field_
 		err = fmt.Errorf("mysql-proxy-server: get table %v field %v not found", table_config.Name, field_name)
 		return
 	}
-	is_unsigned := strings.Contains(fc.CreateFlags, "UNSIGNED") || strings.Contains(fc.CreateFlags, "unsigned")
+	is_unsigned := strings.Contains(strings.ToLower(fc.Type), "unsigned")
 	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.RealType, is_unsigned)
 	if go_type == "" {
 		err = fmt.Errorf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type)
