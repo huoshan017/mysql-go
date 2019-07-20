@@ -1,48 +1,52 @@
 package main
 
 import (
+	"bytes"
 	"flag"
-	"log"
+	"fmt"
 	"os"
+	"os/exec"
+	"path"
+	"strings"
 
 	"github.com/huoshan017/mysql-go/generate"
 )
 
 func main() {
 	if len(os.Args) < 4 {
-		log.Printf("args num not enough\n")
+		fmt.Fprintf(os.Stderr, "args num not enough\n")
 		return
 	}
 
 	arg_config_file := flag.String("c", "", "config file path")
 	arg_dest_path := flag.String("d", "", "dest source path")
-	arg_dest_proto := flag.String("p", "", "dest proto file")
+	arg_protoc_path := flag.String("p", "", "protoc file path")
 	flag.Parse()
 
 	var config_path string
 	if nil != arg_config_file {
 		config_path = *arg_config_file
-		log.Printf("config file path %v\n", config_path)
+		fmt.Fprintf(os.Stdout, "config file path %v\n", config_path)
 	} else {
-		log.Printf("not found config file arg\n")
+		fmt.Fprintf(os.Stderr, "not found config file arg\n")
 		return
 	}
 
 	var dest_path string
 	if nil != arg_dest_path {
 		dest_path = *arg_dest_path
-		log.Printf("dest path %v\n", dest_path)
+		fmt.Fprintf(os.Stdout, "dest path %v\n", dest_path)
 	} else {
-		log.Printf("not found dest path arg\n")
+		fmt.Fprintf(os.Stderr, "not found dest path arg\n")
 		return
 	}
 
-	var dest_proto string
-	if nil != arg_dest_proto {
-		dest_proto = *arg_dest_proto
-		log.Printf("dest proto %v\n", dest_proto)
+	var protoc_path string
+	if nil != arg_protoc_path {
+		protoc_path = *arg_protoc_path
+		fmt.Fprintf(os.Stdout, "protoc path %v\n", protoc_path)
 	} else {
-		log.Printf("not found dest proto arg\n")
+		fmt.Fprintf(os.Stderr, "not found dest proto arg\n")
 		return
 	}
 
@@ -55,19 +59,31 @@ func main() {
 		return
 	}
 
-	log.Printf("generated source\n")
+	fmt.Fprintf(os.Stdout, "generated source\n")
 
-	if !config_loader.GenerateFieldStructsProto(dest_proto) {
+	proto_dest_path, config_file := path.Split(config_path)
+	proto_file := strings.Replace(config_file, "json", "proto", -1)
+	fmt.Fprintf(os.Stdout, "proto_dest_path: %v    proto_file: %v\n", proto_dest_path, proto_file)
+	if !config_loader.GenerateFieldStructsProto(proto_dest_path + proto_file) {
 		return
 	}
 
-	log.Printf("generated proto\n")
+	fmt.Fprintf(os.Stdout, "generated proto\n")
+
+	cmd := exec.Command(protoc_path, "--go_out", dest_path+"/"+config_loader.DBPkg, "--proto_path", proto_dest_path, proto_file)
+	var out bytes.Buffer
+
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cmd run err: %v\n", err.Error())
+		return
+	}
+	fmt.Printf("%s", out.String())
 
 	if !config_loader.GenerateInitFunc(dest_path) {
 		return
 	}
 
-	log.Printf("generated init funcs\n")
-
-	log.Printf("generated all\n")
+	fmt.Fprintf(os.Stdout, "generated init funcs\ngenerated all\n")
 }
