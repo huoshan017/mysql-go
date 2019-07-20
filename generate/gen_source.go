@@ -277,7 +277,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	var field_list string
 	for i, field := range table.Fields {
 		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned)
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
 		if go_type == "" {
 			continue
 		}
@@ -292,7 +292,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	var dest_list string
 	for _, field := range table.Fields {
 		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned)
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
 		if go_type == "" {
 			continue
 		}
