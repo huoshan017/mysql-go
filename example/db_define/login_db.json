@@ -12,12 +12,12 @@
 			"primary_key": "unique_id",
 			"engine": "innodb",
 			"fields": [
-				{ "name":"unique_id",		"type":"char(64) not null",				"index_type":"none" },
-				{ "name":"account",			"type":"char(32) not null default",		"index_type":"normal" },
-				{ "name":"player_id",		"type":"int unsigned not null default",	"index_type":"normal" },
-				{ "name":"start_time",		"type":"int unsigned not null default",	"index_type":"none" },
-				{ "name":"start_time_str",	"type":"char(32) not null default",		"index_type":"none" },
-				{ "name":"duration",		"type":"int unsigned not null default",	"index_type":"none" }
+				{ "name":"unique_id",		"type":"char(64) not null" },
+				{ "name":"account",			"type":"char(32) not null default" },
+				{ "name":"player_id",		"type":"int unsigned not null default" },
+				{ "name":"start_time",		"type":"int unsigned not null default" },
+				{ "name":"start_time_str",	"type":"char(32) not null default" },
+				{ "name":"duration",		"type":"int unsigned not null default" }
 			]
 		}
 	]
