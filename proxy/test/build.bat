@@ -1,9 +1,8 @@
 set GOPATH=%cd%/../../../../../../
 
-cd ../../bin
-code_generator.exe -c ../proxy/test/db_define/game_db.json -d ../proxy/test -p ../example/protobuf/protoc.exe
+%cd%/../../bin/code_generator.exe -c %cd%/db_define/game_db.json -d %cd% -p %cd%/../../example/protobuf/protoc.exe
 
-go build -i -o ../bin/test_client.exe github.com/huoshan017/mysql-go/proxy/test
+go build -i -o %cd%/../bin/test_client.exe github.com/huoshan017/mysql-go/proxy/test
 if errorlevel 1 goto exit
 
 goto ok
