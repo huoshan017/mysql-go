@@ -5,7 +5,6 @@ export PATH=$PATH:$GOPATH/bin
 
 go get -u -v -t github.com/golang/protobuf/protoc-gen-go
 
-cd ../../bin
-./code_generator -c ../proxy/test/db_define/game_db.json -d ../proxy/test -p ../example/protobuf/protoc
+$(pwd)/../../bin/./code_generator -c $(pwd)/db_define/game_db.json -d $(pwd) -p $(pwd)/../../example/protobuf/protoc
 
 go build -i -o ../bin/test_client github.com/huoshan017/mysql-go/proxy/test
