@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/huoshan017/mysql-go/base"
+	mysql_base "github.com/huoshan017/mysql-go/base"
 )
 
 type FieldStructMember struct {
@@ -164,18 +164,6 @@ func (this *ConfigLoader) GenerateFieldStructsProto(dest_path_file string) bool 
 	return true
 }
 
-func create_dirs(dest_path string) (err error) {
-	if err = os.MkdirAll(dest_path, os.ModePerm); err != nil {
-		log.Printf("创建目录结构%v错误 %v\n", dest_path, err.Error())
-		return
-	}
-	if err = os.Chmod(dest_path, os.ModePerm); err != nil {
-		log.Printf("修改目录%v权限错误 %v\n", dest_path, err.Error())
-		return
-	}
-	return
-}
-
 func _get_file_creater(dest_file string) *os.File {
 	var f *os.File
 	var err error
@@ -202,7 +190,7 @@ func _save_and_close_file(f *os.File, dest_file string) bool {
 
 func (this *ConfigLoader) _init_pkg_dirs(dest_path string) string {
 	pkg_path := dest_path + "/" + this.DBPkg
-	err := create_dirs(pkg_path)
+	err := mysql_base.CreateDirs(pkg_path)
 	if err != nil {
 		return ""
 	}

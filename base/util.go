@@ -2,6 +2,7 @@ package mysql_base
 
 import (
 	"log"
+	"os"
 )
 
 func CopySrcValue2Dest(dest, src interface{}) bool {
@@ -71,4 +72,16 @@ func CopySrcValue2Dest(dest, src interface{}) bool {
 		return false
 	}
 	return true
+}
+
+func CreateDirs(dest_path string) (err error) {
+	if err = os.MkdirAll(dest_path, os.ModePerm); err != nil {
+		log.Printf("创建目录结构%v错误 %v\n", dest_path, err.Error())
+		return
+	}
+	if err = os.Chmod(dest_path, os.ModePerm); err != nil {
+		log.Printf("修改目录%v权限错误 %v\n", dest_path, err.Error())
+		return
+	}
+	return
 }

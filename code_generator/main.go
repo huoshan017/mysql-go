@@ -9,7 +9,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/huoshan017/mysql-go/generate"
+	mysql_base "github.com/huoshan017/mysql-go/base"
+	mysql_generate "github.com/huoshan017/mysql-go/generate"
 )
 
 func main() {
@@ -62,9 +63,14 @@ func main() {
 	fmt.Fprintf(os.Stdout, "generated source\n")
 
 	proto_dest_path, config_file := path.Split(config_path)
+	proto_dest_path += ".proto/"
+	mysql_base.CreateDirs(proto_dest_path)
 	proto_file := strings.Replace(config_file, "json", "proto", -1)
+
 	fmt.Fprintf(os.Stdout, "proto_dest_path: %v    proto_file: %v\n", proto_dest_path, proto_file)
+
 	if !config_loader.GenerateFieldStructsProto(proto_dest_path + proto_file) {
+		fmt.Fprintf(os.Stderr, "generate proto file failed\n")
 		return
 	}
 
@@ -82,6 +88,7 @@ func main() {
 	fmt.Printf("%s", out.String())
 
 	if !config_loader.GenerateInitFunc(dest_path) {
+		fmt.Fprintf(os.Stderr, "generate init func failed\n")
 		return
 	}
 
