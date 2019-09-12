@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
@@ -55,7 +56,7 @@ func main() {
 		protoc_path = *arg_protoc_path
 	} else {
 		fmt.Fprintf(os.Stdout, "to use default protoc path\n")
-		go_os := os.Getenv("GOOS")
+		go_os := runtime.GOOS //os.Getenv("GOOS")
 		var o bool
 		if protoc_path, o = protoc_dest_map[go_os]; !o {
 			fmt.Fprintf(os.Stderr, "not found dest protoc arg by GOOS %v\n", go_os)
