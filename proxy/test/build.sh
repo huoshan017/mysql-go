@@ -3,7 +3,7 @@
 export GOPATH=$(pwd)/../../../../../../
 export PATH=$PATH:$GOPATH/bin
 
-go get -u -v -t github.com/golang/protobuf/protoc-gen-go
+go get -u -v github.com/golang/protobuf/protoc-gen-go
 
 $(pwd)/../../bin/./code_generator -c $(pwd)/db_define/game_db.json -d $(pwd)
 

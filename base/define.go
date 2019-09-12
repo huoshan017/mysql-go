@@ -166,7 +166,7 @@ func GetMysqlFieldTypeByString(field_type_str string) (int, bool) {
 }
 
 // mysql default field length
-const (
+/*const (
 	MYSQL_FIELD_DEFAULT_LENGTH            = iota
 	MYSQL_FIELD_DEFAULT_LENGTH_TINYINT    = 4
 	MYSQL_FIELD_DEFAULT_LENGTH_SMALLINT   = 6
@@ -226,7 +226,7 @@ var mysql_field_type_default_length_map = map[int]int{
 func GetMysqlFieldTypeDefaultLength(field_type int) (int, bool) {
 	str, o := mysql_field_type_default_length_map[field_type]
 	return str, o
-}
+}*/
 
 // mysql index type
 const (
