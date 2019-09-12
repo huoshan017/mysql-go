@@ -1,6 +1,6 @@
 set GOPATH=%cd%/../../../../../../../
 
-%cd%/../../../bin/code_generator.exe -c %cd%/../../db_define/game_db.json -d %cd%/../../src/game -p %cd%/../../protobuf/protoc.exe
+%cd%/../../../bin/code_generator.exe -c %cd%/../../db_define/game_db.json -d %cd%/../../src/game
 
 go build -i -o %cd%/../../bin/game.exe github.com/huoshan017/mysql-go/example/src/game
 if errorlevel 1 goto exit

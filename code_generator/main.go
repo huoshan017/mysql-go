@@ -13,6 +13,13 @@ import (
 	mysql_generate "github.com/huoshan017/mysql-go/generate"
 )
 
+var protoc_root = os.Getenv("GOPATH") + "src/github.com/huoshan017/mysql-go/_external/"
+
+var protoc_dest_map = map[string]string{
+	"windows": protoc_root + "windows/protoc.exe",
+	"linux":   protoc_root + "linux/protoc",
+}
+
 func main() {
 	if len(os.Args) < 4 {
 		fmt.Fprintf(os.Stderr, "args num not enough\n")
@@ -25,7 +32,7 @@ func main() {
 	flag.Parse()
 
 	var config_path string
-	if nil != arg_config_file {
+	if nil != arg_config_file && *arg_config_file != "" {
 		config_path = *arg_config_file
 		fmt.Fprintf(os.Stdout, "config file path %v\n", config_path)
 	} else {
@@ -34,7 +41,7 @@ func main() {
 	}
 
 	var dest_path string
-	if nil != arg_dest_path {
+	if nil != arg_dest_path && *arg_dest_path != "" {
 		dest_path = *arg_dest_path
 		fmt.Fprintf(os.Stdout, "dest path %v\n", dest_path)
 	} else {
@@ -43,13 +50,18 @@ func main() {
 	}
 
 	var protoc_path string
-	if nil != arg_protoc_path {
+	if nil != arg_protoc_path && *arg_protoc_path != "" {
 		protoc_path = *arg_protoc_path
-		fmt.Fprintf(os.Stdout, "protoc path %v\n", protoc_path)
 	} else {
-		fmt.Fprintf(os.Stderr, "not found dest proto arg\n")
-		return
+		fmt.Fprintf(os.Stdout, "not found dest protoc arg, to use default protoc path\n")
+		var o bool
+		if protoc_path, o = protoc_dest_map[os.Getenv("GOOS")]; !o {
+			fmt.Fprintf(os.Stderr, "not found dest protoc arg\n")
+			return
+		}
 	}
+
+	fmt.Fprintf(os.Stdout, "protoc path %v\n", protoc_path)
 
 	var config_loader mysql_generate.ConfigLoader
 	if !config_loader.Load(config_path) {
