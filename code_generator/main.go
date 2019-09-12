@@ -18,6 +18,7 @@ var protoc_root = os.Getenv("GOPATH") + "src/github.com/huoshan017/mysql-go/_ext
 var protoc_dest_map = map[string]string{
 	"windows": protoc_root + "windows/protoc.exe",
 	"linux":   protoc_root + "linux/protoc",
+	"darwin":  protoc_root + "darwin/protoc",
 }
 
 func main() {
@@ -53,10 +54,11 @@ func main() {
 	if nil != arg_protoc_path && *arg_protoc_path != "" {
 		protoc_path = *arg_protoc_path
 	} else {
-		fmt.Fprintf(os.Stdout, "not found dest protoc arg, to use default protoc path\n")
+		fmt.Fprintf(os.Stdout, "to use default protoc path\n")
+		go_os := os.Getenv("GOOS")
 		var o bool
-		if protoc_path, o = protoc_dest_map[os.Getenv("GOOS")]; !o {
-			fmt.Fprintf(os.Stderr, "not found dest protoc arg\n")
+		if protoc_path, o = protoc_dest_map[go_os]; !o {
+			fmt.Fprintf(os.Stderr, "not found dest protoc arg by GOOS %v\n", go_os)
 			return
 		}
 	}
