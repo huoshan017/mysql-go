@@ -28,9 +28,10 @@ func main() {
 		return
 	}
 
-	arg_config_file := flag.String("c", "", "config file path")
-	arg_dest_path := flag.String("d", "", "dest source path")
-	arg_protoc_path := flag.String("p", "", "protoc file path")
+	var arg_config_file, arg_dest_path, arg_protoc_path *string
+	arg_config_file = flag.String("c", "", "config file path")
+	arg_dest_path = flag.String("d", "", "dest source path")
+	arg_protoc_path = flag.String("p", "", "protoc file path")
 	flag.Parse()
 
 	var config_path string

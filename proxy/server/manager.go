@@ -4,10 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/manager"
-	"github.com/huoshan017/mysql-go/proxy/common"
 )
 
 type new_value_func func() interface{}
@@ -167,7 +163,7 @@ func output_critical(err interface{}) {
 type ProxyReadProc struct {
 }
 
-func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *mysql_proxy_common.SelectReply) error {
+func (p *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *mysql_proxy_common.SelectReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -190,7 +186,7 @@ func (this *ProxyReadProc) Select(args *mysql_proxy_common.SelectArgs, reply *my
 	return nil
 }
 
-func (this *ProxyReadProc) SelectRecordsCount(args *mysql_proxy_common.SelectRecordsCountArgs, reply *mysql_proxy_common.SelectRecordsCountReply) error {
+func (p *ProxyReadProc) SelectRecordsCount(args *mysql_proxy_common.SelectRecordsCountArgs, reply *mysql_proxy_common.SelectRecordsCountReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -216,7 +212,7 @@ func (this *ProxyReadProc) SelectRecordsCount(args *mysql_proxy_common.SelectRec
 	return err
 }
 
-func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsReply) error {
+func (p *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -240,7 +236,7 @@ func (this *ProxyReadProc) SelectRecords(args *mysql_proxy_common.SelectRecordsA
 	return nil
 }
 
-func (this *ProxyReadProc) SelectRecordsMap(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsMapReply) error {
+func (p *ProxyReadProc) SelectRecordsMap(args *mysql_proxy_common.SelectRecordsArgs, reply *mysql_proxy_common.SelectRecordsMapReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -264,7 +260,7 @@ func (this *ProxyReadProc) SelectRecordsMap(args *mysql_proxy_common.SelectRecor
 	return nil
 }
 
-func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsReply) error {
+func (p *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -288,7 +284,7 @@ func (this *ProxyReadProc) SelectAllRecords(args *mysql_proxy_common.SelectAllRe
 	return nil
 }
 
-func (this *ProxyReadProc) SelectAllRecordsMap(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsMapReply) error {
+func (p *ProxyReadProc) SelectAllRecordsMap(args *mysql_proxy_common.SelectAllRecordsArgs, reply *mysql_proxy_common.SelectAllRecordsMapReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -312,7 +308,7 @@ func (this *ProxyReadProc) SelectAllRecordsMap(args *mysql_proxy_common.SelectAl
 	return nil
 }
 
-func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldReply) error {
+func (p *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -340,7 +336,7 @@ func (this *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs,
 	return nil
 }
 
-func (this *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldMapReply) error {
+func (p *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldArgs, reply *mysql_proxy_common.SelectFieldMapReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -368,7 +364,7 @@ func (this *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldAr
 	return nil
 }
 
-func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsConditionReply) error {
+func (p *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsConditionReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -392,7 +388,7 @@ func (this *ProxyReadProc) SelectRecordsCondition(args *mysql_proxy_common.Selec
 	return nil
 }
 
-func (this *ProxyReadProc) SelectRecordsMapCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsMapConditionReply) error {
+func (p *ProxyReadProc) SelectRecordsMapCondition(args *mysql_proxy_common.SelectRecordsConditionArgs, reply *mysql_proxy_common.SelectRecordsMapConditionReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -419,7 +415,7 @@ func (this *ProxyReadProc) SelectRecordsMapCondition(args *mysql_proxy_common.Se
 type ProxyWriteProc struct {
 }
 
-func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordArgs, reply *mysql_proxy_common.InsertRecordReply) error {
+func (p *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordArgs, reply *mysql_proxy_common.InsertRecordReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -440,7 +436,7 @@ func (this *ProxyWriteProc) InsertRecord(args *mysql_proxy_common.InsertRecordAr
 	return nil
 }
 
-func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordArgs, reply *mysql_proxy_common.UpdateRecordReply) error {
+func (p *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordArgs, reply *mysql_proxy_common.UpdateRecordReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -457,7 +453,7 @@ func (this *ProxyWriteProc) UpdateRecord(args *mysql_proxy_common.UpdateRecordAr
 	return nil
 }
 
-func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordArgs, reply *mysql_proxy_common.DeleteRecordReply) error {
+func (p *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordArgs, reply *mysql_proxy_common.DeleteRecordReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -474,7 +470,7 @@ func (this *ProxyWriteProc) DeleteRecord(args *mysql_proxy_common.DeleteRecordAr
 	return nil
 }
 
-func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTransactionArgs, reply *mysql_proxy_common.CommitTransactionReply) error {
+func (p *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTransactionArgs, reply *mysql_proxy_common.CommitTransactionReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -493,7 +489,7 @@ func (this *ProxyWriteProc) CommitTransaction(args *mysql_proxy_common.CommitTra
 	return nil
 }
 
-func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, reply *mysql_proxy_common.SaveImmidiateReply) error {
+func (p *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, reply *mysql_proxy_common.SaveImmidiateReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -507,7 +503,7 @@ func (this *ProxyWriteProc) Save(args *mysql_proxy_common.SaveImmidiateArgs, rep
 	return nil
 }
 
-func (this *ProxyWriteProc) End(args *mysql_proxy_common.EndArgs, reply *mysql_proxy_common.EndReply) error {
+func (p *ProxyWriteProc) End(args *mysql_proxy_common.EndArgs, reply *mysql_proxy_common.EndReply) error {
 	defer func() {
 		if err := recover(); err != nil {
 			output_critical(err)
@@ -520,23 +516,23 @@ type ProcService struct {
 	service *Service
 }
 
-func (this *ProcService) init() {
-	this.service = &Service{}
-	this.service.Init()
-	this.service.Register(&ProxyReadProc{})
-	this.service.Register(&ProxyWriteProc{})
+func (p *ProcService) init() {
+	p.service = &Service{}
+	p.service.Init()
+	p.service.Register(&ProxyReadProc{})
+	p.service.Register(&ProxyWriteProc{})
 	RegisterUserType(&mysql_base.FieldValuePair{})
 	RegisterUserType(&mysql_base.OpDetail{})
 	RegisterUserType(&mysql_base.SelectCondition{})
 }
 
-func (this *ProcService) Start(addr string) error {
-	this.init()
-	err := this.service.Listen(addr)
+func (p *ProcService) Start(addr string) error {
+	p.init()
+	err := p.service.Listen(addr)
 	if err != nil {
 		return err
 	}
-	this.service.Serve()
+	p.service.Serve()
 	return nil
 }
 
