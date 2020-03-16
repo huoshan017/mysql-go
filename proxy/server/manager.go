@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	mysql_base "github.com/huoshan017/mysql-go/base"
+	mysql_manager "github.com/huoshan017/mysql-go/manager"
+	mysql_proxy_common "github.com/huoshan017/mysql-go/proxy/common"
 )
 
 type new_value_func func() interface{}

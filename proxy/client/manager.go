@@ -414,3 +414,8 @@ func (this *DB) GoRun() {
 	this.read_client.GoRun()
 	this.write_client.GoRun()
 }
+
+func (this *DB) Run() {
+	this.read_client.Run()
+	this.write_client.Run()
+}
