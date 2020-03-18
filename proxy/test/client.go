@@ -60,7 +60,7 @@ func main() {
 			log.Printf("selected player: %v\n", p)
 		}
 
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100000; i++ {
 			ps, err = player_table_proxy.SelectRecords("level", 1)
 			if err != nil {
 				log.Printf("selected player records err %v\n", err.Error())
@@ -82,7 +82,7 @@ func main() {
 				log.Printf("selected records condition players: %v\n", ps)
 			}
 
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(time.Millisecond * 1)
 		}
 	}()
 

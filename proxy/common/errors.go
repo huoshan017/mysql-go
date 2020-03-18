@@ -37,7 +37,7 @@ func SetProxyLogger(logger Logger) error {
 }
 
 const (
-	DEFAULT_CRITICAL_LOG_CALL_FRAME_NUM = 10
+	DEFAULT_CRITICAL_LOG_CALL_FRAME_NUM = 20
 )
 
 func OutputCriticalStack(logger Logger, err interface{}) {

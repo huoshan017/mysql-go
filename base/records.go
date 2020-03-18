@@ -118,7 +118,7 @@ func _gen_select_query_str(table_name string, field_list []string, field_name st
 		limit_str += " LIMIT " + strconv.Itoa(sel_cond.Offset) + ", " + strconv.Itoa(sel_cond.Limit)
 	}
 
-	if field_name != "" {
+	if field_name != "" && sel_cond != nil {
 		if limit_str != "" {
 			query_str += (" WHERE " + field_name + comp_type[sel_cond.CompType] + "? " + limit_str + ";")
 		} else {
