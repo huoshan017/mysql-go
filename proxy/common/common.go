@@ -17,17 +17,12 @@ type PongReply struct {
 }
 
 type ArgsHead struct {
-	DBHostId    int32
-	DBHostAlias string
-	DBName      string
+	DBHostId int32
+	DBName   string
 }
 
 func (this *ArgsHead) SetDBHostId(db_host_id int32) {
 	this.DBHostId = db_host_id
-}
-
-func (this *ArgsHead) SetDBHostAlias(db_host_alias string) {
-	this.DBHostAlias = db_host_alias
 }
 
 func (this *ArgsHead) SetDBName(db_name string) {
@@ -36,10 +31,6 @@ func (this *ArgsHead) SetDBName(db_name string) {
 
 func (this *ArgsHead) GetDBHostId() int32 {
 	return this.DBHostId
-}
-
-func (this *ArgsHead) GetDBHostAlias() string {
-	return this.DBHostAlias
 }
 
 func (this *ArgsHead) GetDBName() string {

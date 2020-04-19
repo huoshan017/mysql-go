@@ -4,8 +4,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/generate"
+	mysql_base "github.com/huoshan017/mysql-go/base"
+	mysql_generate "github.com/huoshan017/mysql-go/generate"
 )
 
 const (
@@ -365,13 +365,12 @@ func (this *OperateManager) _op_cmd(d *mysql_base.OpDetail) {
 	}
 }
 
-func (this *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) {
+func (this *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) (err error) {
 	procedure := this.db.BeginProcedure()
 	if procedure == nil {
 		return
 	}
 	for _, d := range dl {
-		var err error
 		if d.OpType == DB_OPERATE_TYPE_INSERT {
 			err, _ = procedure.InsertRecord(d.TableName, d.FieldList...)
 		} else if d.OpType == DB_OPERATE_TYPE_UPDATE {
@@ -383,10 +382,11 @@ func (this *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) {
 		}
 		if err != nil {
 			procedure.Rollback()
-			break
+			return
 		}
 	}
 	procedure.Commit()
+	return
 }
 
 func (this *OperateManager) _check_op_list_empty() bool {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/huoshan017/mysql-go/proxy/client"
+	mysql_proxy "github.com/huoshan017/mysql-go/proxy/client"
 	"github.com/huoshan017/mysql-go/proxy/test/game_db"
 )
 
@@ -29,23 +29,28 @@ func main() {
 	}
 
 	var proxy_addr string = host
-	var db_host_id int32 = 1
-	var db_host_alias string = "main"
-	var db_name = "game_db"
 	var db_proxy mysql_proxy.DB
-	err := db_proxy.Connect(proxy_addr, db_host_id, db_host_alias, db_name)
+	err := db_proxy.Connect(proxy_addr)
 	if err != nil {
 		log.Printf("db proxy connect err %v\n", err.Error())
 		return
 	}
 
-	db_proxy.GoRun()
+	db_proxy.RunBackground()
 
-	tb_mgr := game_db.NewTablesProxyManager(&db_proxy)
+	tb_mgr := game_db.NewTablesProxyManager(&db_proxy, 1, "game_db")
 	player_table_proxy := tb_mgr.GetT_PlayerTableProxy()
 
-	field_name := "id"
-	go func() {
+	//field_name := "id"
+
+	var tp game_db.T_Player
+	for id := uint32(1); id <= 100000; id++ {
+		tp.Set_id(id)
+		tp.Set_role_id(uint64(10000 + id))
+		player_table_proxy.Insert(&tp)
+	}
+
+	/*go func() {
 		var err error
 		var p *game_db.T_Player
 		var ps []*game_db.T_Player
@@ -84,7 +89,7 @@ func main() {
 
 			time.Sleep(time.Millisecond * 1)
 		}
-	}()
+	}()*/
 
 	for {
 		time.Sleep(time.Second)

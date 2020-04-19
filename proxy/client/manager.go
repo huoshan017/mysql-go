@@ -38,19 +38,19 @@ func CreateQueryResultList(rows [][]interface{}) *QueryResultList {
 	}
 }
 
-func (this *QueryResultList) Init(rows [][]interface{}) {
-	this.rows = rows
+func (p *QueryResultList) Init(rows [][]interface{}) {
+	p.rows = rows
 }
 
-func (this *QueryResultList) Close() {
-	this.rows = nil
+func (p *QueryResultList) Close() {
+	p.rows = nil
 }
 
-func (this *QueryResultList) Get(dest ...interface{}) bool {
-	if this.cur_row_idx >= len(this.rows) {
+func (p *QueryResultList) Get(dest ...interface{}) bool {
+	if p.cur_row_idx >= len(p.rows) {
 		return false
 	}
-	row := this.rows[this.cur_row_idx]
+	row := p.rows[p.cur_row_idx]
 	if len(dest) != len(row) {
 		log.Printf("mysql-proxy-client: QueryResultList:Get arg dest length must equal to row length\n")
 		return false
@@ -60,49 +60,58 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 			return false
 		}
 	}
-	this.cur_row_idx += 1
+	p.cur_row_idx += 1
 	return true
 }
 
 type Transaction struct {
-	db          *DB
+	proxy       *DB
+	host_id     int32
+	db_name     string
 	detail_list []*mysql_base.OpDetail
 }
 
-func CreateTransaction(db *DB) *Transaction {
-	return &Transaction{db: db}
+func CreateTransaction(host_id int32, db_name string, proxy *DB) *Transaction {
+	return &Transaction{
+		proxy:   proxy,
+		host_id: host_id,
+		db_name: db_name,
+	}
 }
 
-func (this *Transaction) Done() {
+func (p *Transaction) Done() {
 	var args = &mysql_proxy_common.CommitTransactionArgs{
-		Head:    this.db._gen_head(),
-		Details: this.detail_list,
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: p.host_id,
+			DBName:   p.db_name,
+		},
+		Details: p.detail_list,
 	}
 	var reply mysql_proxy_common.CommitTransactionReply
-	err := this.db.write_client.Call("ProxyWriteProc.CommitTransaction", args, &reply)
+	err := p.proxy.write_client.Call("ProxyWriteProc.CommitTransaction", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call CommitTransaction err %v\n", err.Error())
 	}
 }
 
-func (this *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+func (p *Transaction) Insert(table_name string, field_list []*mysql_base.FieldValuePair) {
+	p.detail_list = append(p.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_INSERT,
 		FieldList: field_list,
 	})
 }
 
-func (this *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+func (p *Transaction) InsertIgnore(table_name string, field_list []*mysql_base.FieldValuePair) {
+	p.detail_list = append(p.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_INSERT_IGNORE,
 		FieldList: field_list,
 	})
 }
 
-func (this *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
-	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+func (p *Transaction) Update(table_name string, key string, value interface{}, field_list []*mysql_base.FieldValuePair) {
+	p.detail_list = append(p.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_UPDATE,
 		Key:       key,
@@ -111,8 +120,8 @@ func (this *Transaction) Update(table_name string, key string, value interface{}
 	})
 }
 
-func (this *Transaction) Delete(table_name string, key string, value interface{}) {
-	this.detail_list = append(this.detail_list, &mysql_base.OpDetail{
+func (p *Transaction) Delete(table_name string, key string, value interface{}) {
+	p.detail_list = append(p.detail_list, &mysql_base.OpDetail{
 		TableName: table_name,
 		OpType:    DB_OPERATE_TYPE_DELETE,
 		Key:       key,
@@ -121,121 +130,117 @@ func (this *Transaction) Delete(table_name string, key string, value interface{}
 }
 
 type DB struct {
-	read_client   *client
-	write_client  *client
-	db_host_id    int32
-	db_host_alias string
-	db_name       string
-	inited        bool
+	read_client  *client
+	write_client *client
 }
 
-func (this *DB) Connect(proxy_address string, db_host_id int32, db_host_alias, db_name string) error {
+func (p *DB) Connect(proxy_address string) error {
 	client := new_client()
 	err := client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_ONLY_READ)
 	if err != nil {
 		return err
 	}
-	this.read_client = client
+	p.read_client = client
 	client = new_client()
 	err = client.Dial(proxy_address, mysql_proxy_common.CONNECTION_TYPE_WRITE)
 	if err != nil {
 		return err
 	}
-	this.write_client = client
-	this.db_host_id = db_host_id
-	this.db_host_alias = db_host_alias
-	this.db_name = db_name
-	this.inited = true
+	p.write_client = client
 	return nil
 }
 
-func (this *DB) _gen_head() *mysql_proxy_common.ArgsHead {
-	var head mysql_proxy_common.ArgsHead
-	head.SetDBHostId(this.db_host_id)
-	head.SetDBHostAlias(this.db_host_alias)
-	head.SetDBName(this.db_name)
-	return &head
-}
-
-func (this *DB) _insert(table_name string, field_pairs []*mysql_base.FieldValuePair, ignore bool) {
+func (p *DB) _insert(host_id int32, db_name, table_name string, field_pairs []*mysql_base.FieldValuePair, ignore bool) {
 	var args = &mysql_proxy_common.InsertRecordArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		FieldValuePairs: field_pairs,
 		Ignore:          ignore,
 	}
 	var reply mysql_proxy_common.InsertRecordReply
-	err := this.write_client.Call("ProxyWriteProc.InsertRecord", args, &reply)
+	err := p.write_client.Call("ProxyWriteProc.InsertRecord", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call InsertRecord err %v\n", err.Error())
 	}
 }
 
-func (this *DB) Insert(table_name string, field_pairs []*mysql_base.FieldValuePair) {
-	this._insert(table_name, field_pairs, true)
+func (p *DB) Insert(host_id int32, db_name, table_name string, field_pairs []*mysql_base.FieldValuePair) {
+	p._insert(host_id, db_name, table_name, field_pairs, true)
 }
 
-func (this *DB) InsertIgnore(table_name string, field_pairs []*mysql_base.FieldValuePair) {
-	this._insert(table_name, field_pairs, false)
+func (p *DB) InsertIgnore(host_id int32, db_name, table_name string, field_pairs []*mysql_base.FieldValuePair) {
+	p._insert(host_id, db_name, table_name, field_pairs, false)
 }
 
-func (this *DB) Update(table_name string, field_name string, field_value interface{}, field_pairs []*mysql_base.FieldValuePair) {
+func (p *DB) Update(host_id int32, db_name, table_name string, field_name string, field_value interface{}, field_pairs []*mysql_base.FieldValuePair) {
 	var args = &mysql_proxy_common.UpdateRecordArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		WhereFieldName:  field_name,
 		WhereFieldValue: field_value,
 		FieldValuePairs: field_pairs,
 	}
 	var reply mysql_proxy_common.UpdateRecordReply
-	err := this.write_client.Call("ProxyWriteProc.UpdateRecord", args, &reply)
+	err := p.write_client.Call("ProxyWriteProc.UpdateRecord", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call UpdateRecord err %v\n", err.Error())
 	}
 }
 
-func (this *DB) Delete(table_name string, field_name string, field_value interface{}) {
+func (p *DB) Delete(host_id int32, db_name, table_name string, field_name string, field_value interface{}) {
 	var args = &mysql_proxy_common.DeleteRecordArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		WhereFieldName:  field_name,
 		WhereFieldValue: field_value,
 	}
 	var reply mysql_proxy_common.DeleteRecordReply
-	err := this.write_client.Call("ProxyWriteProc.DeleteRecord", args, &reply)
+	err := p.write_client.Call("ProxyWriteProc.DeleteRecord", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call DeleteRecord err %v\n", err.Error())
 	}
 }
 
-func (this *DB) Save() {
+func (p *DB) Save() {
 	var args = &mysql_proxy_common.SaveImmidiateArgs{}
 	var reply mysql_proxy_common.SaveImmidiateReply
-	err := this.write_client.Call("ProxyWriteProc.Save", args, &reply)
+	err := p.write_client.Call("ProxyWriteProc.Save", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call Save err %v\n", err.Error())
 	}
 }
 
-func (this *DB) End() {
+func (p *DB) End() {
 	var args mysql_proxy_common.EndArgs
 	var reply mysql_proxy_common.EndReply
-	err := this.write_client.Call("ProxyWriteProc.End", &args, &reply)
+	err := p.write_client.Call("ProxyWriteProc.End", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call End err %v\n", err.Error())
 	}
 }
 
-func (this *DB) Select(table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) error {
+func (p *DB) Select(host_id int32, db_name, table_name string, field_name string, field_value interface{}, field_list []string, dest_list []interface{}) error {
 	var args = &mysql_proxy_common.SelectArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectReply
-	err := this.read_client.Call("ProxyReadProc.Select", args, &reply)
+	err := p.read_client.Call("ProxyReadProc.Select", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call Select err %v\n", err.Error())
 		return err
@@ -252,15 +257,18 @@ func (this *DB) Select(table_name string, field_name string, field_value interfa
 	return nil
 }
 
-func (this *DB) SelectRecordsCount(table_name, field_name string, field_value interface{}) (count int32, err error) {
+func (p *DB) SelectRecordsCount(host_id int32, db_name, table_name, field_name string, field_value interface{}) (count int32, err error) {
 	var args = mysql_proxy_common.SelectRecordsCountArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		WhereFieldName:  field_name,
 		WhereFieldValue: field_value,
 	}
 	var reply mysql_proxy_common.SelectRecordsCountReply
-	err = this.read_client.Call("ProxyReadProc.SelectRecordsCount", &args, &reply)
+	err = p.read_client.Call("ProxyReadProc.SelectRecordsCount", &args, &reply)
 	if err != nil {
 		return
 	}
@@ -268,16 +276,19 @@ func (this *DB) SelectRecordsCount(table_name, field_name string, field_value in
 	return
 }
 
-func (this *DB) SelectRecords(table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) error {
+func (p *DB) SelectRecords(host_id int32, db_name, table_name string, field_name string, field_value interface{}, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectRecordsArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectRecordsReply
-	err := this.read_client.Call("ProxyReadProc.SelectRecords", args, &reply)
+	err := p.read_client.Call("ProxyReadProc.SelectRecords", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records err: %v\n", err.Error())
 		return err
@@ -286,16 +297,19 @@ func (this *DB) SelectRecords(table_name string, field_name string, field_value 
 	return nil
 }
 
-func (this *DB) SelectRecordsMap(table_name string, field_name string, field_value interface{}, field_list []string) (records_map map[interface{}][]interface{}, err error) {
+func (p *DB) SelectRecordsMap(host_id int32, db_name, table_name string, field_name string, field_value interface{}, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectRecordsArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectRecordsMapReply
-	err = this.read_client.Call("ProxyReadProc.SelectRecordsMap", &args, &reply)
+	err = p.read_client.Call("ProxyReadProc.SelectRecordsMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records map err: %v\n", err.Error())
 		return nil, err
@@ -303,14 +317,17 @@ func (this *DB) SelectRecordsMap(table_name string, field_name string, field_val
 	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectAllRecords(table_name string, field_list []string, result_list *QueryResultList) error {
+func (p *DB) SelectAllRecords(host_id int32, db_name, table_name string, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectAllRecordsArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectAllRecordsReply
-	err := this.read_client.Call("ProxyReadProc.SelectAllRecords", args, &reply)
+	err := p.read_client.Call("ProxyReadProc.SelectAllRecords", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select all records err: %v\n", err.Error())
 		return err
@@ -319,14 +336,17 @@ func (this *DB) SelectAllRecords(table_name string, field_list []string, result_
 	return nil
 }
 
-func (this *DB) SelectAllRecordsMap(table_name string, field_list []string) (records_map map[interface{}][]interface{}, err error) {
+func (p *DB) SelectAllRecordsMap(host_id int32, db_name, table_name string, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectAllRecordsArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		SelectFieldNames: field_list,
 	}
 	var reply mysql_proxy_common.SelectAllRecordsMapReply
-	err = this.read_client.Call("ProxyReadProc.SelectAllRecordsMap", &args, &reply)
+	err = p.read_client.Call("ProxyReadProc.SelectAllRecordsMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select all records map err: %v\n", err.Error())
 		return nil, err
@@ -334,14 +354,17 @@ func (this *DB) SelectAllRecordsMap(table_name string, field_list []string) (rec
 	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectField(table_name string, field_name string) ([]interface{}, error) {
+func (p *DB) SelectField(host_id int32, db_name, table_name string, field_name string) ([]interface{}, error) {
 	var args = &mysql_proxy_common.SelectFieldArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		SelectFieldName: field_name,
 	}
 	var reply mysql_proxy_common.SelectFieldReply
-	err := this.read_client.Call("ProxyReadProc.SelectField", args, &reply)
+	err := p.read_client.Call("ProxyReadProc.SelectField", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select field err: %v\n", err.Error())
 		return nil, err
@@ -349,14 +372,17 @@ func (this *DB) SelectField(table_name string, field_name string) ([]interface{}
 	return reply.ResultList, nil
 }
 
-func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interface{}]bool, error) {
+func (p *DB) SelectFieldMap(host_id int32, db_name, table_name string, field_name string) (map[interface{}]bool, error) {
 	var args = mysql_proxy_common.SelectFieldArgs{
-		Head:            this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:       table_name,
 		SelectFieldName: field_name,
 	}
 	var reply mysql_proxy_common.SelectFieldMapReply
-	err := this.read_client.Call("ProxyReadProc.SelectFieldMap", &args, &reply)
+	err := p.read_client.Call("ProxyReadProc.SelectFieldMap", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select field map err: %v\n", err.Error())
 		return nil, err
@@ -364,9 +390,12 @@ func (this *DB) SelectFieldMap(table_name string, field_name string) (map[interf
 	return reply.ResultMap, nil
 }
 
-func (this *DB) SelectRecordsCondition(table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) error {
+func (p *DB) SelectRecordsCondition(host_id int32, db_name, table_name string, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string, result_list *QueryResultList) error {
 	var args = &mysql_proxy_common.SelectRecordsConditionArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
@@ -374,7 +403,7 @@ func (this *DB) SelectRecordsCondition(table_name string, field_name string, fie
 		SelCond:          sel_cond,
 	}
 	var reply mysql_proxy_common.SelectRecordsConditionReply
-	err := this.read_client.Call("ProxyReadProc.SelectRecordsCondition", args, &reply)
+	err := p.read_client.Call("ProxyReadProc.SelectRecordsCondition", args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records condition err: %v\n", err.Error())
 		return err
@@ -383,9 +412,12 @@ func (this *DB) SelectRecordsCondition(table_name string, field_name string, fie
 	return nil
 }
 
-func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string) (records_map map[interface{}][]interface{}, err error) {
+func (p *DB) SelectRecordsMapCondition(host_id int32, db_name, table_name, field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition, field_list []string) (records_map map[interface{}][]interface{}, err error) {
 	var args = mysql_proxy_common.SelectRecordsConditionArgs{
-		Head:             this._gen_head(),
+		Head: &mysql_proxy_common.ArgsHead{
+			DBHostId: host_id,
+			DBName:   db_name,
+		},
 		TableName:        table_name,
 		WhereFieldName:   field_name,
 		WhereFieldValue:  field_value,
@@ -393,7 +425,7 @@ func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_v
 		SelCond:          sel_cond,
 	}
 	var reply mysql_proxy_common.SelectRecordsMapConditionReply
-	err = this.read_client.Call("ProxyReadProc.SelectRecordsMapCondition", &args, &reply)
+	err = p.read_client.Call("ProxyReadProc.SelectRecordsMapCondition", &args, &reply)
 	if err != nil {
 		log.Printf("mysql-proxy-client: call select records map condition err: %v\n", err.Error())
 		return nil, err
@@ -401,21 +433,21 @@ func (this *DB) SelectRecordsMapCondition(table_name, field_name string, field_v
 	return reply.ResultMap, nil
 }
 
-func (this *DB) NewTransaction() *Transaction {
-	return CreateTransaction(this)
+func (p *DB) NewTransaction(host_id int32, db_name string) *Transaction {
+	return CreateTransaction(host_id, db_name, p)
 }
 
-func (this *DB) Close() {
-	this.read_client.Close()
-	this.write_client.Close()
+func (p *DB) Close() {
+	p.read_client.Close()
+	p.write_client.Close()
 }
 
-func (this *DB) GoRun() {
-	this.read_client.GoRun()
-	this.write_client.GoRun()
+func (p *DB) RunBackground() {
+	p.read_client.RunBackground()
+	p.write_client.RunBackground()
 }
 
-func (this *DB) Run() {
-	this.read_client.Run()
-	this.write_client.Run()
+func (p *DB) Run() {
+	p.read_client.Run()
+	p.write_client.Run()
 }

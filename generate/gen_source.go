@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/huoshan017/mysql-go/base"
+	mysql_base "github.com/huoshan017/mysql-go/base"
 )
 
 func _upper_first_char(str string) string {
@@ -48,6 +48,9 @@ func gen_row_func(struct_row_name string, go_type string, field *mysql_base.Fiel
 	str += "}\n\n"
 	if field.StructName != "" {
 		str += "func (this *" + struct_row_name + ") Marshal_" + field.Name + "() []byte {\n"
+		str += "	if this." + field.Name + " == nil {\n"
+		str += "		return nil\n"
+		str += "	}\n"
 		str += "	data, err := proto.Marshal(this." + field.Name + ")\n"
 		str += "	if err != nil {\n"
 		str += "		log.Printf(\"Marshal " + field.StructName + " failed err(%v)!\\n\", err.Error())\n"
@@ -102,10 +105,14 @@ func gen_row_format_all_fvp_func(struct_row_name string, table *mysql_base.Table
 	str += ("func (this *" + struct_row_name + ") _format_field_list() []*mysql_base.FieldValuePair {\n")
 	str += ("	var field_list []*mysql_base.FieldValuePair\n")
 	for _, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
+		/*is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
 		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned) == "" {
 			continue
+		}*/
+		if strings.Contains(strings.ToLower(field.Type), "timestamp") {
+			continue
 		}
+
 		if field.StructName != "" {
 			str += "	data_" + field.Name + " := this.Marshal_" + field.Name + "()\n"
 			str += "	if data_" + field.Name + " != nil {\n"

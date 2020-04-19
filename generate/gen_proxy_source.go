@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/huoshan017/mysql-go/base"
+	mysql_base "github.com/huoshan017/mysql-go/base"
 )
 
 func gen_get_proxy_result_list(table *mysql_base.TableConfig, struct_row_name, bytes_define_list, dest_list string) (str string) {
@@ -59,10 +59,10 @@ func get_primary_field_and_type(table *mysql_base.TableConfig) (*mysql_base.Fiel
 		log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
 		return nil, "", false
 	}
-	is_unsigned := strings.Contains(strings.ToLower(pf.Type), "unsigned")
-	pt := mysql_base.MysqlFieldType2GoTypeStr(pf.RealType, is_unsigned)
+	isUnsigned := strings.Contains(strings.ToLower(pf.Type), "unsigned")
+	pt := mysql_base.MysqlFieldType2GoTypeStr(pf.RealType, isUnsigned)
 	if pt == "" {
-		log.Printf("主键类型%v没有对应的数据类型\n")
+		log.Printf("主键类型%v没有对应的数据类型\n", pt)
 		return nil, "", false
 	}
 	return pf, pt, true
@@ -76,15 +76,18 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 
 	// table
 	str += ("type " + struct_table_name + " struct {\n")
-	str += "	db *mysql_proxy.DB\n"
+	//str += "	db *mysql_proxy.DB\n"
+	str += "	tables_mgr *TablesProxyManager\n"
 	if table.SingleRow {
 		str += "	row *" + struct_row_name + "\n"
 	}
 	str += "}\n\n"
 
 	// init func
-	str += ("func (this *" + struct_table_name + ") Init(db *mysql_proxy.DB) {\n")
-	str += ("	this.db = db\n")
+	//str += ("func (this *" + struct_table_name + ") Init(db *mysql_proxy.DB) {\n")
+	str += ("func (this *" + struct_table_name + ") Init(tables_mgr *TablesProxyManager) {\n")
+	//str += ("	this.db = db\n")
+	str += ("	this.tables_mgr = tables_mgr\n")
 	str += "}\n\n"
 
 	var field_list string
@@ -143,9 +146,11 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	str += ("	var err error\n")
 	str += ("	var dest_list = []interface{}{" + dest_list + "}\n")
 	if !table.SingleRow {
-		str += ("	err = this.db.Select(\"" + table.Name + "\", field_name, field_value, field_list, dest_list)\n")
+		//str += ("	err = this.db.Select(\"" + table.Name + "\", field_name, field_value, field_list, dest_list)\n")
+		str += ("	err = this.tables_mgr.proxy.Select(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value, field_list, dest_list)\n")
 	} else {
-		str += ("	err = this.db.Select(\"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list)\n")
+		//str += ("	err = this.db.Select(\"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list)\n")
+		str += ("	err = this.tables_mgr.proxy.Select(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"place_hold\", 1, field_list, dest_list)\n")
 	}
 	str += ("	if err != nil {\n")
 	str += ("		return nil, err\n")
@@ -172,19 +177,22 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	if !table.SingleRow {
 		// select records count
 		str += "func (this *" + struct_table_name + ") SelectRecordsCount() (count int32, err error) {\n"
-		str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", \"\", nil)\n"
+		//str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", \"\", nil)\n"
+		str += "	return this.tables_mgr.proxy.SelectRecordsCount(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"\", nil)\n"
 		str += "}\n\n"
 
 		// select records count by field
 		str += "func (this *" + struct_table_name + ") SelectRecordsCountByField(field_name string, field_value interface{}) (count int32, err error) {\n"
-		str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", field_name, field_value)\n"
+		//str += "	return this.db.SelectRecordsCount(\"" + table.Name + "\", field_name, field_value)\n"
+		str += "	return this.tables_mgr.proxy.SelectRecordsCount(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value)\n"
 		str += "}\n\n"
 
 		// select records condition
 		str += "func (this *" + struct_table_name + ") SelectRecordsCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_proxy.QueryResultList\n"
-		str += "	err := this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list)\n"
+		//str += "	err := this.db.SelectRecordsCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list)\n"
+		str += "	err := this.tables_mgr.proxy.SelectRecordsCondition(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value, sel_cond, field_list, &result_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -195,7 +203,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		// select records map condition
 		str += "func (this *" + struct_table_name + ") SelectRecordsMapCondition(field_name string, field_value interface{}, sel_cond *mysql_base.SelectCondition) (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
-		str += "	records_map, err := this.db.SelectRecordsMapCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list)\n"
+		//str += "	records_map, err := this.db.SelectRecordsMapCondition(\"" + table.Name + "\", field_name, field_value, sel_cond, field_list)\n"
+		str += "	records_map, err := this.tables_mgr.proxy.SelectRecordsMapCondition(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value, sel_cond, field_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -207,7 +216,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += "func (this *" + struct_table_name + ") SelectAllRecords() ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_proxy.QueryResultList\n"
-		str += "	err := this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list)\n"
+		//str += "	err := this.db.SelectAllRecords(\"" + table.Name + "\", field_list, &result_list)\n"
+		str += "	err := this.tables_mgr.proxy.SelectAllRecords(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_list, &result_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -218,7 +228,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		// select all records map
 		str += "func (this *" + struct_table_name + ") SelectAllRecordsMap() (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
-		str += "	records_map, err := this.db.SelectAllRecordsMap(\"" + table.Name + "\", field_list)\n"
+		//str += "	records_map, err := this.db.SelectAllRecordsMap(\"" + table.Name + "\", field_list)\n"
+		str += "	records_map, err := this.tables_mgr.proxy.SelectAllRecordsMap(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -230,7 +241,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += "func (this *" + struct_table_name + ") SelectRecords(field_name string, field_value interface{}) ([]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
 		str += "	var result_list mysql_proxy.QueryResultList\n"
-		str += "	err := this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list)\n"
+		//str += "	err := this.db.SelectRecords(\"" + table.Name + "\", field_name, field_value, field_list, &result_list)\n"
+		str += "	err := this.tables_mgr.proxy.SelectRecords(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value, field_list, &result_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -241,7 +253,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		// select records map
 		str += "func (this *" + struct_table_name + ") SelectRecordsMap(field_name string, field_value interface{}) (map[" + pt + "]*" + struct_row_name + ", error) {\n"
 		str += "	var field_list = []string{" + field_list + "}\n"
-		str += "	records_map, err := this.db.SelectRecordsMap(\"" + table.Name + "\", field_name, field_value, field_list)\n"
+		//str += "	records_map, err := this.db.SelectRecordsMap(\"" + table.Name + "\", field_name, field_value, field_list)\n"
+		str += "	records_map, err := this.tables_mgr.proxy.SelectRecordsMap(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_name, field_value, field_list)\n"
 		str += "	if err != nil {\n"
 		str += "		return nil, err\n"
 		str += "	}\n"
@@ -260,7 +273,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 
 		// select all primary field
 		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryField() ([]" + pt + ", error) {\n")
-		str += ("	dest_list, err := this.db.SelectField(\"" + table.Name + "\", \"" + pf.Name + "\")\n")
+		//str += ("	dest_list, err := this.db.SelectField(\"" + table.Name + "\", \"" + pf.Name + "\")\n")
+		str += ("	dest_list, err := this.tables_mgr.proxy.SelectField(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"" + pf.Name + "\")\n")
 		str += ("	if err != nil {\n")
 		str += ("		return nil, err\n")
 		str += ("	}\n")
@@ -273,7 +287,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 
 		// select all primary field map
 		str += ("func (this *" + struct_table_name + ") SelectAllPrimaryFieldMap() (map[" + pt + "]bool, error) {\n")
-		str += ("	dest_list, err := this.db.SelectField(\"" + table.Name + "\", \"" + pf.Name + "\")\n")
+		//str += ("	dest_list, err := this.db.SelectField(\"" + table.Name + "\", \"" + pf.Name + "\")\n")
+		str += ("	dest_list, err := this.tables_mgr.proxy.SelectField(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"" + pf.Name + "\")\n")
 		str += ("	if err != nil {\n")
 		str += ("		return nil, err\n")
 		str += ("	}\n")
@@ -288,7 +303,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += "func (this *" + struct_table_name + ") Insert(t *" + struct_row_name + ") {\n"
 		str += "	var field_list = t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
-		str += "		this.db.Insert(\"" + table.Name + "\", field_list)\n"
+		//str += "		this.db.Insert(\"" + table.Name + "\", field_list)\n"
+		str += "		this.tables_mgr.proxy.Insert(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_list)\n"
 		str += "	}\n"
 		str += "}\n\n"
 
@@ -296,13 +312,15 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 		str += "func (this *" + struct_table_name + ") InsertIgnore(t *" + struct_row_name + ") {\n"
 		str += "	var field_list = t._format_field_list()\n"
 		str += "	if field_list != nil {\n"
-		str += "		this.db.InsertIgnore(\"" + table.Name + "\", field_list)\n"
+		//str += "		this.db.InsertIgnore(\"" + table.Name + "\", field_list)\n"
+		str += "		this.tables_mgr.proxy.InsertIgnore(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", field_list)\n"
 		str += "	}\n"
 		str += "}\n\n"
 
 		// delete
 		str += ("func (this *" + struct_table_name + ") Delete(" + pf.Name + " " + pt + ") {\n")
-		str += ("	this.db.Delete(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ")\n")
+		//str += ("	this.db.Delete(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ")\n")
+		str += ("	this.tables_mgr.proxy.Delete(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ")\n")
 		str += ("}\n\n")
 
 		// create row func
@@ -327,9 +345,11 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	str += "	var field_list = t._format_field_list()\n"
 	str += "	if field_list != nil {\n"
 	if !table.SingleRow {
-		str += "		this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", t.Get_" + pf.Name + "(), field_list)\n"
+		//str += "		this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", t.Get_" + pf.Name + "(), field_list)\n"
+		str += "		this.tables_mgr.proxy.Update(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"" + pf.Name + "\", t.Get_" + pf.Name + "(), field_list)\n"
 	} else {
-		str += "		this.db.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
+		//str += "		this.db.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
+		str += "		this.tables_mgr.proxy.Update(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
 	}
 	str += "	}\n"
 	str += "}\n\n"
@@ -337,10 +357,12 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	// update some field
 	if !table.SingleRow {
 		str += "func (this *" + struct_table_name + ") UpdateWithFVPList(" + pf.Name + " " + pt + ", field_list []*mysql_base.FieldValuePair) {\n"
-		str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
+		//str += "	this.db.Update(\"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
+		str += "	this.tables_mgr.proxy.Update(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"" + pf.Name + "\", " + pf.Name + ", field_list)\n"
 	} else {
 		str += "func (this *" + struct_table_name + ") UpdateWithFVPList(field_list []*mysql_base.FieldValuePair) {\n"
-		str += "	this.db.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
+		//str += "	this.db.Update(\"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
+		str += "	this.tables_mgr.proxy.Update(this.tables_mgr.host_id, this.tables_mgr.db_name, \"" + table.Name + "\", \"place_hold\", 1, field_list)\n"
 	}
 	str += "}\n\n"
 

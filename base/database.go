@@ -5,36 +5,40 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
+	//_ "github.com/go-sql-driver/mysql"
 )
 
+// QueryResultList ...
 type QueryResultList struct {
 	rows *sql.Rows
 }
 
+// CreateQueryResultList ...
 func CreateQueryResultList(rows *sql.Rows) *QueryResultList {
 	return &QueryResultList{
 		rows: rows,
 	}
 }
 
-func (this *QueryResultList) Init(rows *sql.Rows) {
-	this.rows = rows
+// Init ...
+func (q *QueryResultList) Init(rows *sql.Rows) {
+	q.rows = rows
 }
 
-func (this *QueryResultList) Close() {
-	if this.rows == nil {
+// Close ...
+func (q *QueryResultList) Close() {
+	if q.rows == nil {
 		return
 	}
-	this.rows.Close()
+	q.rows.Close()
 }
 
-func (this *QueryResultList) Get(dest ...interface{}) bool {
-	if !this.rows.Next() {
+// Get ...
+func (q *QueryResultList) Get(dest ...interface{}) bool {
+	if !q.rows.Next() {
 		return false
 	}
-	err := this.rows.Scan(dest...)
+	err := q.rows.Scan(dest...)
 	if err != nil {
 		log.Printf("QueryResultList::Get with dest(%v) scan err %v\n", dest, err.Error())
 		return false
@@ -42,34 +46,39 @@ func (this *QueryResultList) Get(dest ...interface{}) bool {
 	return true
 }
 
-func (this *QueryResultList) Get2(dest []interface{}) bool {
-	return this.Get(dest...)
+// Get2 ...
+func (q *QueryResultList) Get2(dest []interface{}) bool {
+	return q.Get(dest...)
 }
 
-func (this *QueryResultList) HasData() bool {
-	return this.rows.NextResultSet()
+// HasData ...
+func (q *QueryResultList) HasData() bool {
+	return q.rows.NextResultSet()
 }
 
+// Database ...
 type Database struct {
 	db *sql.DB
 }
 
-func (this *Database) Open(dbhost, dbuser, dbpassword, dbname string) error {
+// Open ...
+func (q *Database) Open(dbhost, dbuser, dbpassword, dbname string) error {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v", dbuser, dbpassword, dbhost, dbname)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
 	}
-	this.db = db
+	q.db = db
 	return nil
 }
 
-func (this *Database) Close() {
-	if this.db == nil {
+// Close ...
+func (q *Database) Close() {
+	if q.db == nil {
 		log.Printf("Database close failed with null instance\n")
 		return
 	}
-	err := this.db.Close()
+	err := q.db.Close()
 	if err != nil {
 		log.Printf("Database close err %v\n", err.Error())
 	} else {
@@ -77,20 +86,24 @@ func (this *Database) Close() {
 	}
 }
 
-func (this *Database) SetMaxLifeTime(d time.Duration) {
-	this.db.SetConnMaxLifetime(d)
+// SetMaxLifeTime ...
+func (q *Database) SetMaxLifeTime(d time.Duration) {
+	q.db.SetConnMaxLifetime(d)
 }
 
-func (this *Database) SetMaxIdleConns(conns int) {
-	this.db.SetMaxIdleConns(conns)
+// SetMaxIdleConns ...
+func (q *Database) SetMaxIdleConns(conns int) {
+	q.db.SetMaxIdleConns(conns)
 }
 
-func (this *Database) SetMaxOpenConns(conns int) {
-	this.db.SetMaxOpenConns(conns)
+// SetMaxOpenConns ...
+func (q *Database) SetMaxOpenConns(conns int) {
+	q.db.SetMaxOpenConns(conns)
 }
 
-func (this *Database) Query(query_str string, result *QueryResultList) error {
-	rows, err := this.db.Query(query_str)
+// Query ...
+func (q *Database) Query(queryStr string, result *QueryResultList) error {
+	rows, err := q.db.Query(queryStr)
 	//defer rows.Close()
 	if err != nil {
 		return err
@@ -99,8 +112,9 @@ func (this *Database) Query(query_str string, result *QueryResultList) error {
 	return nil
 }
 
-func (this *Database) QueryWith(query_str string, args []interface{}, result *QueryResultList) error {
-	rows, err := this.db.Query(query_str, args...)
+// QueryWith ...
+func (q *Database) QueryWith(queryStr string, args []interface{}, result *QueryResultList) error {
+	rows, err := q.db.Query(queryStr, args...)
 	//defer rows.Close()
 	if err != nil {
 		return err
@@ -109,34 +123,39 @@ func (this *Database) QueryWith(query_str string, args []interface{}, result *Qu
 	return nil
 }
 
-func (this *Database) QueryOne(query_str string, dest []interface{}) error {
-	err := this.db.QueryRow(query_str).Scan(dest...)
+// QueryOne ...
+func (q *Database) QueryOne(queryStr string, dest []interface{}) error {
+	err := q.db.QueryRow(queryStr).Scan(dest...)
 	if err == sql.ErrNoRows {
 		err = ErrNoRows
 	}
 	return err
 }
 
-func (this *Database) QueryOneWith(query_str string, args []interface{}, dest []interface{}) error {
-	err := this.db.QueryRow(query_str, args...).Scan(dest...)
+// QueryOneWith ...
+func (q *Database) QueryOneWith(queryStr string, args []interface{}, dest []interface{}) error {
+	err := q.db.QueryRow(queryStr, args...).Scan(dest...)
 	if err == sql.ErrNoRows {
 		err = ErrNoRows
 	}
 	return err
 }
 
-func (this *Database) QueryCount(query_str string) (count int32, err error) {
-	err = this.db.QueryRow(query_str).Scan(&count)
+// QueryCount ...
+func (q *Database) QueryCount(queryStr string) (count int32, err error) {
+	err = q.db.QueryRow(queryStr).Scan(&count)
 	return
 }
 
-func (this *Database) QueryCountWith(query_str string, arg interface{}) (count int32, err error) {
-	err = this.db.QueryRow(query_str, arg).Scan(&count)
+// QueryCountWith ...
+func (q *Database) QueryCountWith(queryStr string, arg interface{}) (count int32, err error) {
+	err = q.db.QueryRow(queryStr, arg).Scan(&count)
 	return
 }
 
-func (this *Database) HasRow(query_str string) bool {
-	row := this.db.QueryRow(query_str)
+// HasRow ...
+func (q *Database) HasRow(queryStr string) bool {
+	row := q.db.QueryRow(queryStr)
 	if row == nil {
 		return false
 	}
@@ -148,53 +167,57 @@ func (this *Database) HasRow(query_str string) bool {
 	return true
 }
 
-func _exec_result(res sql.Result, last_insert_id, rows_affected *int64) {
+func execResult(res sql.Result, lastInsertID, rowsAffected *int64) {
 	var err error
-	if last_insert_id != nil {
-		*last_insert_id, err = res.LastInsertId()
+	if lastInsertID != nil {
+		*lastInsertID, err = res.LastInsertId()
 		if err != nil {
 			log.Printf("Database exec get last insert id err %v\n", err.Error())
 		}
 	}
-	if rows_affected != nil {
-		*rows_affected, err = res.RowsAffected()
+	if rowsAffected != nil {
+		*rowsAffected, err = res.RowsAffected()
 		if err != nil {
 			log.Printf("Database exe get rows affected err %v\n", err.Error())
 		}
 	}
 }
 
-func (this *Database) Exec(query_str string, last_insert_id, rows_affected *int64) error {
-	res, err := this.db.Exec(query_str)
+// Exec ...
+func (q *Database) Exec(queryStr string, lastInsertID, rowsAffected *int64) error {
+	res, err := q.db.Exec(queryStr)
 	if err != nil {
-		log.Printf("Database exec query string(%v) err %v\n", query_str, err.Error())
+		log.Printf("Database exec query string(%v) err %v\n", queryStr, err.Error())
 		return err
 	}
-	_exec_result(res, last_insert_id, rows_affected)
+	execResult(res, lastInsertID, rowsAffected)
 	return nil
 }
 
-func (this *Database) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) error {
-	res, err := this.db.Exec(query_str, args...)
+// ExecWith ...
+func (q *Database) ExecWith(queryStr string, args []interface{}, lastInsertID, rowsAffected *int64) error {
+	res, err := q.db.Exec(queryStr, args...)
 	if err != nil {
-		log.Printf("Database exec query string(%v) with args(%v) err %v\n", query_str, args, err.Error())
+		log.Printf("Database exec query string(%v) with args(%v) err %v\n", queryStr, args, err.Error())
 		return err
 	}
-	_exec_result(res, last_insert_id, rows_affected)
+	execResult(res, lastInsertID, rowsAffected)
 	return nil
 }
 
-func (this *Database) Prepare(query_str string) *Stmt {
-	stmt, err := this.db.Prepare(query_str)
+// Prepare ...
+func (q *Database) Prepare(queryStr string) *Stmt {
+	stmt, err := q.db.Prepare(queryStr)
 	if err != nil {
-		log.Printf("Database Prepare query (%v) err %v\n", query_str, err.Error())
+		log.Printf("Database Prepare query (%v) err %v\n", queryStr, err.Error())
 		return nil
 	}
 	return CreateStmt(stmt)
 }
 
-func (this *Database) BeginProcedure() *Procedure {
-	tx, err := this.db.Begin()
+// BeginProcedure ...
+func (q *Database) BeginProcedure() *Procedure {
+	tx, err := q.db.Begin()
 	if err != nil {
 		log.Printf("Database begin procedure err %v\n", err.Error())
 		return nil
@@ -204,18 +227,21 @@ func (this *Database) BeginProcedure() *Procedure {
 
 // ----------------------------------- STMT -----------------------------------
 
+// Stmt ...
 type Stmt struct {
 	stmt *sql.Stmt
 }
 
+// CreateStmt ...
 func CreateStmt(stmt *sql.Stmt) *Stmt {
 	return &Stmt{
 		stmt: stmt,
 	}
 }
 
-func (this *Stmt) Query(args []interface{}, result *QueryResultList) error {
-	rows, err := this.stmt.Query(args...)
+// Query ...
+func (q *Stmt) Query(args []interface{}, result *QueryResultList) error {
+	rows, err := q.stmt.Query(args...)
 	defer rows.Close()
 	if err != nil {
 		log.Printf("Stmt query err %v\n", err.Error())
@@ -225,8 +251,9 @@ func (this *Stmt) Query(args []interface{}, result *QueryResultList) error {
 	return nil
 }
 
-func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
-	row := this.stmt.QueryRow(args...)
+// QueryOne ...
+func (q *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
+	row := q.stmt.QueryRow(args...)
 	if row == nil {
 		//log.Printf("Stmt query one row get result empty\n")
 		return ErrQueryResultEmpty
@@ -239,87 +266,98 @@ func (this *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
 	return nil
 }
 
-func (this *Stmt) Exec(args []interface{}, last_insert_id, rows_affected *int64) error {
-	res, err := this.stmt.Exec(args...)
+// Exec ...
+func (q *Stmt) Exec(args []interface{}, lastInsertID, rowsAffected *int64) error {
+	res, err := q.stmt.Exec(args...)
 	if err != nil {
 		log.Printf("Stmt exec with args err %v\n", err.Error())
 		return err
 	}
-	_exec_result(res, last_insert_id, rows_affected)
+	execResult(res, lastInsertID, rowsAffected)
 	return nil
 }
 
 // -------------------------------- Procedure ---------------------------------
+
+// Procedure ...
 type Procedure struct {
 	tx *sql.Tx
 }
 
+// CreateProcedure ...
 func CreateProcedure(tx *sql.Tx) *Procedure {
 	return &Procedure{
 		tx: tx,
 	}
 }
 
-func (this *Procedure) Query(query_str string, result *QueryResultList) error {
-	rows, err := this.tx.Query(query_str)
+// Query ...
+func (p *Procedure) Query(queryStr string, result *QueryResultList) error {
+	rows, err := p.tx.Query(queryStr)
 	if err != nil {
-		log.Printf("Procedure query(%v) err %v\n", query_str, err.Error())
+		log.Printf("Procedure query(%v) err %v\n", queryStr, err.Error())
 		return err
 	}
 	result.Init(rows)
 	return nil
 }
 
-func (this *Procedure) QueryWith(query_str string, args []interface{}, result *QueryResultList) error {
-	rows, err := this.tx.Query(query_str, args...)
+// QueryWith ...
+func (p *Procedure) QueryWith(queryStr string, args []interface{}, result *QueryResultList) error {
+	rows, err := p.tx.Query(queryStr, args...)
 	if err != nil {
-		log.Printf("Procedure query(%v) with args(%v) err %v\n", query_str, args, err.Error())
+		log.Printf("Procedure query(%v) with args(%v) err %v\n", queryStr, args, err.Error())
 		return err
 	}
 	result.Init(rows)
 	return nil
 }
 
-func (this *Procedure) QueryOne(query_str string, dest []interface{}) error {
-	err := this.tx.QueryRow(query_str).Scan(dest...)
+// QueryOne ...
+func (p *Procedure) QueryOne(queryStr string, dest []interface{}) error {
+	err := p.tx.QueryRow(queryStr).Scan(dest...)
 	if err != nil {
-		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, err.Error())
+		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", queryStr, dest, err.Error())
 		return err
 	}
 	return nil
 }
 
-func (this *Procedure) QueryOneWith(query_str string, args []interface{}, dest []interface{}) error {
-	err := this.tx.QueryRow(query_str, args...).Scan(dest...)
+// QueryOneWith ...
+func (p *Procedure) QueryOneWith(queryStr string, args []interface{}, dest []interface{}) error {
+	err := p.tx.QueryRow(queryStr, args...).Scan(dest...)
 	if err != nil {
-		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", query_str, args, err.Error())
+		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", queryStr, args, err.Error())
 		return err
 	}
 	return nil
 }
 
-func (this *Procedure) Exec(query_str string, last_insert_id, rows_affected *int64) error {
-	res, err := this.tx.Exec(query_str)
+// Exec ...
+func (p *Procedure) Exec(queryStr string, lastInsertID, rowsAffected *int64) error {
+	res, err := p.tx.Exec(queryStr)
 	if err != nil {
-		log.Printf("Procedure exec(%v) with err %v\n", query_str, err.Error())
+		log.Printf("Procedure exec(%v) with err %v\n", queryStr, err.Error())
 		return err
 	}
-	_exec_result(res, last_insert_id, rows_affected)
+	execResult(res, lastInsertID, rowsAffected)
 	return nil
 }
 
-func (this *Procedure) ExecWith(query_str string, args []interface{}, last_insert_id, rows_affected *int64) error {
-	res, err := this.tx.Exec(query_str, args...)
+// ExecWith ...
+func (p *Procedure) ExecWith(queryStr string, args []interface{}, lastInsertID, rowsAffected *int64) error {
+	res, err := p.tx.Exec(queryStr, args...)
 	if err != nil {
-		log.Printf("Procedure exec(%v) with args(%v) err %v\n", query_str, args, err.Error())
+		log.Printf("Procedure exec(%v) with args(%v) err %v\n", queryStr, args, err.Error())
 		return err
 	}
-	_exec_result(res, last_insert_id, rows_affected)
+	execResult(res, lastInsertID, rowsAffected)
 	return nil
 }
 
-func (this *Procedure) Commit() error {
-	err := this.tx.Commit()
+// Commit ...
+func (p *Procedure) Commit() error {
+	err := p.tx.Commit()
 	if err != nil {
 		log.Printf("Procedure commit err %v\n", err.Error())
 		return err
@@ -327,8 +365,9 @@ func (this *Procedure) Commit() error {
 	return nil
 }
 
-func (this *Procedure) Rollback() error {
-	err := this.tx.Rollback()
+// Rollback ...
+func (p *Procedure) Rollback() error {
+	err := p.tx.Rollback()
 	if err != nil {
 		log.Printf("Procedure rollback err %v\n", err.Error())
 		return err

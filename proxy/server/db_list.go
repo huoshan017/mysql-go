@@ -17,16 +17,15 @@ type DbDefine struct {
 }
 
 type Db struct {
-	Define   int32    `json:"define"`
+	ConfigId int32    `json:"config_id"`
 	Name     string   `json:"name"`
 	NameList []string `json:"name_list"`
-	Disable  bool     `json:"disable"`
+	Disable  bool     `json:"enable"`
 }
 
 type DbHost struct {
-	Enable   bool   `json:"enable"`
 	Id       int32  `json:"id"`
-	Alias    string `json:"alias"`
+	Enable   bool   `json:"enable"`
 	Ip       string `json:"ip"`
 	User     string `json:"user"`
 	Password string `json:"password"`
@@ -34,7 +33,7 @@ type DbHost struct {
 }
 
 type DbList struct {
-	DefineList []*DbDefine `json:"define_list"`
+	DefineList []*DbDefine `json:"config_list"`
 	MysqlHosts []*DbHost   `json:"mysql_hosts"`
 
 	config_loaders       map[int32]*mysql_generate.ConfigLoader
@@ -81,8 +80,8 @@ func (this *DbList) Load(config string) error {
 				continue
 			}
 			var c *mysql_generate.ConfigLoader
-			if c = this.config_loaders[d.Define]; c == nil {
-				return fmt.Errorf("mysql-proxy-server: DbList not found db define by id %v ", d.Define)
+			if c = this.config_loaders[d.ConfigId]; c == nil {
+				return fmt.Errorf("mysql-proxy-server: DbList not found db define by id %v ", d.ConfigId)
 			}
 			if d.Name != "" {
 				var db_mgr mysql_manager.DB
@@ -91,7 +90,6 @@ func (this *DbList) Load(config string) error {
 					return err
 				}
 				this.insert_db_mgr_list(&db_mgr, h.Id, d.Name)
-				this.insert_db_mgr_list_by_alias(&db_mgr, h.Alias, d.Name)
 			} else if d.NameList != nil {
 				for _, name := range d.NameList {
 					var db_mgr mysql_manager.DB
@@ -100,7 +98,6 @@ func (this *DbList) Load(config string) error {
 						return err
 					}
 					this.insert_db_mgr_list(&db_mgr, h.Id, name)
-					this.insert_db_mgr_list_by_alias(&db_mgr, h.Alias, name)
 				}
 			} else {
 				return fmt.Errorf("mysql-proxy-server: DbList not found db host %v name or name list", h.Id)
@@ -129,18 +126,6 @@ func (this *DbList) insert_db_mgr_list(db_mgr *mysql_manager.DB, db_host_id int3
 	if dml == nil {
 		dml = make(map[string]*mysql_manager.DB)
 		this.db_mgr_list[db_host_id] = dml
-	}
-	dml[db_name] = db_mgr
-}
-
-func (this *DbList) insert_db_mgr_list_by_alias(db_mgr *mysql_manager.DB, db_host_alias string, db_name string) {
-	if this.db_mgr_list_by_alias == nil {
-		this.db_mgr_list_by_alias = make(map[string]map[string]*mysql_manager.DB)
-	}
-	dml := this.db_mgr_list_by_alias[db_host_alias]
-	if dml == nil {
-		dml = make(map[string]*mysql_manager.DB)
-		this.db_mgr_list_by_alias[db_host_alias] = dml
 	}
 	dml[db_name] = db_mgr
 }

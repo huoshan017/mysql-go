@@ -12,22 +12,24 @@ import (
 )
 
 const (
-	DEFAULT_LISTEN_PORT = 19999
+	DEFAULT_LISTEN_PORT = 19999 // default listen port
 )
 
+// Config struct
 type Config struct {
 	ListenAddr       string
 	DBListConfigPath string
 	DBBackupPath     string
 }
 
-func (this *Config) Init(config_path string) bool {
-	data, err := ioutil.ReadFile(config_path)
+// Init ...
+func (c *Config) Init(configPath string) bool {
+	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Printf("read config file err: %v\n", config_path, err.Error())
+		log.Printf("read config file %v err: %v\n", configPath, err.Error())
 		return false
 	}
-	err = json.Unmarshal(data, this)
+	err = json.Unmarshal(data, c)
 	if err != nil {
 		log.Printf("json unmarshal err: %v\n", err.Error())
 		return false
@@ -58,7 +60,8 @@ func main() {
 		return
 	}
 
-	root_path, _ := path.Split(config_path)
+	root_path, file_name := path.Split(config_path)
+	log.Printf("root_path is %v, file_name is %v\n", root_path, file_name)
 	err := db_list.Load(root_path + config.DBListConfigPath)
 	if err != nil {
 		log.Printf("%v\n", err.Error())

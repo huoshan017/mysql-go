@@ -97,7 +97,7 @@ func (this *client) Run() {
 	}
 }
 
-func (this *client) GoRun() {
+func (this *client) RunBackground() {
 	go func() {
 		this.Run()
 	}()
