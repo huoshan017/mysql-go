@@ -14,12 +14,12 @@ import (
 	mysql_generate "github.com/huoshan017/mysql-go/generate"
 )
 
-var protoc_root = os.Getenv("GOPATH") + "src/github.com/huoshan017/mysql-go/_external/"
+//var protoc_root = os.Getenv("GOPATH") + "/mysql-go/_external/"
 
 var protoc_dest_map = map[string]string{
-	"windows": protoc_root + "windows/protoc.exe",
-	"linux":   protoc_root + "linux/protoc",
-	"darwin":  protoc_root + "darwin/protoc",
+	"windows": "windows/protoc.exe",
+	"linux":   "linux/protoc",
+	"darwin":  "darwin/protoc",
 }
 
 func main() {
@@ -29,9 +29,12 @@ func main() {
 	}
 
 	var arg_config_file, arg_dest_path, arg_protoc_path *string
+	// 代碼生成配置路徑
 	arg_config_file = flag.String("c", "", "config file path")
+	// 目標代碼生成目錄
 	arg_dest_path = flag.String("d", "", "dest source path")
-	arg_protoc_path = flag.String("p", "", "protoc file path")
+	// protoc根目錄
+	arg_protoc_path = flag.String("p", "", "protoc file root path")
 	flag.Parse()
 
 	var config_path string
@@ -54,15 +57,11 @@ func main() {
 
 	var protoc_path string
 	if nil != arg_protoc_path && *arg_protoc_path != "" {
-		protoc_path = *arg_protoc_path
-	} else {
-		fmt.Fprintf(os.Stdout, "to use default protoc path\n")
 		go_os := runtime.GOOS //os.Getenv("GOOS")
-		var o bool
-		if protoc_path, o = protoc_dest_map[go_os]; !o {
-			fmt.Fprintf(os.Stderr, "not found dest protoc arg by GOOS %v\n", go_os)
-			return
-		}
+		protoc_path = *arg_protoc_path + protoc_dest_map[go_os]
+	} else {
+		fmt.Fprintf(os.Stderr, "not found dest protoc file root path\n")
+		return
 	}
 
 	fmt.Fprintf(os.Stdout, "protoc path %v\n", protoc_path)
@@ -92,8 +91,10 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "generated proto\n")
 
-	cmd := exec.Command(protoc_path, "--go_out", dest_path+"/"+config_loader.DBPkg, "--proto_path", proto_dest_path, proto_file)
+	cmd := exec.Command(protoc_path, "--go_out", dest_path /*+"/"+config_loader.DBPkg*/, "--proto_path", proto_dest_path, proto_file)
 	var out bytes.Buffer
+
+	fmt.Fprintf(os.Stdout, "--go_out=%v  --proto_path=%v  proto_file=%v\n", dest_path /*+"/"+config_loader.DBPkg*/, proto_dest_path, proto_file)
 
 	cmd.Stdout = &out
 	err := cmd.Run()

@@ -8,7 +8,8 @@ import (
 
 func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) bool {
 	str := "syntax = \"proto3\";\n"
-	str += "package " + pkg_name + ";\n\n"
+	//str += "package " + pkg_name + ";\n"
+	str += "option go_package=\"./" + pkg_name + "\";\n\n"
 
 	for _, fs := range field_structs {
 		str += _gen_struct(fs)
