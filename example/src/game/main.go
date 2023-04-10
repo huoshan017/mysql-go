@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/huoshan017/mysql-go/example/src/game/game_db"
-	"github.com/huoshan017/mysql-go/manager"
+	mysql_manager "github.com/huoshan017/mysql-go/manager"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 5 {
 		log.Printf("args not enough\n")
 		return
 	}
@@ -27,20 +27,47 @@ func main() {
 		return
 	}
 
-	var db_mgr mysql_manager.DB
+	var arg_user, arg_host, arg_password *string
+	// 用戶
+	arg_user = flag.String("u", "", "user")
+	// 主機
+	arg_host = flag.String("h", "", "host")
+	// 密碼
+	arg_password = flag.String("p", "", "password")
+	flag.Parse()
 
+	var user string
+	if nil != arg_user && *arg_user != "" {
+		user = *arg_user
+	} else {
+		user = "root"
+	}
+
+	var host string
+	if nil != arg_host && *arg_host != "" {
+		host = *arg_host
+	} else {
+		host = "127.0.0.1"
+	}
+
+	var password string
+	if nil != arg_password && *arg_password != "" {
+		password = *arg_password
+	}
+
+	var db_mgr mysql_manager.DB
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
 
 	var err error
-	err = db_mgr.Connect("localhost", "root", "", "game_db")
+	err = db_mgr.Connect(host, user, password, "game_db")
 	if err != nil {
 		log.Printf("connect db err: %v\n", err.Error())
 		return
 	}
 
-	db_mgr.Run()
+	go db_mgr.Run()
 
 	tb_mgr := game_db.NewTablesManager(&db_mgr)
 	db_player_table := tb_mgr.GetT_PlayerTable()
@@ -82,7 +109,7 @@ func main() {
 		return
 	}
 
-	log.Printf("get primary field list:\n", err.Error())
+	log.Printf("get primary field list: %v\n", err.Error())
 	for i, id := range ids {
 		log.Printf("	%v: %v\n", i, id)
 	}

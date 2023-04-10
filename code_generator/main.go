@@ -58,7 +58,7 @@ func main() {
 	var protoc_path string
 	if nil != arg_protoc_path && *arg_protoc_path != "" {
 		go_os := runtime.GOOS //os.Getenv("GOOS")
-		protoc_path = *arg_protoc_path + protoc_dest_map[go_os]
+		protoc_path = *arg_protoc_path + "/" + protoc_dest_map[go_os]
 	} else {
 		fmt.Fprintf(os.Stderr, "not found dest protoc file root path\n")
 		return

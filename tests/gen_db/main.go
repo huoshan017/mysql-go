@@ -1,36 +1,74 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
+	"os"
 
-	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/game_db"
-	"github.com/huoshan017/mysql-go/manager"
+	mysql_manager "github.com/huoshan017/mysql-go/manager"
+	"github.com/huoshan017/mysql-go/tests/game_db"
 )
 
 var db_mgr mysql_manager.DB
 
 func main() {
-	config_path := "../src/github.com/huoshan017/mysql-go/generator/config.json"
+	if len(os.Args) < 4 {
+		fmt.Fprintf(os.Stderr, "args num not enough\n")
+		return
+	}
+
+	var arg_user, arg_host, arg_password *string
+	// 用戶
+	arg_user = flag.String("u", "", "user")
+	// 主機
+	arg_host = flag.String("h", "", "host")
+	// 密碼
+	arg_password = flag.String("p", "", "password")
+	flag.Parse()
+
+	var user string
+	if nil != arg_user && *arg_user != "" {
+		user = *arg_user
+	} else {
+		user = "root"
+	}
+
+	var host string
+	if nil != arg_host && *arg_host != "" {
+		host = *arg_host
+	} else {
+		host = "127.0.0.1"
+	}
+
+	var password string
+	if nil != arg_password && *arg_password != "" {
+		password = *arg_password
+	}
+
+	config_path := "../config.json"
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
-	if !db_mgr.Connect("localhost", "root", "", "game_db") {
+
+	fmt.Fprintf(os.Stdout, "host=%v  user=%v  password=%v\n", host, user, password)
+	if err := db_mgr.Connect(host, user, password, "game_db"); err != nil {
+		log.Panicf("connect db err: %v", err)
 		return
 	}
 
-	db_mgr.Run()
+	go db_mgr.Run()
 
 	tb_mgr := game_db.NewTablesManager(&db_mgr)
-	db_player_table := tb_mgr.Get_T_Player_Table()
-	db_global_table := tb_mgr.Get_T_Global_Table()
+	db_player_table := tb_mgr.GetT_PlayerTable()
+	db_global_table := tb_mgr.GetT_GlobalTable()
 
 	id := 5
-	var o bool
+	var e error
 	var gd *game_db.T_Global
-	gd, o = db_global_table.Select()
-	if !o {
-		log.Printf("cant get global table data\n")
+	gd, e = db_global_table.Select()
+	if e != nil {
+		log.Printf("select global table data err %v\n", e)
 		return
 	}
 
@@ -39,21 +77,21 @@ func main() {
 	gd.Set_curr_player_id(40)
 	//db_global_table.UpdateAll(gd)
 
-	db_global_table.UpdateWithFieldPair(gd.GetValuePairList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
+	db_global_table.UpdateWithFieldName(gd, []string{"curr_guild_id", "curr_mail_id", "curr_player_id"})
 
 	var p *game_db.T_Player
-	p, o = db_player_table.Select("id", id)
-	if !o {
-		log.Printf("cant get result by id %v\n", id)
+	p, e = db_player_table.Select("id", id)
+	if e != nil {
+		log.Printf("get result by id %v err %v\n", id, e)
 		return
 	}
 
 	log.Printf("get the result %v by id %v\n", p, id)
 
 	var ps []*game_db.T_Player
-	ps, o = db_player_table.SelectMulti("", nil)
-	if !o {
-		log.Printf("cant get result list\n")
+	ps, e = db_player_table.SelectAllRecords()
+	if e != nil {
+		log.Printf("get all player list err %v\n", e)
 		return
 	}
 
@@ -64,22 +102,22 @@ func main() {
 		}
 	}
 
-	var ids []int32
-	ids = db_player_table.SelectPrimaryField()
-	if ids != nil {
+	var ids []uint32
+	ids, e = db_player_table.SelectAllPrimaryField()
+	if e == nil {
 		log.Printf("get primary field list:\n")
 		for i, id := range ids {
 			log.Printf("	%v: %v\n", i, id)
 		}
 	}
 
-	var transaction *mysql_base.Transaction = db_mgr.NewTransaction()
+	var transaction *mysql_manager.Transaction = db_mgr.NewTransaction()
 
 	p.AtomicExecute(func(t *game_db.T_Player) {
 		t.Set_level(555)
 		t.Set_vip_level(5555)
-		fvp_list := t.GetValuePairList([]string{"level", "vip_level"})
-		db_player_table.TransactionUpdateWithFieldPair(transaction, t.Get_id(), fvp_list)
+		fvp_list := t.GetFVPList([]string{"level", "vip_level"})
+		db_player_table.TransactionUpdateWithFVPList(transaction, t.Get_id(), fvp_list)
 	})
 	transaction.Done()
 	db_mgr.Save()

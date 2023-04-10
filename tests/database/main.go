@@ -8,21 +8,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/manager"
+	mysql_base "github.com/huoshan017/mysql-go/base"
+	mysql_manager "github.com/huoshan017/mysql-go/manager"
 )
 
 var db_mgr mysql_manager.DB
 var transaction *mysql_manager.Transaction
 
 func main() {
-	config_path := "../src/github.com/huoshan017/mysql-go/generate/config.json"
+	config_path := "../src/github.com/huoshan017/mysql-go/example/config.json"
 
 	if !db_mgr.LoadConfig(config_path) {
 		return
 	}
 
-	if !db_mgr.Connect("localhost", "root", "", "game_db") {
+	if err := db_mgr.Connect("localhost", "root", "", "game_db"); err != nil {
+		log.Panicf("connect db err: %v", err)
 		return
 	}
 	defer db_mgr.Close()
@@ -77,7 +78,7 @@ func do_select(strs []string) {
 			log.Printf("不支持的select字段类型 %v\n", field.RealType)
 		}
 	}
-	if db_mgr.Select(table_name, key, value, field_list, dest_list) {
+	if db_mgr.Select(table_name, key, value, field_list, dest_list) == nil {
 		log.Printf("select结果: \n")
 		for i := 0; i < len(field_list); i++ {
 			/*if len(dest_list) <= i {
@@ -105,7 +106,8 @@ func do_select_star(strs []string) {
 	key := strs[2]
 	value := strs[3]
 	var dest_list []interface{}
-	if !db_mgr.SelectStar(table_name, key, value, dest_list) {
+	if err := db_mgr.SelectStar(table_name, key, value, dest_list); err != nil {
+		log.Panicf("select star err: %v", err)
 		return
 	}
 }
@@ -116,7 +118,7 @@ func do_update(strs []string) {
 	value := strs[3]
 	var field_list []*mysql_base.FieldValuePair
 	for i := 4; i < len(strs); i += 2 {
-		field_list = append(field_list, &mysql_base.FieldValuePair{strs[i], strs[i+1]})
+		field_list = append(field_list, &mysql_base.FieldValuePair{Name: strs[i], Value: strs[i+1]})
 	}
 	db_mgr.Update(table_name, key, value, field_list)
 }
@@ -162,7 +164,7 @@ func do_selects(strs []string) {
 	log.Printf("field_list: %v, dest_list: %v\n", field_list, dest_list)
 
 	var result_list mysql_base.QueryResultList
-	if db_mgr.SelectRecords(table_name, key, value, field_list, &result_list) {
+	if err := db_mgr.SelectRecords(table_name, key, value, field_list, &result_list); err == nil {
 		log.Printf("select结果: \n")
 		var cnt int
 		for {
@@ -221,7 +223,7 @@ func do_pupdate(strs []string) {
 	value := strs[3]
 	var field_list []*mysql_base.FieldValuePair
 	for i := 4; i < len(strs); i += 2 {
-		field_list = append(field_list, &mysql_base.FieldValuePair{strs[i], strs[i+1]})
+		field_list = append(field_list, &mysql_base.FieldValuePair{Name: strs[i], Value: strs[i+1]})
 	}
 	transaction.Update(table_name, key, value, field_list)
 }
@@ -243,7 +245,7 @@ func on_tick() {
 	fmt.Scanf("%s\n", &cmd_str)
 
 	strs := strings.Split(cmd_str, ",")
-	if strs == nil || len(strs) == 0 {
+	if len(strs) == 0 {
 		log.Printf("命令不能为空\n")
 		return
 	}

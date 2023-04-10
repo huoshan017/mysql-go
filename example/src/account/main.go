@@ -7,7 +7,7 @@ import (
 	"time"
 
 	//"github.com/huoshan017/mysql-go/base"
-	"github.com/huoshan017/mysql-go/manager"
+	mysql_manager "github.com/huoshan017/mysql-go/manager"
 
 	"github.com/huoshan017/mysql-go/example/src/account/account_db"
 )
@@ -36,7 +36,7 @@ func main() {
 	}
 	err := db_mgr.Connect("localhost", "root", "", "account_db")
 	if err != nil {
-		log.Printf("connect db err: ", err.Error())
+		log.Printf("connect db err: %v", err.Error())
 		return
 	}
 
