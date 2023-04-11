@@ -21,7 +21,7 @@ func gen_get_proxy_result_list(table *mysql_base.TableConfig, struct_row_name, b
 	str += ("			break\n")
 	str += ("		}\n")
 	for _, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}
@@ -38,9 +38,9 @@ func gen_get_proxy_result_map(table *mysql_base.TableConfig, struct_row_name, by
 	str += ("	for k, v := range records_map {\n")
 	str += ("		var t = Create" + struct_row_name + "()\n")
 	for i, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
-		} else if mysql_base.IsMysqlFieldIntType(field.RealType) || mysql_base.IsMysqlFieldTextType(field.RealType) {
+		} else if mysql_base.IsMysqlFieldIntType(field.Type) || mysql_base.IsMysqlFieldTextType(field.Type) {
 			str += "		mysql_base.CopySrcValue2Dest(&t." + field.Name + ", v[" + strconv.Itoa(i) + "])\n"
 		}
 	}
@@ -55,12 +55,12 @@ func get_primary_field_and_type(table *mysql_base.TableConfig) (*mysql_base.Fiel
 		log.Printf("cant get table %v primary key\n", table.Name)
 		return nil, "", false
 	}
-	if !(mysql_base.IsMysqlFieldIntType(pf.RealType) || mysql_base.IsMysqlFieldTextType(pf.RealType)) {
+	if !(mysql_base.IsMysqlFieldIntType(pf.Type) || mysql_base.IsMysqlFieldTextType(pf.Type)) {
 		log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
 		return nil, "", false
 	}
-	isUnsigned := strings.Contains(strings.ToLower(pf.Type), "unsigned")
-	pt := mysql_base.MysqlFieldType2GoTypeStr(pf.RealType, isUnsigned)
+	isUnsigned := strings.Contains(strings.ToLower(pf.TypeStr), "unsigned")
+	pt := mysql_base.MysqlFieldType2GoTypeStr(pf.Type, isUnsigned)
 	if pt == "" {
 		log.Printf("主键类型%v没有对应的数据类型\n", pt)
 		return nil, "", false
@@ -92,8 +92,8 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 
 	var field_list string
 	for i, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
+		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 		if go_type == "" {
 			continue
 		}
@@ -107,14 +107,14 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	var bytes_define_list string
 	var dest_list string
 	for _, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
+		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 		if go_type == "" {
 			continue
 		}
 
 		var dest string
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			dest = "data_" + field.Name
 			if bytes_define_list == "" {
 				bytes_define_list = dest
@@ -156,7 +156,7 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 	str += ("		return nil, err\n")
 	str += ("	}\n")
 	for _, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "	t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}

@@ -162,10 +162,7 @@ func (q *Database) HasRow(queryStr string) bool {
 	}
 	var dest interface{}
 	err := row.Scan(dest)
-	if err == sql.ErrNoRows {
-		return false
-	}
-	return true
+	return !(err == sql.ErrNoRows)
 }
 
 func execResult(res sql.Result, lastInsertID, rowsAffected *int64) {
@@ -243,7 +240,7 @@ func CreateStmt(stmt *sql.Stmt) *Stmt {
 // Query ...
 func (q *Stmt) Query(args []interface{}, result *QueryResultList) error {
 	rows, err := q.stmt.Query(args...)
-	defer rows.Close()
+	//defer rows.Close()
 	if err != nil {
 		log.Printf("Stmt query err %v\n", err.Error())
 		return err

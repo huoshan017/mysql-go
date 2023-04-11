@@ -5,12 +5,12 @@ import (
 )
 
 type FieldConfig struct {
-	Name          string `json:"name"`
-	Type          string `json:"type"`
-	IndexType     string `json:"index_type"`
-	RealType      int
-	RealIndexType int
-	StructName    string
+	Name       string `json:"name"`
+	TypeStr    string `json:"type"`
+	IndexStr   string `json:"index"`
+	Type       int
+	Index      int
+	StructName string
 }
 
 type TableConfig struct {
@@ -22,29 +22,29 @@ type TableConfig struct {
 	FieldMap   map[string]*FieldConfig
 }
 
-func (this *TableConfig) AfterLoad() {
-	for _, f := range this.Fields {
-		if this.FieldMap == nil {
-			this.FieldMap = make(map[string]*FieldConfig)
+func (tc *TableConfig) AfterLoad() {
+	for _, f := range tc.Fields {
+		if tc.FieldMap == nil {
+			tc.FieldMap = make(map[string]*FieldConfig)
 		}
-		this.FieldMap[f.Name] = f
+		tc.FieldMap[f.Name] = f
 	}
 }
 
-func (this *TableConfig) GetField(field_name string) *FieldConfig {
-	if this.FieldMap == nil {
+func (tc *TableConfig) GetField(field_name string) *FieldConfig {
+	if tc.FieldMap == nil {
 		return nil
 	}
-	return this.FieldMap[field_name]
+	return tc.FieldMap[field_name]
 }
 
-func (this *TableConfig) GetPrimaryKeyFieldConfig() (field_config *FieldConfig) {
-	if this.PrimaryKey == "" || this.Fields == nil {
+func (tc *TableConfig) GetPrimaryKeyFieldConfig() (field_config *FieldConfig) {
+	if tc.PrimaryKey == "" || tc.Fields == nil {
 		return nil
 	}
 
-	for _, f := range this.Fields {
-		if f.Name == this.PrimaryKey {
+	for _, f := range tc.Fields {
+		if f.Name == tc.PrimaryKey {
 			field_config = f
 			break
 		}
@@ -53,36 +53,36 @@ func (this *TableConfig) GetPrimaryKeyFieldConfig() (field_config *FieldConfig) 
 	return
 }
 
-func (this *TableConfig) IsPrimaryAutoIncrement() bool {
-	f := this.GetPrimaryKeyFieldConfig()
+func (tc *TableConfig) IsPrimaryAutoIncrement() bool {
+	f := tc.GetPrimaryKeyFieldConfig()
 	if f == nil {
 		return false
 	}
 
-	if !strings.Contains(f.Type, "AUTO_INCREMENT") {
+	if !strings.Contains(f.TypeStr, "AUTO_INCREMENT") {
 		return false
 	}
 
 	return true
 }
 
-func (this *TableConfig) HasBytesField() bool {
-	if this.Fields == nil {
+func (tc *TableConfig) HasBytesField() bool {
+	if tc.Fields == nil {
 		return false
 	}
-	for _, f := range this.Fields {
-		if IsMysqlFieldBinaryType(f.RealType) || IsMysqlFieldBlobType(f.RealType) {
+	for _, f := range tc.Fields {
+		if IsMysqlFieldBinaryType(f.Type) || IsMysqlFieldBlobType(f.Type) {
 			return true
 		}
 	}
 	return false
 }
 
-func (this *TableConfig) HasStructField() bool {
-	if this.Fields == nil {
+func (tc *TableConfig) HasStructField() bool {
+	if tc.Fields == nil {
 		return false
 	}
-	for _, f := range this.Fields {
+	for _, f := range tc.Fields {
 		if f.StructName != "" {
 			return true
 		}

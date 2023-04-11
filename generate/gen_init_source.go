@@ -4,16 +4,22 @@ import (
 	"log"
 	"os"
 
-	"github.com/huoshan017/mysql-go/base"
+	mysql_base "github.com/huoshan017/mysql-go/base"
 )
 
-func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConfig) bool {
+func gen_init_source(f *os.File, pkg_name string, configBytes []byte, tables []*mysql_base.TableConfig) bool {
 	var str string
 	str += "package " + pkg_name + "\n\n"
 	str += "import (\n"
+	str += "	\"fmt\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/manager\"\n"
 	str += "	\"github.com/huoshan017/mysql-go/proxy/client\"\n"
+	str += "	\"github.com/huoshan017/mysql-go/generate\"\n"
 	str += ")\n\n"
+
+	str += "var configBytes = `" + string(configBytes) + "`\n\n"
+
+	str += "var configLoader mysql_generate.ConfigLoader" + "\n\n"
 
 	str += "type TablesManager struct {\n"
 	for _, table := range tables {
@@ -26,6 +32,12 @@ func gen_init_source(f *os.File, pkg_name string, tables []*mysql_base.TableConf
 	str += "}\n\n"
 
 	str += "func (this *TablesManager) Init(db *mysql_manager.DB) {\n"
+	str += "	if !configLoader.LoadConfigBytes([]byte(configBytes)) {\n"
+	str += "		panic(\"load config bytes crash\")\n"
+	str += "	}\n\n"
+	str += "	if err := db.SetConfigLoader(&configLoader); err != nil {\n"
+	str += "		panic(fmt.Sprintf(\"set config loader err: %v\", err))\n"
+	str += "	}\n\n"
 	for _, table := range tables {
 		var struct_row_name = _upper_first_char(table.Name)
 		var struct_table_name = struct_row_name + "Table"

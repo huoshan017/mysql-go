@@ -26,13 +26,14 @@ type ConfigLoader struct {
 	Charset      string                    `json:"charset"`
 	Tables       []*mysql_base.TableConfig `json:"tables"`
 	FieldStructs []*FieldStruct            `json:"field_structs"`
+	configBytes  []byte
 }
 
-func (this *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {
-	if this.Tables == nil {
+func (c *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {
+	if c.Tables == nil {
 		return nil
 	}
-	for _, t := range this.Tables {
+	for _, t := range c.Tables {
 		if t.Name == table_name {
 			return t
 		}
@@ -40,30 +41,40 @@ func (this *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {
 	return nil
 }
 
-func (this *ConfigLoader) Load(config string) bool {
+func (c *ConfigLoader) LoadConfigBytes(bytes []byte) bool {
+	err := json.Unmarshal(bytes, c)
+	if nil != err {
+		log.Printf("ConfigLoader::Load json unmarshal failed err(%s)!\n", err.Error())
+		return false
+	}
+
+	if c.DBPkg == "" {
+		log.Printf("ConfigLoader::Load db_pkg is empty\n")
+		return false
+	}
+
+	for _, tab := range c.Tables {
+		if !c.load_table(tab) {
+			return false
+		}
+		tab.AfterLoad()
+	}
+
+	return true
+}
+
+func (c *ConfigLoader) Load(config string) bool {
 	data, err := ioutil.ReadFile(config)
 	if nil != err {
 		log.Printf("ConfigLoader::Load failed to readfile err(%s)!\n", err.Error())
 		return false
 	}
 
-	err = json.Unmarshal(data, this)
-	if nil != err {
-		log.Printf("ConfigLoader::Load json unmarshal failed err(%s)!\n", err.Error())
+	if !c.LoadConfigBytes(data) {
 		return false
 	}
 
-	if this.DBPkg == "" {
-		log.Printf("ConfigLoader::Load db_pkg is empty\n")
-		return false
-	}
-
-	for _, tab := range this.Tables {
-		if !this.load_table(tab) {
-			return false
-		}
-		tab.AfterLoad()
-	}
+	c.configBytes = data
 
 	log.Printf("ConfigLoader::Load loaded config file %v\n", config)
 
@@ -71,16 +82,16 @@ func (this *ConfigLoader) Load(config string) bool {
 }
 
 func _get_field_simple_type(field *mysql_base.FieldConfig) (int, bool) {
-	ft := field.Type
-	n := strings.IndexAny(field.Type, ": (")
+	ft := field.TypeStr
+	n := strings.IndexAny(field.TypeStr, ": (")
 	if n >= 0 {
-		t := []byte(field.Type)
+		t := []byte(field.TypeStr)
 		ft = string(t[:n])
 	}
 	return mysql_base.GetMysqlFieldTypeByString(strings.ToUpper(ft))
 }
 
-func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
+func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	engine := strings.ToUpper(tab.Engine)
 	var ok bool
 	if _, ok = mysql_base.GetMysqlEngineTypeByString(engine); !ok {
@@ -105,17 +116,17 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	var strs []string
 	for _, f := range tab.Fields {
 		// blob类型
-		if strings.Index(f.Type, ":") >= 0 {
-			strs = strings.Split(f.Type, ":")
+		if strings.Contains(f.TypeStr, ":") {
+			strs = strings.Split(f.TypeStr, ":")
 			if len(strs) < 2 {
-				log.Printf("ConfigLoader::load_table %v field blob type not found\n")
+				log.Printf("ConfigLoader::load_table %v field blob type not found\n", tab.Name)
 				return false
 			}
 			str = strings.ToUpper(strs[0])
-			f.Type = strs[0]
+			f.TypeStr = strs[0]
 			f.StructName = strs[1]
 		} else {
-			str = strings.ToUpper(f.Type)
+			str = strings.ToUpper(f.TypeStr)
 		}
 
 		real_type, ok := _get_field_simple_type(f)
@@ -124,9 +135,9 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			return false
 		}
 
-		f.RealType = real_type
+		f.Type = real_type
 
-		str = strings.ToUpper(f.IndexType)
+		str = strings.ToUpper(f.IndexStr)
 		var real_index_type int
 		real_index_type, ok = mysql_base.GetMysqlIndexTypeByString(str)
 		if !ok {
@@ -134,26 +145,25 @@ func (this *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 			return false
 		}
 
-		f.RealIndexType = real_index_type
+		f.Index = real_index_type
 	}
 	return true
 }
 
-func (this *ConfigLoader) GenerateFieldStructsProto(dest_path_file string) bool {
-	if this.FieldStructs == nil {
+func (c *ConfigLoader) GenerateFieldStructsProto(dest_path_file string) bool {
+	if c.FieldStructs == nil {
 		return false
 	}
 
-	var f *os.File
-	f = _get_file_creater(dest_path_file)
+	f := _get_file_creater(dest_path_file)
 	if f == nil {
 		return false
 	}
 
-	res := gen_proto(f, this.DBPkg, this.FieldStructs)
+	err := gen_proto(f, c.DBPkg, c.FieldStructs)
 
-	if !res {
-		log.Printf("写文件%v失败\n", f.Name)
+	if err != nil {
+		log.Fatalf("gen_proto err: %v", err)
 		return false
 	}
 
@@ -188,8 +198,8 @@ func _save_and_close_file(f *os.File, dest_file string) bool {
 	return true
 }
 
-func (this *ConfigLoader) _init_pkg_dirs(dest_path string) string {
-	pkg_path := dest_path + "/" + this.DBPkg
+func (c *ConfigLoader) _init_pkg_dirs(dest_path string) string {
+	pkg_path := dest_path + "/" + c.DBPkg
 	err := mysql_base.CreateDirs(pkg_path)
 	if err != nil {
 		return ""
@@ -197,38 +207,38 @@ func (this *ConfigLoader) _init_pkg_dirs(dest_path string) string {
 	return pkg_path
 }
 
-func (this *ConfigLoader) Generate(dest_path string) bool {
-	if this.Tables == nil || len(this.Tables) == 0 {
+func (c *ConfigLoader) Generate(dest_path string) bool {
+	if c.Tables == nil || len(c.Tables) == 0 {
 		return false
 	}
 
-	pkg_path := this._init_pkg_dirs(dest_path)
+	pkg_path := c._init_pkg_dirs(dest_path)
 	if pkg_path == "" {
 		return false
 	}
 
-	for _, table := range this.Tables {
+	for _, table := range c.Tables {
 		dest_file := pkg_path + "/" + table.Name + ".go"
 		f := _get_file_creater(dest_file)
 		if f == nil {
 			return false
 		}
 
-		res := gen_source(f, this.DBPkg, table)
+		res := gen_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write source to %v failed\n", f.Name)
+			log.Printf("write source to %v failed\n", f.Name())
 			return false
 		}
 
-		res = gen_proxy_source(f, this.DBPkg, table)
+		res = gen_proxy_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write proxy source to %v failed\n", f.Name)
+			log.Printf("write proxy source to %v failed\n", f.Name())
 			return false
 		}
 
-		res = gen_record_mgr_source(f, this.DBPkg, table)
+		res = gen_record_mgr_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write record mgr source to %v failed\n", f.Name)
+			log.Printf("write record mgr source to %v failed\n", f.Name())
 			return false
 		}
 
@@ -240,12 +250,12 @@ func (this *ConfigLoader) Generate(dest_path string) bool {
 	return true
 }
 
-func (this *ConfigLoader) GenerateInitFunc(dest_path string) bool {
-	if this.Tables == nil || len(this.Tables) == 0 {
+func (c *ConfigLoader) GenerateInitFunc(dest_path string) bool {
+	if c.Tables == nil || len(c.Tables) == 0 {
 		return false
 	}
 
-	pkg_path := this._init_pkg_dirs(dest_path)
+	pkg_path := c._init_pkg_dirs(dest_path)
 	if pkg_path == "" {
 		return false
 	}
@@ -256,22 +266,18 @@ func (this *ConfigLoader) GenerateInitFunc(dest_path string) bool {
 		return false
 	}
 
-	gen_init_source(f, this.DBPkg, this.Tables)
+	gen_init_source(f, c.DBPkg, c.configBytes, c.Tables)
 
-	if !_save_and_close_file(f, dest_file) {
-		return false
-	}
-
-	return true
+	return _save_and_close_file(f, dest_file)
 }
 
-func (this *ConfigLoader) GetTablesName() []string {
-	if this.Tables == nil {
+func (c *ConfigLoader) GetTablesName() []string {
+	if c.Tables == nil {
 		return nil
 	}
 
 	var tables_name []string
-	for _, t := range this.Tables {
+	for _, t := range c.Tables {
 		tables_name = append(tables_name, t.Name)
 	}
 

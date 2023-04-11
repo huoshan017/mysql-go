@@ -118,8 +118,8 @@
 			"engine": "innodb",
 			"fields": [
 				{ "name":"id",				"type":"int unsigned not null" 				},
-				{ "name":"account",			"type":"varchar(16) not null default ''" 	},
-				{ "name":"role_id",			"type":"bigint unsigned not null default 0" },
+				{ "name":"account",			"type":"varchar(16) not null default ''", 		"index":"unique" },
+				{ "name":"role_id",			"type":"bigint unsigned not null default 0",	"index":"normal" },
 				{ "name":"nick_name",		"type":"varchar(16) not null default ''" 	},
 				{ "name":"sex",				"type":"tinyint unsigned not null default 0" },
 				{ "name":"level",			"type":"int unsigned not null default 0" 	},
@@ -136,10 +136,6 @@
 				{ "name":"activities",		"type":"blob:DBActivitys" 					},
 				{ "name":"role_common",		"type":"blob:DBRoleCommon" 					},
 				{ "name":"roles",			"type":"mediumblob:DBRoles" 				}
-			],
-			"index": [
-				{ "field":"account", 		"type":"unique" },
-				{ "field":"role_id", 		"type":"normal" }
 			]
 		},
 		
@@ -159,17 +155,12 @@
 			"engine":"innodb",
 			"fields": [
 				{ "name":"id",				"type":"int unsigned not null" },
-				{ "name":"mail_id",			"type":"int unsigned not null default 0" },
+				{ "name":"mail_id",			"type":"int unsigned not null default 0", 		"index":"unique" },
 				{ "name":"title",			"type":"varchar(16) not null default ''" },
 				{ "name":"content",			"type":"varchar(200) not null default ''" },
-				{ "name":"sender",			"type":"bigint unsigned not null default 0" },
-				{ "name":"receiver",		"type":"bigint unsigned not null default 0" },
+				{ "name":"sender",			"type":"bigint unsigned not null default 0", 	"index":"normal" },
+				{ "name":"receiver",		"type":"bigint unsigned not null default 0", 	"index":"normal" },
 				{ "name":"send_time",		"type":"int not null default 0" }
-			],
-			"index": [
-				{ "field":"mail_id", 		"type":"unique" },
-				{ "field":"sender",  		"type":"normal" },
-				{ "field":"receiver", 		"type":"normal" }
 			]
 		},
 		
@@ -179,16 +170,13 @@
 			"engine":"innodb",
 			"fields": [
 				{ "name":"id",				"type":"int unsigned not null" },
-				{ "name":"guild_id",		"type":"int not null default 0" },
+				{ "name":"guild_id",		"type":"int not null default 0", 				"index":"unique" },
 				{ "name":"name",			"type":"varchar(16) not null default ''" },
 				{ "name":"creater", 		"type":"bigint unsigned not null default 0" },
 				{ "name":"create_time",		"type":"timestamp not null default current_timestamp" },
 				{ "name":"logo",			"type":"int not null default 0" },
 				{ "name":"level",			"type":"int not null default 0" },
 				{ "name":"exp",				"type":"int not null default 0" }
-			],
-			"index": [
-				{ "field":"guild_id",		"type":"unique" }
 			]
 		},
 		
@@ -211,12 +199,8 @@
 				{"name":"record_id",		"type":"int unsigned not null" },
 				{"name":"save_time",		"type":"int unsigned not null" },
 				{"name":"save_data",		"type":"blob not null" },
-				{"name":"attacker",			"type":"int unsigned not null" },
-				{"name":"defenser",			"type":"int unsigned not null" }
-			],
-			"index": [
-				{ "field":"attacker",		"type":"normal" },
-				{ "field":"defenser",		"type":"normal" }
+				{"name":"attacker",			"type":"int unsigned not null", 				"index":"normal" },
+				{"name":"defenser",			"type":"int unsigned not null", 				"index":"normal" }
 			]
 		}
 	]

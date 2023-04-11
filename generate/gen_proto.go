@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) bool {
+func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) error {
 	str := "syntax = \"proto3\";\n"
 	//str += "package " + pkg_name + ";\n"
 	str += "option go_package=\"./" + pkg_name + "\";\n\n"
@@ -19,9 +19,9 @@ func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) bool {
 	_, err := f.WriteString(str)
 	if err != nil {
 		log.Printf("write string err %v\n", err.Error())
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 func _gen_struct(field_struct *FieldStruct) string {

@@ -4,26 +4,15 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/huoshan017/mysql-go/example/src/game/game_db"
 	mysql_manager "github.com/huoshan017/mysql-go/manager"
 )
 
 func main() {
-	if len(os.Args) < 5 {
+	if len(os.Args) < 4 {
 		log.Printf("args not enough\n")
-		return
-	}
-
-	arg_config_file := flag.String("c", "", "config file path")
-	flag.Parse()
-
-	var config_path string
-	if nil != arg_config_file {
-		config_path = *arg_config_file
-		log.Printf("config file path %v\n", config_path)
-	} else {
-		log.Printf("not found config file arg\n")
 		return
 	}
 
@@ -56,12 +45,7 @@ func main() {
 	}
 
 	var db_mgr mysql_manager.DB
-	if !db_mgr.LoadConfig(config_path) {
-		return
-	}
-
-	var err error
-	err = db_mgr.Connect(host, user, password, "game_db")
+	err := db_mgr.Connect(host, user, password, "game_db")
 	if err != nil {
 		log.Printf("connect db err: %v\n", err.Error())
 		return
@@ -83,26 +67,25 @@ func main() {
 	gd.Set_curr_guild_id(20)
 	gd.Set_curr_player_id(40)
 
-	db_global_table.UpdateWithFVPList(gd.GetFVPList([]string{"curr_guild_id", "curr_mail_id", "curr_player_id"}))
+	db_global_table.UpdateWithFieldName(gd, []string{"curr_guild_id", "curr_player_id"})
 
-	var p, p2 *game_db.T_Player
-	id := 5
-	p, err = db_player_table.Select("id", id)
-	if err != nil {
-		log.Printf("cant get result by id %v err: %v\n", id, err.Error())
-		return
-	}
+	var id uint32 = 1
+	p := db_player_table.NewRecord(id)
+	p.Set_account("account1")
+	p.Set_head(1)
+	p.Set_exp(1)
+	p.Set_level(1)
+	db_player_table.Insert(p)
 
-	id = 6
-	p2, err = db_player_table.Select("id", id)
-	if err != nil {
-		log.Printf("cant get result by id %v err: %v\n", id, err.Error())
-		return
-	}
+	id = 2
+	p2 := db_player_table.NewRecord(id)
+	p2.Set_account("account2")
+	p2.Set_head(2)
+	p2.Set_exp(2)
+	p2.Set_level(2)
+	db_player_table.Insert(p2)
 
-	log.Printf("get the result %v by id %v\n", p, id)
-
-	var ids []uint32
+	/*var ids []uint32
 	ids, err = db_player_table.SelectAllPrimaryField()
 	if err != nil {
 		log.Printf("get primary field list err: %v\n", err.Error())
@@ -112,7 +95,7 @@ func main() {
 	log.Printf("get primary field list: %v\n", err.Error())
 	for i, id := range ids {
 		log.Printf("	%v: %v\n", i, id)
-	}
+	}*/
 
 	var transaction *mysql_manager.Transaction = db_mgr.NewTransaction()
 
@@ -139,4 +122,6 @@ func main() {
 	}
 
 	db_mgr.Save()
+
+	time.Sleep(time.Second)
 }

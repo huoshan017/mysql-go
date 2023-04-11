@@ -16,19 +16,17 @@ var db_mgr mysql_manager.DB
 var transaction *mysql_manager.Transaction
 
 func main() {
-	config_path := "../src/github.com/huoshan017/mysql-go/example/config.json"
+	//config_path := "../src/github.com/huoshan017/mysql-go/example/config.json"
 
-	if !db_mgr.LoadConfig(config_path) {
+	/*if !db_mgr.LoadConfig(config_path) {
 		return
-	}
+	}*/
 
 	if err := db_mgr.Connect("localhost", "root", "", "game_db"); err != nil {
 		log.Panicf("connect db err: %v", err)
 		return
 	}
-	defer db_mgr.Close()
-
-	db_mgr.Run()
+	go db_mgr.Run()
 
 	for {
 		on_tick()
@@ -68,14 +66,14 @@ func do_select(strs []string) {
 	var dest_list []interface{}
 	for _, field_name := range field_list {
 		field := table.GetField(field_name)
-		if mysql_base.IsMysqlFieldIntType(field.RealType) {
+		if mysql_base.IsMysqlFieldIntType(field.Type) {
 			dest_list = append(dest_list, new(int))
-		} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
+		} else if mysql_base.IsMysqlFieldTextType(field.Type) {
 			dest_list = append(dest_list, new(string))
-		} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+		} else if mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type) {
 			dest_list = append(dest_list, new([]byte))
 		} else {
-			log.Printf("不支持的select字段类型 %v\n", field.RealType)
+			log.Printf("不支持的select字段类型 %v\n", field.Type)
 		}
 	}
 	if db_mgr.Select(table_name, key, value, field_list, dest_list) == nil {
@@ -150,14 +148,14 @@ func do_selects(strs []string) {
 	var dest_list []interface{}
 	for _, field_name := range field_list {
 		field := table.GetField(field_name)
-		if mysql_base.IsMysqlFieldIntType(field.RealType) {
+		if mysql_base.IsMysqlFieldIntType(field.Type) {
 			dest_list = append(dest_list, new(int))
-		} else if mysql_base.IsMysqlFieldTextType(field.RealType) {
+		} else if mysql_base.IsMysqlFieldTextType(field.Type) {
 			dest_list = append(dest_list, new(string))
-		} else if mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType) {
+		} else if mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type) {
 			dest_list = append(dest_list, new([]byte))
 		} else {
-			log.Printf("不支持的select字段类型 %v\n", field.RealType)
+			log.Printf("不支持的select字段类型 %v\n", field.Type)
 		}
 	}
 

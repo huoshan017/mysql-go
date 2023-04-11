@@ -92,8 +92,8 @@ func _get_new_value_with_field_name(table_config *mysql_base.TableConfig, field_
 		err = fmt.Errorf("mysql-proxy-server: get table %v field %v not found", table_config.Name, field_name)
 		return
 	}
-	is_unsigned := strings.Contains(strings.ToLower(fc.Type), "unsigned")
-	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.RealType, is_unsigned)
+	is_unsigned := strings.Contains(strings.ToLower(fc.TypeStr), "unsigned")
+	go_type := mysql_base.MysqlFieldType2GoTypeStr(fc.Type, is_unsigned)
 	if go_type == "" {
 		err = fmt.Errorf("mysql-proxy-server: table %v field %v type %v transfer to go type failed", table_config.Name, field_name, fc.Type)
 		return
@@ -331,6 +331,9 @@ func (p *ProxyReadProc) SelectField(args *mysql_proxy_common.SelectFieldArgs, re
 	for {
 		var new_value interface{}
 		new_value, err = _get_new_value_with_field_name(table_config, args.SelectFieldName)
+		if err != nil {
+			continue
+		}
 		if !result_list.Get(new_value) {
 			break
 		}
@@ -359,6 +362,9 @@ func (p *ProxyReadProc) SelectFieldMap(args *mysql_proxy_common.SelectFieldArgs,
 	for {
 		var new_value interface{}
 		new_value, err = _get_new_value_with_field_name(table_config, args.SelectFieldName)
+		if err != nil {
+			continue
+		}
 		if !result_list.Get(new_value) {
 			break
 		}

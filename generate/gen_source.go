@@ -109,7 +109,7 @@ func gen_row_format_all_fvp_func(struct_row_name string, table *mysql_base.Table
 		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned) == "" {
 			continue
 		}*/
-		if strings.Contains(strings.ToLower(field.Type), "timestamp") {
+		if strings.Contains(strings.ToLower(field.TypeStr), "timestamp") {
 			continue
 		}
 
@@ -168,7 +168,7 @@ func gen_get_result_list(table *mysql_base.TableConfig, struct_row_name, bytes_d
 	str += ("			break\n")
 	str += ("		}\n")
 	for _, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}
@@ -189,7 +189,7 @@ func gen_get_result_map(table *mysql_base.TableConfig, struct_row_name, bytes_de
 	str += ("			break\n")
 	str += ("		}\n")
 	for _, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "		t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}
@@ -225,8 +225,10 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	field_func_map := table.Name + "_fields_map"
 	str += "var " + field_func_map + " = map[string]" + field_pair_func_define + "{\n"
 	for _, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.Type), is_unsigned) == "" {
+		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+		//if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.TypeStr), is_unsigned) == "" {
+		if mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned) == "" {
+			log.Printf("table %v field %v(type_str: %v) skipped", table.Name, field.Name, field.TypeStr)
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
@@ -244,8 +246,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			go_type = "*" + field.StructName
 			init_mem_list += "		" + field.Name + ": &" + field.StructName + "{},\n"
 		} else {
-			is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-			go_type = mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
+			is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+			go_type = mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 			if go_type == "" {
 				log.Printf("get go type failed by field type %v in table %v, to continue\n", field.Type, table.Name)
 				continue
@@ -283,8 +285,8 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	var field_list string
 	for i, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
+		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 		if go_type == "" {
 			continue
 		}
@@ -298,14 +300,14 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	var bytes_define_list string
 	var dest_list string
 	for _, field := range table.Fields {
-		is_unsigned := strings.Contains(strings.ToLower(field.Type), "unsigned")
-		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.RealType, is_unsigned)
+		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
+		go_type := mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 		if go_type == "" {
 			continue
 		}
 
 		var dest string
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			dest = "data_" + field.Name
 			if bytes_define_list == "" {
 				bytes_define_list = dest
@@ -345,7 +347,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	str += ("		return nil, err\n")
 	str += ("	}\n")
 	for _, field := range table.Fields {
-		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.RealType) || mysql_base.IsMysqlFieldBlobType(field.RealType)) {
+		if field.StructName != "" && (mysql_base.IsMysqlFieldBinaryType(field.Type) || mysql_base.IsMysqlFieldBlobType(field.Type)) {
 			str += "	t.Unmarshal_" + field.Name + "(data_" + field.Name + ")\n"
 		}
 	}
@@ -361,14 +363,14 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			log.Printf("cant get table %v primary key\n", table.Name)
 			return false
 		}
-		if !(mysql_base.IsMysqlFieldIntType(pf.RealType) || mysql_base.IsMysqlFieldTextType(pf.RealType)) {
+		if !(mysql_base.IsMysqlFieldIntType(pf.Type) || mysql_base.IsMysqlFieldTextType(pf.Type)) {
 			log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
 			return false
 		}
-		is_unsigned := strings.Contains(strings.ToLower(pf.Type), "unsigned")
-		pt = mysql_base.MysqlFieldType2GoTypeStr(pf.RealType, is_unsigned)
+		is_unsigned := strings.Contains(strings.ToLower(pf.TypeStr), "unsigned")
+		pt = mysql_base.MysqlFieldType2GoTypeStr(pf.Type, is_unsigned)
 		if pt == "" {
-			log.Printf("主键类型%v没有对应的数据类型\n")
+			log.Printf("主键类型%v没有对应的数据类型\n", pf.Type)
 			return false
 		}
 	}

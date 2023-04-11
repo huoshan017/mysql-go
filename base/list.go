@@ -11,31 +11,31 @@ type ListNodePool struct {
 
 var listnode_pool ListNodePool
 
-func (this *ListNodePool) Init() {
-	this.pool = &sync.Pool{
+func (p *ListNodePool) Init() {
+	p.pool = &sync.Pool{
 		New: func() interface{} {
 			return &ListNode{}
 		},
 	}
-	this.inited = true
+	p.inited = true
 }
 
-func (this *ListNodePool) Get(data interface{}) *ListNode {
-	if !this.inited {
-		this.Init()
+func (p *ListNodePool) Get(data interface{}) *ListNode {
+	if !p.inited {
+		p.Init()
 	}
-	node := this.pool.Get().(*ListNode)
+	node := p.pool.Get().(*ListNode)
 	node.next = nil
 	node.prev = nil
 	node.data = data
 	return node
 }
 
-func (this *ListNodePool) Put(m *ListNode) {
-	if !this.inited {
+func (p *ListNodePool) Put(m *ListNode) {
+	if !p.inited {
 		return
 	}
-	this.pool.Put(m)
+	p.pool.Put(m)
 }
 
 type ListNode struct {
@@ -44,16 +44,16 @@ type ListNode struct {
 	prev *ListNode
 }
 
-func (this *ListNode) GetData() interface{} {
-	return this.data
+func (n *ListNode) GetData() interface{} {
+	return n.data
 }
 
-func (this *ListNode) GetNext() *ListNode {
-	return this.next
+func (n *ListNode) GetNext() *ListNode {
+	return n.next
 }
 
-func (this *ListNode) GetPrev() *ListNode {
-	return this.prev
+func (n *ListNode) GetPrev() *ListNode {
+	return n.prev
 }
 
 type List struct {
@@ -62,123 +62,120 @@ type List struct {
 	data_map map[interface{}]*ListNode
 }
 
-func (this *List) Append(data interface{}) *ListNode {
+func (l *List) Append(data interface{}) *ListNode {
 	node := listnode_pool.Get(data)
-	if this.head == nil {
-		this.head = node
+	if l.head == nil {
+		l.head = node
 	}
-	if this.tail != nil {
-		this.tail.next = node
-		node.prev = this.tail
+	if l.tail != nil {
+		l.tail.next = node
+		node.prev = l.tail
 	}
-	this.tail = node
-	if this.data_map == nil {
-		this.data_map = make(map[interface{}]*ListNode)
+	l.tail = node
+	if l.data_map == nil {
+		l.data_map = make(map[interface{}]*ListNode)
 	}
-	this.data_map[data] = node
+	l.data_map[data] = node
 	return node
 }
 
-func (this *List) HasData(data interface{}) bool {
-	_, o := this.data_map[data]
+func (l *List) HasData(data interface{}) bool {
+	_, o := l.data_map[data]
+	return o
+}
+
+func (l *List) IsHead(data interface{}) bool {
+	head, o := l.data_map[data]
 	if !o {
 		return false
 	}
-	return true
+	return l.head == head
 }
 
-func (this *List) IsHead(data interface{}) bool {
-	head, o := this.data_map[data]
+func (l *List) IsTail(data interface{}) bool {
+	tail, o := l.data_map[data]
 	if !o {
 		return false
 	}
-	return this.head == head
+	return l.tail == tail
 }
 
-func (this *List) IsTail(data interface{}) bool {
-	tail, o := this.data_map[data]
-	if !o {
-		return false
-	}
-	return this.tail == tail
+func (l *List) GetHeadNode() *ListNode {
+	return l.head
 }
 
-func (this *List) GetHeadNode() *ListNode {
-	return this.head
+func (l *List) GetTailNode() *ListNode {
+	return l.tail
 }
 
-func (this *List) GetTailNode() *ListNode {
-	return this.tail
-}
-
-func (this *List) GetLength() int {
+func (l *List) GetLength() int {
 	var length int
-	if this.data_map != nil {
-		length = len(this.data_map)
+	if l.data_map != nil {
+		length = len(l.data_map)
 	}
 	return length
 }
 
-func (this *List) Clear() {
-	n := this.head
+func (l *List) Clear() {
+	n := l.head
 	for n != nil {
 		listnode_pool.Put(n)
 		n = n.next
 	}
-	this.head = nil
-	this.tail = nil
-	this.data_map = nil
+	l.head = nil
+	l.tail = nil
+	l.data_map = nil
 }
 
-func (this *List) _delete_node(node *ListNode) {
+func (l *List) _delete_node(node *ListNode) {
 	if node.prev != nil {
 		node.prev.next = node.next
 	}
 	if node.next != nil {
 		node.next.prev = node.prev
 	}
-	if this.head == node {
-		this.head = node.next
+	if l.head == node {
+		l.head = node.next
 	}
 }
 
-func (this *List) _delete(data interface{}) *ListNode {
-	node, o := this.data_map[data]
+func (l *List) _delete(data interface{}) *ListNode {
+	node, o := l.data_map[data]
 	if !o {
 		return nil
 	}
-	this._delete_node(node)
+	l._delete_node(node)
 	return node
 }
 
-func (this *List) Delete(data interface{}) bool {
-	node := this._delete(data)
+func (l *List) Delete(data interface{}) bool {
+	node := l._delete(data)
 	if node == nil {
 		return false
 	}
-	if this.tail == node {
-		this.tail = node.prev
+	if l.tail == node {
+		l.tail = node.prev
 	}
-	delete(this.data_map, data)
+	delete(l.data_map, data)
 	return true
 }
 
-func (this *List) MoveToLast(data interface{}) bool {
-	node, o := this.data_map[data]
+func (l *List) MoveToLast(data interface{}) bool {
+	node, o := l.data_map[data]
 	if !o {
 		return false
 	}
 
-	if this.tail == node {
+	if l.tail == node {
 		return true
 	}
 
-	this._delete_node(node)
+	l._delete_node(node)
 
-	this.tail.next = node
-	node.prev = this.tail
+	l.tail.next = node
+	node.prev = l.tail
 	node.next = nil
-	this.tail = node
+	l.tail = node
 
 	return true
 }

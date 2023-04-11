@@ -46,17 +46,16 @@ func main() {
 		password = *arg_password
 	}
 
-	config_path := "../config.json"
-	if !db_mgr.LoadConfig(config_path) {
-		return
-	}
+	//config_path := "../config.json"
+	//if !db_mgr.LoadConfig(config_path) {
+	//	return
+	//}
 
 	fmt.Fprintf(os.Stdout, "host=%v  user=%v  password=%v\n", host, user, password)
 	if err := db_mgr.Connect(host, user, password, "game_db"); err != nil {
 		log.Panicf("connect db err: %v", err)
 		return
 	}
-
 	go db_mgr.Run()
 
 	tb_mgr := game_db.NewTablesManager(&db_mgr)
