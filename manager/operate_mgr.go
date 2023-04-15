@@ -237,7 +237,7 @@ func (m *OperateManager) Delete(table_name string, field_name string, field_valu
 				return
 			}
 			// 如果是插入，则直接把命令删除
-			if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT {
+			/*if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT {
 				m.op_list.Delete(op_data)
 				return
 			}
@@ -249,7 +249,7 @@ func (m *OperateManager) Delete(table_name string, field_name string, field_valu
 				m.op_list.MoveToLast(op_data)
 				m.curr_op_id += 1
 				return
-			}
+			}*/
 		}
 	}
 
@@ -268,7 +268,7 @@ func (m *OperateManager) Delete(table_name string, field_name string, field_valu
 	m.insert_table_op_data(table_name, field_value, op_data)
 }
 
-func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (merged_list []*mysql_base.FieldValuePair) {
+/*func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (merged_list []*mysql_base.FieldValuePair) {
 	if field_list1 == nil {
 		return
 	}
@@ -290,7 +290,7 @@ func field_list_cover(field_list1, field_list2 []*mysql_base.FieldValuePair) (me
 		}
 	}
 	return
-}
+}*/
 
 func (m *OperateManager) Update(table_name string, field_name string, field_value interface{}, field_list []*mysql_base.FieldValuePair) {
 	m.locker.Lock()
@@ -307,12 +307,12 @@ func (m *OperateManager) Update(table_name string, field_name string, field_valu
 			if op_data.detail.OpType == DB_OPERATE_TYPE_DELETE {
 				return
 			}
-			if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT || op_data.detail.OpType == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.OpType == DB_OPERATE_TYPE_UPDATE {
+			/*if op_data.detail.OpType == DB_OPERATE_TYPE_INSERT || op_data.detail.OpType == DB_OPERATE_TYPE_INSERT_IGNORE || op_data.detail.OpType == DB_OPERATE_TYPE_UPDATE {
 				op_data.detail.FieldList = field_list_cover(field_list, op_data.detail.FieldList)
 				m.op_list.MoveToLast(op_data)
 				m.curr_op_id += 1
 			}
-			return
+			return*/
 		}
 	}
 
