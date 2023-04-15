@@ -1,11 +1,11 @@
 package mysql_manager
 
 import (
-	"log"
 	"sync"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
 	mysql_generate "github.com/huoshan017/mysql-go/generate"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 const (
@@ -197,7 +197,7 @@ func (m *OperateManager) Insert(table_name string, field_list []*mysql_base.Fiel
 	var field_value interface{}
 	op_data, field_name, field_value = m.get_table_op_data_with_field_list(table_name, field_list)
 	if op_data != nil && op_data.detail.OpType != DB_OPERATE_TYPE_DELETE && op_data.id > m.curr_trans_op_id {
-		log.Printf("mysql_manager: operate manager insert table %v new row with(field_name:%v, field_value:%v) already exist\n", table_name, field_name, field_value)
+		log.Infof("mysql_manager: operate manager insert table %v new row with(field_name:%v, field_value:%v) already exist\n", table_name, field_name, field_value)
 		return
 	}
 
@@ -354,17 +354,19 @@ func (m *OperateManager) appendTransaction(transaction *Transaction) {
 	m.curr_op_id += 1
 }
 
-func (m *OperateManager) _op_cmd(d *mysql_base.OpDetail) {
+func (m *OperateManager) _op_cmd(d *mysql_base.OpDetail) error {
+	var err error
 	switch d.OpType {
 	case DB_OPERATE_TYPE_INSERT:
-		m.db.InsertRecord(d.TableName, d.FieldList...)
+		_, err = m.db.InsertRecord(d.TableName, d.FieldList...)
 	case DB_OPERATE_TYPE_DELETE:
-		m.db.DeleteRecord(d.TableName, d.Key, d.Value)
+		err = m.db.DeleteRecord(d.TableName, d.Key, d.Value)
 	case DB_OPERATE_TYPE_UPDATE:
-		m.db.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
+		err = m.db.UpdateRecord(d.TableName, d.Key, d.Value, d.FieldList...)
 	case DB_OPERATE_TYPE_INSERT_IGNORE:
-		m.db.InsertIgnoreRecord(d.TableName, d.FieldList...)
+		_, err = m.db.InsertIgnoreRecord(d.TableName, d.FieldList...)
 	}
+	return err
 }
 
 func (m *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) (err error) {
@@ -383,12 +385,10 @@ func (m *OperateManager) _op_transaction(dl []*mysql_base.OpDetail) (err error) 
 			_, err = procedure.InsertIgnoreRecord(d.TableName, d.FieldList...)
 		}
 		if err != nil {
-			procedure.Rollback()
-			return
+			return procedure.Rollback()
 		}
 	}
-	procedure.Commit()
-	return
+	return procedure.Commit()
 }
 
 func (m *OperateManager) _check_op_list_empty() bool {
@@ -421,6 +421,7 @@ func (m *OperateManager) Save() {
 		return
 	}
 
+	var err error
 	node := tmp_list.GetHeadNode()
 	for node != nil {
 		op_data := node.GetData().(*OpData)
@@ -431,11 +432,17 @@ func (m *OperateManager) Save() {
 
 		if op_data.sql_type == DB_SQL_TYPE_COMMAND {
 			if op_data.detail != nil {
-				m._op_cmd(op_data.detail)
+				err = m._op_cmd(op_data.detail)
+				if err != nil {
+					log.Infof("operate cmd err: %v", err)
+				}
 			}
 		} else if op_data.sql_type == DB_SQL_TYPE_PROCEDURE {
 			if op_data.detail_list != nil && len(op_data.detail_list) > 0 {
-				m._op_transaction(op_data.detail_list)
+				err = m._op_transaction(op_data.detail_list)
+				if err != nil {
+					log.Infof("operate transaction err: %v", err)
+				}
 			}
 		}
 		node = node.GetNext()

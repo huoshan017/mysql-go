@@ -1,12 +1,12 @@
 package mysql_manager
 
 import (
-	"log"
 	"sync/atomic"
 	"time"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
 	mysql_generate "github.com/huoshan017/mysql-go/generate"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 const (
@@ -51,7 +51,7 @@ func (db *DB) SetConfigLoader(configLoader *mysql_generate.ConfigLoader) error {
 	for _, t := range db.config_loader.Tables {
 		err := db.database.LoadTable(t)
 		if err != nil {
-			log.Printf("load table %v config failed\n", t.Name)
+			log.Infof("load table %v config failed\n", t.Name)
 			return err
 		}
 	}
@@ -62,7 +62,7 @@ func (db *DB) SetConfigLoader(configLoader *mysql_generate.ConfigLoader) error {
 func (db *DB) Connect(dbhost, dbuser, dbpassword, dbname string) error {
 	err := db.database.Open(dbhost, dbuser, dbpassword, dbname)
 	if err != nil {
-		log.Printf("open database err %v\n", err.Error())
+		log.Infof("open database err %v\n", err.Error())
 		return err
 	}
 	db.database.SetMaxLifeTime(DEFAULT_CONN_MAX_LIFE_SECONDS)

@@ -1,8 +1,9 @@
 package mysql_base
 
 import (
-	"log"
 	"strconv"
+
+	"github.com/huoshan017/mysql-go/log"
 )
 
 type FieldValuePair struct {
@@ -133,7 +134,7 @@ func _gen_select_query_str(table_name string, field_list []string, field_name st
 
 func (db *Database) SelectRecord(table_name, key_name string, key_value interface{}, field_list []string, dest_list []interface{}) error {
 	if len(dest_list) == 0 {
-		log.Printf("Database::SelectRecord result dest_list cant not empty\n")
+		log.Infof("Database::SelectRecord result dest_list cant not empty")
 		return ErrArgumentInvalid
 	}
 	var sel_cond = SelectCondition{

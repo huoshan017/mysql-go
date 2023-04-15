@@ -1,12 +1,12 @@
 package mysql_generate
 
 import (
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func gen_get_proxy_result_list(table *mysql_base.TableConfig, struct_row_name, bytes_define_list, dest_list string) (str string) {
@@ -52,17 +52,17 @@ func gen_get_proxy_result_map(table *mysql_base.TableConfig, struct_row_name, by
 func get_primary_field_and_type(table *mysql_base.TableConfig) (*mysql_base.FieldConfig, string, bool) {
 	pf := table.GetPrimaryKeyFieldConfig()
 	if pf == nil {
-		log.Printf("cant get table %v primary key\n", table.Name)
+		log.Infof("cant get table %v primary key", table.Name)
 		return nil, "", false
 	}
 	if !(mysql_base.IsMysqlFieldIntType(pf.Type) || mysql_base.IsMysqlFieldTextType(pf.Type)) {
-		log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
+		log.Infof("not support primary type %v for table %v", pf.Type, table.Name)
 		return nil, "", false
 	}
 	isUnsigned := strings.Contains(strings.ToLower(pf.TypeStr), "unsigned")
 	pt := mysql_base.MysqlFieldType2GoTypeStr(pf.Type, isUnsigned)
 	if pt == "" {
-		log.Printf("主键类型%v没有对应的数据类型\n", pt)
+		log.Infof("主键类型%v没有对应的数据类型", pt)
 		return nil, "", false
 	}
 	return pf, pt, true
@@ -382,7 +382,7 @@ func gen_proxy_source(f *os.File, pkg_name string, table *mysql_base.TableConfig
 
 	_, err := f.WriteString(str)
 	if err != nil {
-		log.Printf("write string err %v\n", err.Error())
+		log.Infof("write string err %v", err.Error())
 		return false
 	}
 

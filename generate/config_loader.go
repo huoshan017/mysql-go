@@ -3,11 +3,11 @@ package mysql_generate
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 type FieldStructMember struct {
@@ -44,12 +44,12 @@ func (c *ConfigLoader) GetTable(table_name string) *mysql_base.TableConfig {
 func (c *ConfigLoader) LoadConfigBytes(bytes []byte) bool {
 	err := json.Unmarshal(bytes, c)
 	if nil != err {
-		log.Printf("ConfigLoader::Load json unmarshal failed err(%s)!\n", err.Error())
+		log.Infof("ConfigLoader::Load json unmarshal failed err(%s)!", err.Error())
 		return false
 	}
 
 	if c.DBPkg == "" {
-		log.Printf("ConfigLoader::Load db_pkg is empty\n")
+		log.Infof("ConfigLoader::Load db_pkg is empty")
 		return false
 	}
 
@@ -66,7 +66,7 @@ func (c *ConfigLoader) LoadConfigBytes(bytes []byte) bool {
 func (c *ConfigLoader) Load(config string) bool {
 	data, err := ioutil.ReadFile(config)
 	if nil != err {
-		log.Printf("ConfigLoader::Load failed to readfile err(%s)!\n", err.Error())
+		log.Infof("ConfigLoader::Load failed to readfile err(%s)!", err.Error())
 		return false
 	}
 
@@ -76,7 +76,7 @@ func (c *ConfigLoader) Load(config string) bool {
 
 	c.configBytes = data
 
-	log.Printf("ConfigLoader::Load loaded config file %v\n", config)
+	log.Infof("ConfigLoader::Load loaded config file %v", config)
 
 	return true
 }
@@ -95,7 +95,7 @@ func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	engine := strings.ToUpper(tab.Engine)
 	var ok bool
 	if _, ok = mysql_base.GetMysqlEngineTypeByString(engine); !ok {
-		log.Printf("ConfigLoader::load_table unsupported engine type %v\n", engine)
+		log.Infof("ConfigLoader::load_table unsupported engine type %v", engine)
 		return false
 	}
 
@@ -108,7 +108,7 @@ func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 	}
 
 	if !has_primary && !tab.SingleRow {
-		log.Printf("ConfigLoader::load_table %v not found primary key\n", tab.Name)
+		log.Infof("ConfigLoader::load_table %v not found primary key", tab.Name)
 		return false
 	}
 
@@ -119,7 +119,7 @@ func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 		if strings.Contains(f.TypeStr, ":") {
 			strs = strings.Split(f.TypeStr, ":")
 			if len(strs) < 2 {
-				log.Printf("ConfigLoader::load_table %v field blob type not found\n", tab.Name)
+				log.Infof("ConfigLoader::load_table %v field blob type not found", tab.Name)
 				return false
 			}
 			str = strings.ToUpper(strs[0])
@@ -131,7 +131,7 @@ func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 
 		real_type, ok := _get_field_simple_type(f)
 		if !ok {
-			log.Printf("ConfigLoader::load_table %v field type %v not found\n", tab.Name, str)
+			log.Infof("ConfigLoader::load_table %v field type %v not found", tab.Name, str)
 			return false
 		}
 
@@ -141,7 +141,7 @@ func (c *ConfigLoader) load_table(tab *mysql_base.TableConfig) bool {
 		var real_index_type int
 		real_index_type, ok = mysql_base.GetMysqlIndexTypeByString(str)
 		if !ok {
-			log.Printf("ConfigLoader::load_table %v index type %v not found\n", tab.Name, str)
+			log.Infof("ConfigLoader::load_table %v index type %v not found", tab.Name, str)
 			return false
 		}
 
@@ -179,7 +179,7 @@ func _get_file_creater(dest_file string) *os.File {
 	var err error
 	f, err = os.OpenFile(dest_file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		log.Printf("打开文件%v失败 %v\n", dest_file, err.Error())
+		log.Infof("打开文件%v失败 %vn", dest_file, err.Error())
 		return nil
 	}
 	return f
@@ -188,11 +188,11 @@ func _get_file_creater(dest_file string) *os.File {
 func _save_and_close_file(f *os.File, dest_file string) bool {
 	var err error
 	if err = f.Sync(); err != nil {
-		log.Printf("同步文件%v失败 %v\n", dest_file, err.Error())
+		log.Infof("同步文件%v失败 %v", dest_file, err.Error())
 		return false
 	}
 	if err = f.Close(); err != nil {
-		log.Printf("关闭文件%v失败 %v\n", dest_file, err.Error())
+		log.Infof("关闭文件%v失败 %v", dest_file, err.Error())
 		return false
 	}
 	return true
@@ -226,19 +226,19 @@ func (c *ConfigLoader) Generate(dest_path string) bool {
 
 		res := gen_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write source to %v failed\n", f.Name())
+			log.Infof("write source to %v failed", f.Name())
 			return false
 		}
 
 		res = gen_proxy_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write proxy source to %v failed\n", f.Name())
+			log.Infof("write proxy source to %v failed", f.Name())
 			return false
 		}
 
 		res = gen_record_mgr_source(f, c.DBPkg, table)
 		if !res {
-			log.Printf("write record mgr source to %v failed\n", f.Name())
+			log.Infof("write record mgr source to %v failed", f.Name())
 			return false
 		}
 

@@ -1,9 +1,10 @@
 package mysql_generate
 
 import (
-	"log"
 	"os"
 	"strconv"
+
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) error {
@@ -18,7 +19,7 @@ func gen_proto(f *os.File, pkg_name string, field_structs []*FieldStruct) error 
 
 	_, err := f.WriteString(str)
 	if err != nil {
-		log.Printf("write string err %v\n", err.Error())
+		log.Infof("write string err %v", err.Error())
 		return err
 	}
 	return nil

@@ -2,8 +2,9 @@ package mysql_base
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func (db *Database) LoadTable(tab *TableConfig) error {
@@ -12,7 +13,7 @@ func (db *Database) LoadTable(tab *TableConfig) error {
 	if !tab.SingleRow {
 		primary_field := tab.GetPrimaryKeyFieldConfig()
 		if primary_field == nil {
-			log.Printf("Database::LoadTable %v cant get primary key field config\n", tab.Name)
+			log.Infof("Database::LoadTable %v cant get primary key field config", tab.Name)
 			return ErrPrimaryFieldNotDefine
 		}
 		sql_str = fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (`%s` %s, PRIMARY KEY(`%s`)) ENGINE=%s", tab.Name, tab.PrimaryKey, primary_field.TypeStr, tab.PrimaryKey, tab.Engine)
@@ -61,14 +62,14 @@ func (db *Database) add_field(table_name string, field *FieldConfig) error {
 	sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s", table_name, field.Name, field.TypeStr)
 	err := db.Exec(sql_str, nil, nil)
 	if err != nil {
-		log.Printf("create table %v field %v failed\n", table_name, field.Name)
+		log.Infof("create table %v field %v failed", table_name, field.Name)
 		return err
 	}
 
 	// create index
 	index_type, o := GetMysqlIndexTypeByString(strings.ToUpper(field.IndexStr))
 	if !o {
-		log.Printf("No supported index type %v\n", field.IndexStr)
+		log.Infof("No supported index type %v", field.IndexStr)
 		return fmt.Errorf("table %v has not supported index type %v", table_name, field.IndexStr)
 	}
 
@@ -80,12 +81,12 @@ func (db *Database) add_field(table_name string, field *FieldConfig) error {
 		} else if index_type == MYSQL_INDEX_TYPE_FULLTEXT {
 			sql_str = fmt.Sprintf("ALTER TABLE `%s` ADD FULLTEXT(`%s`)", table_name, field.Name)
 		} else {
-			log.Printf("table %v field %v index type FULLTEXT not supported\n", table_name, field.Name)
+			log.Infof("table %v field %v index type FULLTEXT not supported", table_name, field.Name)
 		}
 
 		err = db.Exec(sql_str, nil, nil)
 		if err != nil {
-			log.Printf("create table %v field %v index failed\n", table_name, field.Name)
+			log.Infof("create table %v field %v index failed", table_name, field.Name)
 			return err
 		}
 	}

@@ -1,13 +1,10 @@
 package mysql_generate
 
 import (
-	"log"
 	"os"
 
-	//"strconv"
-	//"strings"
-
-	"github.com/huoshan017/mysql-go/base"
+	mysql_base "github.com/huoshan017/mysql-go/base"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool {
@@ -74,7 +71,7 @@ func gen_record_mgr_source(f *os.File, pkg_name string, table *mysql_base.TableC
 
 	_, err := f.WriteString(str)
 	if err != nil {
-		log.Printf("write string err %v\n", err.Error())
+		log.Infof("write string err %v", err.Error())
 		return false
 	}
 

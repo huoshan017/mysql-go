@@ -1,11 +1,11 @@
 package mysql_generate
 
 import (
-	"log"
 	"os"
 	"strings"
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func _upper_first_char(str string) string {
@@ -228,7 +228,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 		is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
 		//if mysql_base.MysqlFieldTypeStr2GoTypeStr(strings.ToUpper(field.TypeStr), is_unsigned) == "" {
 		if mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned) == "" {
-			log.Printf("table %v field %v(type_str: %v) skipped", table.Name, field.Name, field.TypeStr)
+			log.Infof("table %v field %v(type_str: %v) skipped", table.Name, field.Name, field.TypeStr)
 			continue
 		}
 		str += "	\"" + field.Name + "\": " + field_pair_func_type + "{\n"
@@ -249,7 +249,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 			is_unsigned := strings.Contains(strings.ToLower(field.TypeStr), "unsigned")
 			go_type = mysql_base.MysqlFieldType2GoTypeStr(field.Type, is_unsigned)
 			if go_type == "" {
-				log.Printf("get go type failed by field type %v in table %v, to continue\n", field.Type, table.Name)
+				log.Infof("get go type failed by field type %v in table %v, to continue", field.Type, table.Name)
 				continue
 			}
 		}
@@ -360,17 +360,17 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 	if !table.SingleRow {
 		pf = table.GetPrimaryKeyFieldConfig()
 		if pf == nil {
-			log.Printf("cant get table %v primary key\n", table.Name)
+			log.Infof("cant get table %v primary key", table.Name)
 			return false
 		}
 		if !(mysql_base.IsMysqlFieldIntType(pf.Type) || mysql_base.IsMysqlFieldTextType(pf.Type)) {
-			log.Printf("not support primary type %v for table %v", pf.Type, table.Name)
+			log.Infof("not support primary type %v for table %v", pf.Type, table.Name)
 			return false
 		}
 		is_unsigned := strings.Contains(strings.ToLower(pf.TypeStr), "unsigned")
 		pt = mysql_base.MysqlFieldType2GoTypeStr(pf.Type, is_unsigned)
 		if pt == "" {
-			log.Printf("主键类型%v没有对应的数据类型\n", pf.Type)
+			log.Infof("主键类型%v没有对应的数据类型", pf.Type)
 			return false
 		}
 	}
@@ -579,7 +579,7 @@ func gen_source(f *os.File, pkg_name string, table *mysql_base.TableConfig) bool
 
 	_, err := f.WriteString(str)
 	if err != nil {
-		log.Printf("write string err %v\n", err.Error())
+		log.Infof("write string err %v", err.Error())
 		return false
 	}
 

@@ -12,9 +12,8 @@ import (
 
 	mysql_base "github.com/huoshan017/mysql-go/base"
 	mysql_generate "github.com/huoshan017/mysql-go/generate"
+	"github.com/huoshan017/mysql-go/log"
 )
-
-//var protoc_root = os.Getenv("GOPATH") + "/mysql-go/_external/"
 
 var protoc_dest_map = map[string]string{
 	"windows": "windows/protoc.exe",
@@ -42,7 +41,7 @@ func main() {
 		config_path = *arg_config_file
 		fmt.Fprintf(os.Stdout, "config file path %v\n", config_path)
 	} else {
-		fmt.Fprintf(os.Stderr, "not found config file arg\n")
+		log.Infof("not found config file arg")
 		return
 	}
 
@@ -51,7 +50,7 @@ func main() {
 		dest_path = *arg_dest_path
 		fmt.Fprintf(os.Stdout, "dest path %v\n", dest_path)
 	} else {
-		fmt.Fprintf(os.Stderr, "not found dest path arg\n")
+		log.Infof("not found dest path arg")
 		return
 	}
 
@@ -60,7 +59,7 @@ func main() {
 		go_os := runtime.GOOS //os.Getenv("GOOS")
 		protoc_path = *arg_protoc_path + "/" + protoc_dest_map[go_os]
 	} else {
-		fmt.Fprintf(os.Stderr, "not found dest protoc file root path\n")
+		log.Infof("not found dest protoc file root path")
 		return
 	}
 
@@ -85,7 +84,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "proto_dest_path: %v    proto_file: %v\n", proto_dest_path, proto_file)
 
 	if !config_loader.GenerateFieldStructsProto(proto_dest_path + proto_file) {
-		fmt.Fprintf(os.Stderr, "generate proto file failed\n")
+		log.Infof("generate proto file failed")
 		return
 	}
 
@@ -99,13 +98,13 @@ func main() {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "cmd run err: %v\n", err.Error())
+		log.Infof("cmd run err: %v", err.Error())
 		return
 	}
 	fmt.Printf("%s", out.String())
 
 	if !config_loader.GenerateInitFunc(dest_path) {
-		fmt.Fprintf(os.Stderr, "generate init func failed\n")
+		log.Infof("generate init func failed")
 		return
 	}
 

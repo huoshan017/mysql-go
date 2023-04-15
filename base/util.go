@@ -1,8 +1,9 @@
 package mysql_base
 
 import (
-	"log"
 	"os"
+
+	"github.com/huoshan017/mysql-go/log"
 )
 
 func CopySrcValue2Dest(dest, src interface{}) bool {
@@ -68,7 +69,7 @@ func CopySrcValue2Dest(dest, src interface{}) bool {
 		r := src.([]byte)
 		*d = r
 	default:
-		log.Printf("mysql_base: copy src value to unsupported dest type %v\n", dt)
+		log.Infof("mysql_base: copy src value to unsupported dest type %v", dt)
 		return false
 	}
 	return true
@@ -76,11 +77,11 @@ func CopySrcValue2Dest(dest, src interface{}) bool {
 
 func CreateDirs(dest_path string) (err error) {
 	if err = os.MkdirAll(dest_path, os.ModePerm); err != nil {
-		log.Printf("创建目录结构%v错误 %v\n", dest_path, err.Error())
+		log.Infof("创建目录结构%v错误 %v", dest_path, err.Error())
 		return
 	}
 	if err = os.Chmod(dest_path, os.ModePerm); err != nil {
-		log.Printf("修改目录%v权限错误 %v\n", dest_path, err.Error())
+		log.Infof("修改目录%v权限错误 %v", dest_path, err.Error())
 		return
 	}
 	return

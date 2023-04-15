@@ -6,5 +6,6 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/golang/protobuf v1.5.0
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/pkg/errors v0.9.1
 	google.golang.org/protobuf v1.30.0
 )

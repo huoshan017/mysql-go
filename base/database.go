@@ -3,10 +3,10 @@ package mysql_base
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/huoshan017/mysql-go/log"
 )
 
 // QueryResultList ...
@@ -41,7 +41,7 @@ func (q *QueryResultList) Get(dest ...interface{}) bool {
 	}
 	err := q.rows.Scan(dest...)
 	if err != nil {
-		log.Printf("QueryResultList::Get with dest(%v) scan err %v\n", dest, err.Error())
+		log.Infof("QueryResultList::Get with dest(%v) scan err %v", dest, err.Error())
 		return false
 	}
 	return true
@@ -76,14 +76,12 @@ func (q *Database) Open(dbhost, dbuser, dbpassword, dbname string) error {
 // Close ...
 func (q *Database) Close() {
 	if q.db == nil {
-		log.Printf("Database close failed with null instance\n")
+		log.Infof("Database close failed with null instance")
 		return
 	}
 	err := q.db.Close()
 	if err != nil {
-		log.Printf("Database close err %v\n", err.Error())
-	} else {
-		log.Printf("Database closed\n")
+		log.Infof("Database close err %v", err.Error())
 	}
 }
 
@@ -170,13 +168,13 @@ func execResult(res sql.Result, lastInsertID, rowsAffected *int64) {
 	if lastInsertID != nil {
 		*lastInsertID, err = res.LastInsertId()
 		if err != nil {
-			log.Printf("Database exec get last insert id err %v\n", err.Error())
+			log.Infof("Database exec get last insert id err %v", err.Error())
 		}
 	}
 	if rowsAffected != nil {
 		*rowsAffected, err = res.RowsAffected()
 		if err != nil {
-			log.Printf("Database exe get rows affected err %v\n", err.Error())
+			log.Infof("Database exe get rows affected err %v", err.Error())
 		}
 	}
 }
@@ -185,7 +183,7 @@ func execResult(res sql.Result, lastInsertID, rowsAffected *int64) {
 func (q *Database) Exec(queryStr string, lastInsertID, rowsAffected *int64) error {
 	res, err := q.db.Exec(queryStr)
 	if err != nil {
-		log.Printf("Database exec query string(%v) err %v\n", queryStr, err.Error())
+		log.Infof("Database exec query string(%v) err %v", queryStr, err.Error())
 		return err
 	}
 	execResult(res, lastInsertID, rowsAffected)
@@ -196,7 +194,7 @@ func (q *Database) Exec(queryStr string, lastInsertID, rowsAffected *int64) erro
 func (q *Database) ExecWith(queryStr string, args []interface{}, lastInsertID, rowsAffected *int64) error {
 	res, err := q.db.Exec(queryStr, args...)
 	if err != nil {
-		log.Printf("Database exec query string(%v) with args(%v) err %v\n", queryStr, args, err.Error())
+		log.Infof("Database exec query string(%v) with args(%v) err %v", queryStr, args, err.Error())
 		return err
 	}
 	execResult(res, lastInsertID, rowsAffected)
@@ -207,7 +205,7 @@ func (q *Database) ExecWith(queryStr string, args []interface{}, lastInsertID, r
 func (q *Database) Prepare(queryStr string) *Stmt {
 	stmt, err := q.db.Prepare(queryStr)
 	if err != nil {
-		log.Printf("Database Prepare query (%v) err %v\n", queryStr, err.Error())
+		log.Infof("Database Prepare query (%v) err %v", queryStr, err.Error())
 		return nil
 	}
 	return CreateStmt(stmt)
@@ -217,7 +215,7 @@ func (q *Database) Prepare(queryStr string) *Stmt {
 func (q *Database) BeginProcedure() *Procedure {
 	tx, err := q.db.Begin()
 	if err != nil {
-		log.Printf("Database begin procedure err %v\n", err.Error())
+		log.Infof("Database begin procedure err %v", err.Error())
 		return nil
 	}
 	return CreateProcedure(tx)
@@ -242,7 +240,7 @@ func (q *Stmt) Query(args []interface{}, result *QueryResultList) error {
 	rows, err := q.stmt.Query(args...)
 	//defer rows.Close()
 	if err != nil {
-		log.Printf("Stmt query err %v\n", err.Error())
+		log.Infof("Stmt query err %v", err.Error())
 		return err
 	}
 	result.Init(rows)
@@ -258,7 +256,7 @@ func (q *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
 	}
 	err := row.Scan(dest...)
 	if err != nil {
-		log.Printf("Stmt query one row and scan err %v\n", err.Error())
+		log.Infof("Stmt query one row and scan err %v", err.Error())
 		return err
 	}
 	return nil
@@ -268,7 +266,7 @@ func (q *Stmt) QueryOne(args []interface{}, dest []interface{}) error {
 func (q *Stmt) Exec(args []interface{}, lastInsertID, rowsAffected *int64) error {
 	res, err := q.stmt.Exec(args...)
 	if err != nil {
-		log.Printf("Stmt exec with args err %v\n", err.Error())
+		log.Infof("Stmt exec with args err %v", err.Error())
 		return err
 	}
 	execResult(res, lastInsertID, rowsAffected)
@@ -293,7 +291,7 @@ func CreateProcedure(tx *sql.Tx) *Procedure {
 func (p *Procedure) Query(queryStr string, result *QueryResultList) error {
 	rows, err := p.tx.Query(queryStr)
 	if err != nil {
-		log.Printf("Procedure query(%v) err %v\n", queryStr, err.Error())
+		log.Infof("Procedure query(%v) err %v", queryStr, err.Error())
 		return err
 	}
 	result.Init(rows)
@@ -304,7 +302,7 @@ func (p *Procedure) Query(queryStr string, result *QueryResultList) error {
 func (p *Procedure) QueryWith(queryStr string, args []interface{}, result *QueryResultList) error {
 	rows, err := p.tx.Query(queryStr, args...)
 	if err != nil {
-		log.Printf("Procedure query(%v) with args(%v) err %v\n", queryStr, args, err.Error())
+		log.Infof("Procedure query(%v) with args(%v) err %v", queryStr, args, err.Error())
 		return err
 	}
 	result.Init(rows)
@@ -315,7 +313,7 @@ func (p *Procedure) QueryWith(queryStr string, args []interface{}, result *Query
 func (p *Procedure) QueryOne(queryStr string, dest []interface{}) error {
 	err := p.tx.QueryRow(queryStr).Scan(dest...)
 	if err != nil {
-		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", queryStr, dest, err.Error())
+		log.Infof("Procedure query(%v) one row with args(%v) and scan err %v", queryStr, dest, err.Error())
 		return err
 	}
 	return nil
@@ -325,7 +323,7 @@ func (p *Procedure) QueryOne(queryStr string, dest []interface{}) error {
 func (p *Procedure) QueryOneWith(queryStr string, args []interface{}, dest []interface{}) error {
 	err := p.tx.QueryRow(queryStr, args...).Scan(dest...)
 	if err != nil {
-		log.Printf("Procedure query(%v) one row with args(%v) and scan err %v\n", queryStr, args, err.Error())
+		log.Infof("Procedure query(%v) one row with args(%v) and scan err %v", queryStr, args, err.Error())
 		return err
 	}
 	return nil
@@ -335,7 +333,7 @@ func (p *Procedure) QueryOneWith(queryStr string, args []interface{}, dest []int
 func (p *Procedure) Exec(queryStr string, lastInsertID, rowsAffected *int64) error {
 	res, err := p.tx.Exec(queryStr)
 	if err != nil {
-		log.Printf("Procedure exec(%v) with err %v\n", queryStr, err.Error())
+		log.Infof("Procedure exec(%v) with err %v", queryStr, err.Error())
 		return err
 	}
 	execResult(res, lastInsertID, rowsAffected)
@@ -346,7 +344,7 @@ func (p *Procedure) Exec(queryStr string, lastInsertID, rowsAffected *int64) err
 func (p *Procedure) ExecWith(queryStr string, args []interface{}, lastInsertID, rowsAffected *int64) error {
 	res, err := p.tx.Exec(queryStr, args...)
 	if err != nil {
-		log.Printf("Procedure exec(%v) with args(%v) err %v\n", queryStr, args, err.Error())
+		log.Infof("Procedure exec(%v) with args(%v) err %v", queryStr, args, err.Error())
 		return err
 	}
 	execResult(res, lastInsertID, rowsAffected)
@@ -357,7 +355,7 @@ func (p *Procedure) ExecWith(queryStr string, args []interface{}, lastInsertID, 
 func (p *Procedure) Commit() error {
 	err := p.tx.Commit()
 	if err != nil {
-		log.Printf("Procedure commit err %v\n", err.Error())
+		log.Infof("Procedure commit err %v", err.Error())
 		return err
 	}
 	return nil
@@ -367,7 +365,7 @@ func (p *Procedure) Commit() error {
 func (p *Procedure) Rollback() error {
 	err := p.tx.Rollback()
 	if err != nil {
-		log.Printf("Procedure rollback err %v\n", err.Error())
+		log.Infof("Procedure rollback err %v", err.Error())
 		return err
 	}
 	return nil
