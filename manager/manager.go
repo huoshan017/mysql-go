@@ -66,8 +66,6 @@ func (db *DB) Connect(dbhost, dbuser, dbpassword, dbname string) error {
 		return err
 	}
 	db.database.SetMaxLifeTime(DEFAULT_CONN_MAX_LIFE_SECONDS)
-	//if db.config_loader != nil && db.config_loader.Tables != nil {
-	//}
 	db.save_interval = DEFAULT_SAVE_INTERVAL_TIME
 	return nil
 }
